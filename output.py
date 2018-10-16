@@ -116,14 +116,14 @@ def create(path, orig_ds, yrs_in):
     return root_ds, sl_int, spi_int, si_int, cf_int, sd_int, ed_int, sns_int
 
 
-def scratch(pth, dim_x, dim_y, dim_t, timeidx):
+def scratch(pth, dim_x, dim_y, time):
 
     pth = os.path.join(pth, 'scratch.nc')
     root = Dataset(pth, "a", format="NETCDF4")
 
     x = root.createDimension('x', dim_x)
     y = root.createDimension('y', dim_y)
-    time = root.createDimension('time', dim_t)
+    time = root.createDimension('time', len(time))
 
     xv = root.createVariable('x', 'i32', ('x',))
     yv = root.createVariable('y', 'i32', ('y',))
@@ -132,7 +132,7 @@ def scratch(pth, dim_x, dim_y, dim_t, timeidx):
 
     xv[:] = np.arange(0, len(dim_x))
     yv[:] = np.arange(0, len(dim_y))
-    time[:] = pd.DatetimeIndex(timeidx).astype(np.int64)/1e6
+    time[:] = pd.DatetimeIndex(time).astype(np.int64)/1e6
 
 
 
