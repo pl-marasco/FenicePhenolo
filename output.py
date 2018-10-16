@@ -1,8 +1,11 @@
-#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# !/usr/bin/env python
 
 from netCDF4 import Dataset, date2num
 from datetime import datetime
 import numpy as np
+import os
+import pandas as pd
 
 
 def create(path, orig_ds, yrs_in):
@@ -111,3 +114,27 @@ def create(path, orig_ds, yrs_in):
 
     # output the file and the variables
     return root_ds, sl_int, spi_int, si_int, cf_int, sd_int, ed_int, sns_int
+
+
+def scratch(pth, dim_x, dim_y, dim_t, timeidx):
+
+    pth = os.path.join(pth, 'scratch.nc')
+    root = Dataset(pth, "a", format="NETCDF4")
+
+    x = root.createDimension('x', dim_x)
+    y = root.createDimension('y', dim_y)
+    time = root.createDimension('time', dim_t)
+
+    xv = root.createVariable('x', 'i32', ('x',))
+    yv = root.createVariable('y', 'i32', ('y',))
+    timev = root.createVariable('time', 'f32', ('time',))
+    random = root.createVariable('random', 'f32', ('y', 'time', 'x'))
+
+    xv[:] = np.arange(0, len(dim_x))
+    yv[:] = np.arange(0, len(dim_y))
+    time[:] = pd.DatetimeIndex(timeidx).astype(np.int64)/1e6
+
+
+
+
+

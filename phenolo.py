@@ -1,4 +1,6 @@
-#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# !/usr/bin/env python
+
 
 import pandas as pd
 import numpy as np
@@ -10,41 +12,41 @@ import detect_peacks as dp
 from seasonal import fit_seasons, fit_trend
 
 
+def single_px(ts_dek, prmts):
+    coord = 'Single pixel'
 
-def analyzes(dataset, prmts, coord):
     # Numpy error report
     np.seterr(all='ignore')  # {‘ignore’, ‘warn’, ‘raise’, ‘call’, ‘print’, ‘log’}
 
     # Error table
-
     err_table = pd.Series(0, index=['read', 'fix', 'rescaling', 'outlier', 'cleaning',
                                     's&t_ext', 's2d', 'savgol', 'valley'])
 
-    # read x y
-    try:
-        h0 = dataset.read(prmts['bdsIdx'], window=coord)
-    except RuntimeError:
-        print('Error in read xy')
-        err_table['read'] = 1
-        return err_table
-
-    coord = [coord[0][0], coord[1][0]]
+    # # read x y
+    # try:
+    #     h0 = dataset.read(prmts['bdsIdx'], window=coord)
+    # except RuntimeError:
+    #     print('Error in read xy')
+    #     err_table['read'] = 1
+    #     return err_table
+    #
+    # coord = [coord[0][0], coord[1][0]]
 
     #
     # Core code equal across all the versions
     #
 
-    # Water excluder
-    if 254 in h0:
-        return err_table
-    else:
-        h0 = h0.flatten().astype(np.float)
-
-    # Output container
-    ts_table = pd.DataFrame([])
-
-    # Convert to pandas series
-    ts_dek = pd.Series(h0, index=prmts['dates'])
+    # # Water excluder
+    # if 254 in h0:
+    #     return err_table
+    # else:
+    #     h0 = h0.flatten().astype(np.float)
+    #
+    # # Output container
+    # ts_table = pd.DataFrame([])
+    #
+    # # Convert to pandas series
+    # ts_dek = pd.Series(h0, index=prmts['dates'])
 
     # Fix no data (works only for Spot Veg)
     try:
@@ -58,7 +60,7 @@ def analyzes(dataset, prmts, coord):
     # Rescale values to  0-100
     try:
         # ts_dek_resc_unfix = (ts_dek_unfix - prmts['min_v']) / (prmts['max_v'] - prmts['min_v']) * 100
-        ts_dek_resc = (ts_dek - prmts['min_v']) / (prmts['max_v'] - prmts['min_v']) * 100
+        ts_dek_resc = (ts_dek - prmts.min) / (prmts.max - prmts.min) * 100
     except (RuntimeError, Exception, ValueError):
         print('Error in rescaling, in position:{0}'.format(coord))
         err_table['rescaling'] = 1
@@ -418,4 +420,27 @@ def analyzes(dataset, prmts, coord):
     # plt.show()
     # # plt.clf()
 
-    return ts_table, err_table, season_lng
+    return season_lng #ts_table, err_table,
+
+
+def analyse(column, **kwargs):
+    param = kwargs['param']
+    coord = 'Single pixel'
+
+    # Numpy error report
+    np.seterr(all='ignore')  # {‘ignore’, ‘warn’, ‘raise’, ‘call’, ‘print’, ‘log’}
+
+    try:
+        ts_dek = nodata.nodatafix(column)
+    except (RuntimeError, Exception, ValueError):
+        print('Error in fix no data, in position:{0}'.format(coord))
+        return
+    # Rescale values to  0-100
+    try:
+        ts_dek_resc = (ts_dek / param.max) * 100
+    except (RuntimeError, Exception, ValueError):
+        print('Error in rescaling, in position:{0}'.format(coord))
+        return
+    return ts_dek_resc
+
+

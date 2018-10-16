@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# !/usr/bin/env python
+
 import numpy as np
 import pandas as pd
 from seasonal import fit_seasons, adjust_seasons, fit_trend
