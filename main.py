@@ -8,6 +8,7 @@ import reader
 import preprocessing as pp
 import phenolo
 
+#--conf E:\Dev\PycharmProjects\AssoloPhenolo\NDVI_1km_SPOTPROBA_98_18.ini -l 1
 
 logger = logging.getLogger(__name__)
 

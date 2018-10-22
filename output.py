@@ -116,25 +116,27 @@ def create(path, orig_ds, yrs_in):
     return root_ds, sl_int, spi_int, si_int, cf_int, sd_int, ed_int, sns_int
 
 
-def scratch(pth, dim_x, dim_y, time):
+def scratcher(pth, dx, dy, dtime, **kwargs):
 
-    pth = os.path.join(pth, 'scratch.nc')
-    root = Dataset(pth, "a", format="NETCDF4")
+    if 'name' in kwargs:
+        name = kwargs['name']+'.nc'
+    else:
+        name = 'scratch.nc'
+    pth = os.path.join(pth, name)
 
-    x = root.createDimension('x', dim_x)
-    y = root.createDimension('y', dim_y)
-    time = root.createDimension('time', len(time))
+    scratch = Dataset(pth, "w", format="NETCDF4")
 
-    xv = root.createVariable('x', 'i32', ('x',))
-    yv = root.createVariable('y', 'i32', ('y',))
-    timev = root.createVariable('time', 'f32', ('time',))
-    random = root.createVariable('random', 'f32', ('y', 'time', 'x'))
+    x = scratch.createDimension('x', None)
+    y = scratch.createDimension('y', None)
+    time = scratch.createDimension('time', None)
 
-    xv[:] = np.arange(0, len(dim_x))
-    yv[:] = np.arange(0, len(dim_y))
-    time[:] = pd.DatetimeIndex(time).astype(np.int64)/1e6
+    xv = scratch.createVariable('x', 'i8', ('x',))
+    yv = scratch.createVariable('y', 'i8', ('y',))
+    timev = scratch.createVariable('time', 'f8', ('time',))
+    data = scratch.createVariable('data', 'f8', ('y', 'time', 'x'))
 
+    xv[:] = np.arange(0, dx)
+    yv[:] = np.arange(0, dy)
+    time[:] = dtime
 
-
-
-
+    return scratch

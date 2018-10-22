@@ -132,7 +132,7 @@ class PreProcessor(object):
 #end region
 
     def analyse(self, cube):
-
+        pass
 
 
         #region prosecuzione
