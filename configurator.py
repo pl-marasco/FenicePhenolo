@@ -24,8 +24,8 @@ class ProjectParameters(object):
                 config = cp.ConfigParser()
                 config.read(path_config)
 
-                # [PATHS]
-                section = 'PATHS'
+                # [GENERAL_SETTINGS]
+                section = 'GENERAL_SETTINGS'
                 self.inFilePth = self.__read(config, section, 'InFile')
 
                 if self.__read(config, section, 'OutFile') != '':
@@ -33,7 +33,12 @@ class ProjectParameters(object):
                 else:
                     root, file = os.path.split(self.inFilePth)
                     self.outFilePth = os.path.join(root, 'results.nc')
+
+                ovr = self.__read(config, section, 'Retain_scratch')
+
+                self.ovr_scratch = True if ovr is not None else self.ovr_scratch = False
                 self.scratch = self.__read(config, section, 'ScratchPath')
+
 
                 # [RUN_PARAMETERS_INPUT]
                 # Time dimension

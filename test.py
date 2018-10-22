@@ -2,44 +2,54 @@ import pandas as pd
 import output
 import os
 from netCDF4 import Dataset
-
 import numpy as np
 
 
 def main():
     print('entrato!')
 
-    pth = r'c:\Temp'
+    import output
+
+    pth = r'c:\Temp\temp'
     dates = pd.date_range('1998/04/01', '2013/12/21')
     dates = dates[dates.day.isin([1, 11, 21])]
-    pth = os.path.join(pth, 'scratch.nc')
-    root = Dataset(pth, 'w', format='NETCDF4')
 
-    xi, yi = 15680, 400
+    a = output.scratcher(pth, 50, 50, dates, name='test_1')
 
-    x = root.createDimension('x', xi)
-    y = root.createDimension('y', yi)
-    time = root.createDimension('time', len(dates))
-    xv = root.createVariable('x', 'i8', ('x',))
-    yv = root.createVariable('y', 'i8', ('y',))
-    timev = root.createVariable('time', 'f8', ('time',))
-    random = root.createVariable('random', 'f8', ('x', 'y', 'time'))
-    xv[:] = np.arange(xi)
-    yv[:] = np.arange(yi)
-    timev[:] = dates
+    carrier = a.variables['data']
 
-    try:
-        for x in range(xi):
-            if x == 100:
-                continue
-            random[x, :, :] = np.random.random((1, yi, len(dates)))
-            if x in range(0, 15680, 1000):
-                print(x)
-    except (RuntimeError, Exception):
-        print(x)
+    carrier[10, 10, 10] = 10
 
-    print('done!')
-    root.close()
+    a.close()
+
+    # pth = os.path.join(pth, 'scratch.nc')
+    # root = Dataset(pth, 'w', format='NETCDF4')
+    #
+    # xi, yi = 15680, 400
+    #
+    # x = root.createDimension('x', xi)
+    # y = root.createDimension('y', yi)
+    # time = root.createDimension('time', len(dates))
+    # xv = root.createVariable('x', 'i8', ('x',))
+    # yv = root.createVariable('y', 'i8', ('y',))
+    # timev = root.createVariable('time', 'f8', ('time',))
+    # random = root.createVariable('random', 'f8', ('x', 'y', 'time'))
+    # xv[:] = np.arange(xi)
+    # yv[:] = np.arange(yi)
+    # timev[:] = dates
+    #
+    # try:
+    #     for x in range(xi):
+    #         if x == 100:
+    #             continue
+    #         random[x, :, :] = np.random.random((1, yi, len(dates)))
+    #         if x in range(0, 15680, 1000):
+    #             print(x)
+    # except (RuntimeError, Exception):
+    #     print(x)
+    #
+    # print('done!')
+    # root.close()
 
     # time_idx = (pd.Timestamp('1998/04/01')-pd.Timestamp('1970/01/01'))//pd.Timedelta('1s')
     # random[1, time_idx, 1] = 2

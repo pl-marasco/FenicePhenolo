@@ -5,7 +5,6 @@ from netCDF4 import Dataset, date2num
 from datetime import datetime
 import numpy as np
 import os
-import pandas as pd
 
 
 def create(path, orig_ds, yrs_in):
@@ -133,10 +132,10 @@ def scratcher(pth, dx, dy, dtime, **kwargs):
     xv = scratch.createVariable('x', 'i8', ('x',))
     yv = scratch.createVariable('y', 'i8', ('y',))
     timev = scratch.createVariable('time', 'f8', ('time',))
-    data = scratch.createVariable('data', 'f8', ('y', 'time', 'x'))
+    data = scratch.createVariable('data', 'f8', ('x', 'y', 'time'))
 
-    xv[:] = np.arange(0, dx)
-    yv[:] = np.arange(0, dy)
-    time[:] = dtime
+    # xv[:] = np.arange(dx)
+    # yv[:] = np.arange(dy)
+    # timev[:] = dtime
 
     return scratch
