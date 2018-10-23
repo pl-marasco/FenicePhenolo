@@ -36,7 +36,7 @@ class ProjectParameters(object):
 
                 ovr = self.__read(config, section, 'Retain_scratch')
 
-                self.ovr_scratch = True if ovr is not None else self.ovr_scratch = False
+                # self.ovr_scratch = 'True' if ovr is not None else self.ovr_scratch = 'False'
                 self.scratch = self.__read(config, section, 'ScratchPath')
 
 
