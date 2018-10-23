@@ -2,16 +2,22 @@
 # !/usr/bin/env python
 
 import nodata
-import sys, logging
+import sys, os, logging
+from netCDF4 import Dataset
 
 logger = logging.getLogger(__name__)
 
 
 class PreProcessor(object):
-    def __init__(self, prm_obj):
+    def __init__(self, prm_obj, cube):
 
         if prm_obj.scratch is not None:
             self.scratch = prm_obj.scratch
+        else:
+            self.scratch = prm_obj.outFilePth
+
+        if prm_obj.ovr_scratch:
+            self.ovr_scratch = prm_obj.ovr_scratch
 
         if prm_obj.min is not None:
             self.min = prm_obj.min
@@ -56,6 +62,8 @@ class PreProcessor(object):
             print('Error in rescaling, in position')
             logger.debug('Error in rescaling')
             sys.exit()
+
+
 
 #region
     # def _filter_outlayer(self, cube):

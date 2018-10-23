@@ -34,11 +34,11 @@ class ProjectParameters(object):
                     root, file = os.path.split(self.inFilePth)
                     self.outFilePth = os.path.join(root, 'results.nc')
 
-                ovr = self.__read(config, section, 'Retain_scratch')
-
-                # self.ovr_scratch = 'True' if ovr is not None else self.ovr_scratch = 'False'
+                if self.__read(config, section, 'Retain_scratch').lower() == 'true':
+                    self.ovr_scratch = True
+                else:
+                    self.ovr_scratch = False
                 self.scratch = self.__read(config, section, 'ScratchPath')
-
 
                 # [RUN_PARAMETERS_INPUT]
                 # Time dimension
@@ -191,3 +191,28 @@ class ProjectParameters(object):
                 return config.get(section, parameter)
         else:
             return config.get(section, parameter)
+
+    @staticmethod
+    def __coord_names(self, data):
+
+        dims = [i.lower() for i in data.dims]
+        crd_x, crd_y, crd_t = [None] * 3
+
+        if 'lat' in dims or 'lon' in dims:
+            crd_x = data.dims[dims.index('lon')]
+            crd_y = data.dims[dims.index('lat')]
+            crd_t = data.dims[dims.index('time')]
+
+        elif 'e' in dims or 'n' in dims:
+            crd_x = data.dims[dims.index('e')]
+            crd_y = data.dims[dims.index('n')]
+            crd_t = data.dims[dims.index('time')]
+
+        return crd_x, crd_y, crd_t
+
+    def dim_update(self, data):
+        self.x_nm, self.y_nm, self.t_nm = self.__coord_names(data)
+
+        self.x_dim = data.coords[self.x_nm].data
+        self.y_dim = data.coords[self.y_nm].data
+        self.t_dim = data.coords[self.t_nm].data

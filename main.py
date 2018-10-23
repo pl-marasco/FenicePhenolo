@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-# !/usr/bin/env python
-
 import argparse, sys, importlib, time, os, logging
 from datetime import datetime
 import configurator
@@ -8,20 +5,19 @@ import reader
 import preprocessing as pp
 import phenolo
 
-#--conf E:\Dev\PycharmProjects\AssoloPhenolo\NDVI_1km_SPOTPROBA_98_18.ini -l 1
 
-logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
 
 
 def main(prmts):
 
     start_time = time.process_time()
+
     _log_info(logging.getLogger('paramters'), prmts)
 
-    # read
     cube = reader.ingest(prmts)
 
-    prmts.x_nm, prmts.y_nm, prmts.t_nm = reader._coord_names(cube)
+    prmts.dim_update(cube)
 
     if len(cube.shape) is not 1:
 
@@ -161,6 +157,8 @@ if __name__ == '__main__':
         logger = logging.getLogger(__name__)
         logger.info('*** Phenolo 2.0 ***')
         logger.info('Process started @ {}'.format(datetime.now()))
+
+        # prmts = configurator.ProjectParameters(path=args.conf, type='ini')  # TODO  type 'ini' must be flexible
 
         prmts = configurator.ProjectParameters(path=args.conf, type='ini')  # TODO  type 'ini' must be flexible
 
