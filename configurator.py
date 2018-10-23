@@ -193,7 +193,7 @@ class ProjectParameters(object):
             return config.get(section, parameter)
 
     @staticmethod
-    def __coord_names(self, data):
+    def __coord_names(data):
 
         dims = [i.lower() for i in data.dims]
         crd_x, crd_y, crd_t = [None] * 3
