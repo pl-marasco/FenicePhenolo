@@ -4,7 +4,7 @@ import configurator
 import reader
 import preprocessing as pp
 import phenolo
-
+import scratch
 
 # logger = logging.getLogger(__name__)
 
@@ -21,12 +21,17 @@ def main(prmts):
 
     if len(cube.shape) is not 1:
 
-        ppo = pp.PreProcessor(prmts)
+        scrt = scratch.ScratchFile(prmts)
 
-        pp_cube = ppo.analyse(cube)
+        ppo = pp.PreProcessor(prmts, cube, scrt)
+
+        prmts.pxl_list = ppo.pixel_list()
+
+
+        # if prmts.type == 'SOPT':
 
         # ph = phenolo.analyse(pp_cube)
-        #
+
         # ph.to_netcdf(prmts.outFilePth)
 
     else:

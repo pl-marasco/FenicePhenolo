@@ -4,12 +4,13 @@
 import nodata
 import sys, os, logging
 from netCDF4 import Dataset
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
 
 class PreProcessor(object):
-    def __init__(self, prm_obj, cube):
+    def __init__(self, prm_obj, cube, stc):
 
         if prm_obj.scratch is not None:
             self.scratch = prm_obj.scratch
@@ -44,17 +45,20 @@ class PreProcessor(object):
         if prm_obj.t_nm is not None:
             self.t_nm = prm_obj.t_nm
 
+        self.cube = cube
 
-    def _no_data(self, cube):
+        self.scratch = stc
+
+    def spot_no_data(self):
         # Fix no data
         try:
-            fixed_cube = nodata.fix(self, cube, type='SCE')
+            fixed_cube = nodata.fix(self, self.cube, type='SCE')
             return fixed_cube
         except (RuntimeError, Exception, ValueError):
             logger.debug('Error during the process of fixing')
             sys.exit(1)
 
-    def _rescale(self, cube):
+    def rescale(self, cube):
         # Rescale values to  0-100
         try:
             return ((cube - self.min) / (self.max - self.min)) * 100
@@ -63,7 +67,11 @@ class PreProcessor(object):
             logger.debug('Error in rescaling')
             sys.exit()
 
-
+    def pixel_list(self):
+        # Create a list of pixels to be analyzed
+        masked = self.cube.isel(dict([(self.t_nm, 0)])).where(~(self.cube.isel(dict([(self.t_nm, 0)])) == self.sea))
+        mask_iter = np.ndenumerate(masked.to_masked_array().mask)
+        return [index for index, value in mask_iter if ~value]
 
 #region
     # def _filter_outlayer(self, cube):
