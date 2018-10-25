@@ -27,7 +27,7 @@ def _get_img(prmts, dim):
     import dek as dk
 
     try:
-        # dataset = xr.open_rasterio(prmts.inFilePth, chunks={'x': 5, 'y': 5})
+        # dataset = xr.open_rasterio(param.inFilePth, chunks={'x': 5, 'y': 5})
         dataset = xr.open_rasterio(prmts.inFilePth)
     except IOError:
         logger.debug('Error reading img file')

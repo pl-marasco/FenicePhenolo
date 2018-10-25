@@ -210,9 +210,15 @@ class ProjectParameters(object):
 
         return crd_x, crd_y, crd_t
 
-    def dim_update(self, data):
+    def add_dims(self, data):
         self.x_nm, self.y_nm, self.t_nm = self.__coord_names(data)
 
         self.x_dim = data.coords[self.x_nm].data
         self.y_dim = data.coords[self.y_nm].data
         self.t_dim = data.coords[self.t_nm].data
+
+    def add_px_list(self, cube):
+        # Create a list of pixels to be analyzed
+        masked = cube.isel(dict([(self.t_nm, 0)])).where(~(cube.isel(dict([(self.t_nm, 0)])) == self.sea))
+        mask_iter = np.ndenumerate(masked.to_masked_array().mask)
+        self.pixel_list = [index for index, value in mask_iter if ~value]

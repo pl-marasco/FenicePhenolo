@@ -6,36 +6,37 @@ import preprocessing as pp
 import phenolo
 import scratch
 
-# logger = logging.getLogger(__name__)
+from dask.distributed import Client
+import nodata
+logger = logging.getLogger(__name__)
 
 
-def main(prmts):
+def main(param):
 
     start_time = time.process_time()
 
-    _log_info(logging.getLogger('paramters'), prmts)
+    cube = reader.ingest(param)
 
-    cube = reader.ingest(prmts)
+    param.add_dims(cube)
+    param.add_px_list(cube)
 
-    prmts.dim_update(cube)
+    _log_info(logging.getLogger('paramters'), param)
+    _log_info(logging.getLogger('cube'), cube)
 
     if len(cube.shape) is not 1:
 
-        scrt = scratch.ScratchFile(prmts)
-
-        ppo = pp.PreProcessor(prmts, cube, scrt)
-
-        prmts.pxl_list = ppo.pixel_list()
+        scrt = scratch.ScratchFile(param)
+        ppo = pp.spot_nodata()
 
 
-        # if prmts.type == 'SOPT':
+        # if param.type == 'SOPT':
 
         # ph = phenolo.analyse(pp_cube)
 
-        # ph.to_netcdf(prmts.outFilePth)
+        # ph.to_netcdf(param.outFilePth)
 
     else:
-        phen = phenolo.single_px(cube.to_series(), prmts)
+        phen = phenolo.single_px(cube.to_series(), param)
 
     end = time.process_time() - start_time
 
@@ -75,7 +76,7 @@ def main(prmts):
     #
     #             coord = ((x, x + 1), (y, y + 1))
     #
-    #             ts_table, err_table, season = phen.analyzes(dtst, prmts, coord)
+    #             ts_table, err_table, season = phen.analyzes(dtst, param, coord)
     #             if ts_table is None and season is None and err_table is not None:
     #                 err_pnl.loc[:, x, y] = err_table.values
     #             elif ts_table is not None:
@@ -121,7 +122,7 @@ def main(prmts):
     #     x, y = singleton[0], singleton[1]
     #
     #     window = ((x, x + 1), (y, y + 1))
-    #     ts_table = phen.analyzes(cube_msk, prmts, window)
+    #     ts_table = phen.analyzes(cube_msk, param, window)
     #
     # endregion
 
@@ -163,11 +164,9 @@ if __name__ == '__main__':
         logger.info('*** Phenolo 2.0 ***')
         logger.info('Process started @ {}'.format(datetime.now()))
 
-        # prmts = configurator.ProjectParameters(path=args.conf, type='ini')  # TODO  type 'ini' must be flexible
+        param = configurator.ProjectParameters(path=args.conf, type='ini')  # TODO  type 'ini' must be flexible
 
-        prmts = configurator.ProjectParameters(path=args.conf, type='ini')  # TODO  type 'ini' must be flexible
-
-        main(prmts)
+        main(param)
 
     except KeyboardInterrupt:
         print('Process killed')

@@ -9,7 +9,16 @@ import numpy as np
 # import statsmodels.api as stm
 
 
+def extfix(px, **kwargs):
+    cube = kwargs.pop('data', '')
+    param = kwargs.pop('param','')
+
+    x, y = px
+    ts = cube[dict([(param.x_nm, x), (param.y_nm, y)])].to_series().astype(float)
+    return fix(ts)
+
 def fix(ts):
+
     # 252 cloud
     # 253 snow
     # 254 sea (not treated)
@@ -66,7 +75,7 @@ def fix(ts):
     return ts
 
 #
-# def fix(prmts, cube, **kwargs):
+# def fix(param, cube, **kwargs):
 #
 #     type = kwargs.pop('type', '')
 #
@@ -81,7 +90,7 @@ def fix(ts):
 #             return c3
 #         else:
 #             ts = cube.to_series()
-#             ts_cln = pixeldrillcleaner(prmts, ts)
+#             ts_cln = pixeldrillcleaner(param, ts)
 #             cube.values = ts_cln
 #             return cube
 #
@@ -151,21 +160,22 @@ def fix(ts):
 #     return renamed
 
 
-def _coord_names(data):
-    dims = [i.lower() for i in data.dims]
-    crd_x, crd_y, crd_t = [None] * 3
-
-    if 'lat' in dims or 'lon' in dims:
-        crd_x = data.dims[dims.index('lon')]
-        crd_y = data.dims[dims.index('lat')]
-        crd_t = data.dims[dims.index('time')]
-
-    elif 'e' in dims or 'n' in dims:
-        crd_x = data.dims[dims.index('e')]
-        crd_y = data.dims[dims.index('n')]
-        crd_t = data.dims[dims.index('time')]
-
-    else:
-        crd_t = data.dims[dims.index('time')]
-
-    return crd_x, crd_y, crd_t
+#
+# def _coord_names(data):
+#     dims = [i.lower() for i in data.dims]
+#     crd_x, crd_y, crd_t = [None] * 3
+#
+#     if 'lat' in dims or 'lon' in dims:
+#         crd_x = data.dims[dims.index('lon')]
+#         crd_y = data.dims[dims.index('lat')]
+#         crd_t = data.dims[dims.index('time')]
+#
+#     elif 'e' in dims or 'n' in dims:
+#         crd_x = data.dims[dims.index('e')]
+#         crd_y = data.dims[dims.index('n')]
+#         crd_t = data.dims[dims.index('time')]
+#
+#     else:
+#         crd_t = data.dims[dims.index('time')]
+#
+#     return crd_x, crd_y, crd_t

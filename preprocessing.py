@@ -5,58 +5,77 @@ import nodata
 import sys, os, logging
 from netCDF4 import Dataset
 import numpy as np
+from dask.distributed import Client, as_completed
 
 logger = logging.getLogger(__name__)
 
 
 class PreProcessor(object):
-    def __init__(self, prm_obj, cube, stc):
+    def __init__(self):
+        pass
 
-        if prm_obj.scratch is not None:
-            self.scratch = prm_obj.scratch
-        else:
-            self.scratch = prm_obj.outFilePth
+        # if prm_obj.scratch is not None:
+        #     self.scratch = prm_obj.scratch
+        # else:
+        #     self.scratch = prm_obj.outFilePth
+        #
+        # if prm_obj.ovr_scratch:
+        #     self.ovr_scratch = prm_obj.ovr_scratch
+        #
+        # if prm_obj.min is not None:
+        #     self.min = prm_obj.min
+        # if prm_obj.max is not None:
+        #     self.max = prm_obj.max
+        # if prm_obj.scale is not None:
+        #     self.scale = prm_obj.scale
+        # if prm_obj.offset is not None:
+        #     self.offset = prm_obj.offset
+        #
+        # if prm_obj.mask is not None:
+        #     self.mask = prm_obj.mask
+        # if prm_obj.cloud is not None:
+        #     self.cloud = prm_obj.cloud
+        # if prm_obj.snow is not None:
+        #     self.snow = prm_obj.snow
+        # if prm_obj.sea is not None:
+        #     self.sea = prm_obj.sea
+        #
+        # if prm_obj.x_nm is not None:
+        #     self.x_nm = prm_obj.x_nm
+        # if prm_obj.y_nm is not None:
+        #     self.y_nm = prm_obj.y_nm
+        # if prm_obj.t_nm is not None:
+        #     self.t_nm = prm_obj.t_nm
+        #
+        # self.cube = cube
+        #
+        # self.scratch = stc
+    @staticmethod
+    def spot_no_data(px_coord, **kwargs):
 
-        if prm_obj.ovr_scratch:
-            self.ovr_scratch = prm_obj.ovr_scratch
+        cube = kwargs.pop('data', '')
+        param = kwargs.pop('param', '')
+        scratch = kwargs.pop('container', '')
 
-        if prm_obj.min is not None:
-            self.min = prm_obj.min
-        if prm_obj.max is not None:
-            self.max = prm_obj.max
-        if prm_obj.scale is not None:
-            self.scale = prm_obj.scale
-        if prm_obj.offset is not None:
-            self.offset = prm_obj.offset
+        client = Client
+        g_gather = client.scatter(cube)
+        futures = client.map(nodata.extfix, px_coord, data=g_gather, param=param)
 
-        if prm_obj.mask is not None:
-            self.mask = prm_obj.mask
-        if prm_obj.cloud is not None:
-            self.cloud = prm_obj.cloud
-        if prm_obj.snow is not None:
-            self.snow = prm_obj.snow
-        if prm_obj.sea is not None:
-            self.sea = prm_obj.sea
+        for batch in as_completed(futures, with_results=True).batches():
+            for future, result in batch:
+                ts, pixels = result
+                x, y = pixels
+                scratch.container[x, y, :] = ts
 
-        if prm_obj.x_nm is not None:
-            self.x_nm = prm_obj.x_nm
-        if prm_obj.y_nm is not None:
-            self.y_nm = prm_obj.y_nm
-        if prm_obj.t_nm is not None:
-            self.t_nm = prm_obj.t_nm
+        return scratch
 
-        self.cube = cube
-
-        self.scratch = stc
-
-    def spot_no_data(self):
-        # Fix no data
-        try:
-            fixed_cube = nodata.fix(self, self.cube, type='SCE')
-            return fixed_cube
-        except (RuntimeError, Exception, ValueError):
-            logger.debug('Error during the process of fixing')
-            sys.exit(1)
+        #
+        # try:
+        #     fixed_cube = nodata.fix(self, self.cube, type='SCE')
+        #     return fixed_cube
+        # except (RuntimeError, Exception, ValueError):
+        #     logger.debug('Error during the process of fixing')
+        #     sys.exit(1)
 
     def rescale(self, cube):
         # Rescale values to  0-100
@@ -67,18 +86,14 @@ class PreProcessor(object):
             logger.debug('Error in rescaling')
             sys.exit()
 
-    def pixel_list(self):
-        # Create a list of pixels to be analyzed
-        masked = self.cube.isel(dict([(self.t_nm, 0)])).where(~(self.cube.isel(dict([(self.t_nm, 0)])) == self.sea))
-        mask_iter = np.ndenumerate(masked.to_masked_array().mask)
-        return [index for index, value in mask_iter if ~value]
+
 
 #region
     # def _filter_outlayer(self, cube):
     #
     #     # Filter outlier
     #     try:
-    #         ts_clean = outlier.season(ts_dek_resc, 1, prmts['dys_x_yr'] * prmts['outMax'], 3)
+    #         ts_clean = outlier.season(ts_dek_resc, 1, param['dys_x_yr'] * param['outMax'], 3)
     #  # TODO make variable dek
     #     except (RuntimeError, Exception, ValueError):
     #         print('Outlier research failed, in position:{0}'.format(coord))
@@ -117,26 +132,26 @@ class PreProcessor(object):
     #         return err_table
     #     # Calculate season length and expected number of season
     #     try:
-    #         season_lng = len(seasons) * prmts['dys_mlt']
+    #         season_lng = len(seasons) * param['dys_mlt']
     #         expSeason = int((ts_cleaned.index.max() - ts_cleaned.index.min()) / pd.Timedelta(season_lng, unit='d'))
     #     except (RuntimeError, Exception, ValueError):
     #         print("Error! Season conversion to days failed, in position:{0}".format(coord))
     #         err_table['s2d'] = 1
     #         return err_table
     #
-    #     if prmts['medspan'] == 0:
+    #     if param['medspan'] == 0:
     #         medspan = season_lng / 7
     #     else:
-    #         medspan = prmts['medspan']
+    #         medspan = param['medspan']
     #
     # def _interpolate_to_daily(self):
     #     # Interpolate data to daily sample
     #     ts_d = ts_cleaned.resample('D').asfreq().interpolate(method='linear').fillna(0)
     #
     #     try:
-    #         if prmts['smp'] != 0:
+    #         if param['smp'] != 0:
     #             # Savinsky Golet filter
-    #             ps = savgol_filter(ts_d, prmts['medspan'], prmts['smp'], mode='nearest')
+    #             ps = savgol_filter(ts_d, param['medspan'], param['smp'], mode='nearest')
     #             # TODO automatic selection of savgol window
     #             ps = pd.Series(ps, ts_d.index)
     #         else:
