@@ -38,7 +38,8 @@ class ProjectParameters(object):
                     self.ovr_scratch = True
                 else:
                     self.ovr_scratch = False
-                self.scratch = self.__read(config, section, 'ScratchPath')
+                self.scratch_pth = self.__read(config, section, 'ScratchPath')
+                self.sensor_typ = self.__read(config, section, 'Sensor_type').lower()
 
                 # [RUN_PARAMETERS_INPUT]
                 # Time dimension
@@ -46,6 +47,7 @@ class ProjectParameters(object):
                 self.start_time = self.__read(config, section, 'obs_start', type='time')
                 self.end_time = self.__read(config, section, 'obs_end', type='time')
                 self.exm_start = self.__read(config, section, 'exm_start', type='time')
+                self.exm_end = self.__read(config, section, 'exm_end', type='time')
                 self.exm_end = self.__read(config, section, 'exm_end', type='time')
 
                 # area
@@ -109,6 +111,10 @@ class ProjectParameters(object):
 
                 self.smp = self.__read(config, section, "smp", type='int')
                 self.outmax = self.__read(config, section, "outmax", type='int')
+
+                self.row_nm, self.col_nm, self.dim_nm, = [None]*3
+                self.row_val, self.col_val, self.dim_val = [None]*3
+                self.pixel_list = None
 
                 return
             elif kwargs['type'] == 'CopernicusNetCDF':
@@ -196,29 +202,29 @@ class ProjectParameters(object):
     def __coord_names(data):
 
         dims = [i.lower() for i in data.dims]
-        crd_x, crd_y, crd_t = [None] * 3
+        crd_row, crd_col, crd_dim = [None] * 3
 
         if 'lat' in dims or 'lon' in dims:
-            crd_x = data.dims[dims.index('lon')]
-            crd_y = data.dims[dims.index('lat')]
-            crd_t = data.dims[dims.index('time')]
+            crd_col = data.dims[dims.index('lon')]
+            crd_row = data.dims[dims.index('lat')]
+            crd_dim = data.dims[dims.index('time')]
 
         elif 'e' in dims or 'n' in dims:
-            crd_x = data.dims[dims.index('e')]
-            crd_y = data.dims[dims.index('n')]
-            crd_t = data.dims[dims.index('time')]
+            crd_col = data.dims[dims.index('e')]
+            crd_row = data.dims[dims.index('n')]
+            crd_dim = data.dims[dims.index('time')]
 
-        return crd_x, crd_y, crd_t
+        return crd_row, crd_col, crd_dim
 
     def add_dims(self, data):
-        self.x_nm, self.y_nm, self.t_nm = self.__coord_names(data)
+        self.row_nm, self.col_nm, self.dim_nm = self.__coord_names(data)
 
-        self.x_dim = data.coords[self.x_nm].data
-        self.y_dim = data.coords[self.y_nm].data
-        self.t_dim = data.coords[self.t_nm].data
+        self.row_val = data.coords[self.row_nm].data
+        self.col_val = data.coords[self.col_nm].data
+        self.dim_val = data.coords[self.dim_nm].data
 
     def add_px_list(self, cube):
         # Create a list of pixels to be analyzed
-        masked = cube.isel(dict([(self.t_nm, 0)])).where(~(cube.isel(dict([(self.t_nm, 0)])) == self.sea))
+        masked = cube.isel(dict([(self.dim_nm, 0)])).where(~(cube.isel(dict([(self.dim_nm, 0)])) == self.sea))
         mask_iter = np.ndenumerate(masked.to_masked_array().mask)
         self.pixel_list = [index for index, value in mask_iter if ~value]

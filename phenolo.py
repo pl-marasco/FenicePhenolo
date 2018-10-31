@@ -24,7 +24,7 @@ def single_px(ts_dek, prmts):
 
     # # read x y
     # try:
-    #     h0 = dataset.read(prmts['bdsIdx'], window=coord)
+    #     h0 = dataset.read(param['bdsIdx'], window=coord)
     # except RuntimeError:
     #     print('Error in read xy')
     #     err_table['read'] = 1
@@ -46,7 +46,7 @@ def single_px(ts_dek, prmts):
     # ts_table = pd.DataFrame([])
     #
     # # Convert to pandas series
-    # ts_dek = pd.Series(h0, index=prmts['dates'])
+    # ts_dek = pd.Series(h0, index=param['dates'])
 
     # Fix no data (works only for Spot Veg)
     try:
@@ -59,7 +59,7 @@ def single_px(ts_dek, prmts):
 
     # Rescale values to  0-100
     try:
-        # ts_dek_resc_unfix = (ts_dek_unfix - prmts['min_v']) / (prmts['max_v'] - prmts['min_v']) * 100
+        # ts_dek_resc_unfix = (ts_dek_unfix - param['min_v']) / (param['max_v'] - param['min_v']) * 100
         ts_dek_resc = (ts_dek - prmts.min) / (prmts.max - prmts.min) * 100
     except (RuntimeError, Exception, ValueError):
         print('Error in rescaling, in position:{0}'.format(coord))

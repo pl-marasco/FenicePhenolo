@@ -1,13 +1,12 @@
 import argparse, sys, importlib, time, os, logging
 from datetime import datetime
-import configurator
+import settings
 import reader
 import preprocessing as pp
 import phenolo
 import scratch
+import os
 
-from dask.distributed import Client
-import nodata
 logger = logging.getLogger(__name__)
 
 
@@ -25,15 +24,16 @@ def main(param):
 
     if len(cube.shape) is not 1:
 
-        scrt = scratch.ScratchFile(param)
-        ppo = pp.spot_nodata()
+        scrt = scratch.ScratchFile(param, name='spot_clim')
 
-
-        # if param.type == 'SOPT':
+        if param.sensor_typ == 'spot':
+            ppo = pp.spot_no_data(param, cube, scrt)
 
         # ph = phenolo.analyse(pp_cube)
 
         # ph.to_netcdf(param.outFilePth)
+
+        print('done')
 
     else:
         phen = phenolo.single_px(cube.to_series(), param)
@@ -127,10 +127,10 @@ def main(param):
     # endregion
 
 
-def _log_info(logger, prmts):
+def _log_info(logger, param):
 
     logger.debug('-------------------- start values --------------------')
-    for key, value in prmts.__dict__.items():
+    for key, value in param.__dict__.items():
         logger.debug('{} = {}'.format(key, value))
     logger.debug('--------------------  end values  --------------------')
 
@@ -164,7 +164,7 @@ if __name__ == '__main__':
         logger.info('*** Phenolo 2.0 ***')
         logger.info('Process started @ {}'.format(datetime.now()))
 
-        param = configurator.ProjectParameters(path=args.conf, type='ini')  # TODO  type 'ini' must be flexible
+        param = settings.ProjectParameters(path=args.conf, type='ini')  # TODO  type 'ini' must be flexible
 
         main(param)
 

@@ -74,7 +74,6 @@ def create(path, orig_ds, yrs_in):
     lat_var[:] = lat_val
     time_var[:] = date2num(yrs_out, units=time_var.units, calendar=time_var.calendar)
 
-
     # Create the variables
     sd_int = root_ds.createVariable('Start day of the season', 'i4', ('time', 'latitude', 'longitude'),
                                     zlib=True)
@@ -114,28 +113,28 @@ def create(path, orig_ds, yrs_in):
     # output the file and the variables
     return root_ds, sl_int, spi_int, si_int, cf_int, sd_int, ed_int, sns_int
 
-
-def scratcher(pth, dx, dy, dtime, **kwargs):
-
-    if 'name' in kwargs:
-        name = kwargs['name']+'.nc'
-    else:
-        name = 'scratch.nc'
-    pth = os.path.join(pth, name)
-
-    scratch = Dataset(pth, "w", format="NETCDF4")
-
-    x = scratch.createDimension('x', None)
-    y = scratch.createDimension('y', None)
-    time = scratch.createDimension('time', None)
-
-    xv = scratch.createVariable('x', 'i8', ('x',))
-    yv = scratch.createVariable('y', 'i8', ('y',))
-    timev = scratch.createVariable('time', 'f8', ('time',))
-    data = scratch.createVariable('data', 'f8', ('x', 'y', 'time'))
-
-    # xv[:] = np.arange(dx)
-    # yv[:] = np.arange(dy)
-    # timev[:] = dtime
-
-    return scratch
+#
+# def scratcher(pth, dx, dy, dtime, **kwargs):
+#
+#     if 'name' in kwargs:
+#         name = kwargs['name']+'.nc'
+#     else:
+#         name = 'scratch.nc'
+#     pth = os.path.join(pth, name)
+#
+#     scratch = Dataset(pth, "w", format="NETCDF4")
+#
+#     x = scratch.createDimension('x', None)
+#     y = scratch.createDimension('y', None)
+#     time = scratch.createDimension('time', None)
+#
+#     xv = scratch.createVariable('x', 'i8', ('x',))
+#     yv = scratch.createVariable('y', 'i8', ('y',))
+#     timev = scratch.createVariable('time', 'f8', ('time',))
+#     data = scratch.createVariable('data', 'f8', ('x', 'y', 'time'))
+#
+#     # xv[:] = np.arange(dx)
+#     # yv[:] = np.arange(dy)
+#     # timev[:] = dtime
+#
+#     return scratch

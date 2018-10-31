@@ -9,13 +9,15 @@ import numpy as np
 # import statsmodels.api as stm
 
 
-def extfix(px, **kwargs):
+def ext_fix(px, **kwargs):
     cube = kwargs.pop('data', '')
-    param = kwargs.pop('param','')
+    param = kwargs.pop('param', '')
 
-    x, y = px
-    ts = cube[dict([(param.x_nm, x), (param.y_nm, y)])].to_series().astype(float)
-    return fix(ts)
+    row, col = px
+    ts = cube.isel(dict([(param.col_nm, col)])).to_series().astype(float)
+    tsc = fix(ts)
+    return tsc, px
+
 
 def fix(ts):
 
@@ -69,7 +71,7 @@ def fix(ts):
 
     ts.update(nans)
 
-    ts[(ts == 253) or (ts == 252)] = np.NaN
+    ts[(ts == 253) | (ts == 252)] = np.NaN
     ts = ts.interpolate()
 
     return ts

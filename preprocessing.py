@@ -14,62 +14,30 @@ class PreProcessor(object):
     def __init__(self):
         pass
 
-        # if prm_obj.scratch is not None:
-        #     self.scratch = prm_obj.scratch
-        # else:
-        #     self.scratch = prm_obj.outFilePth
-        #
-        # if prm_obj.ovr_scratch:
-        #     self.ovr_scratch = prm_obj.ovr_scratch
-        #
-        # if prm_obj.min is not None:
-        #     self.min = prm_obj.min
-        # if prm_obj.max is not None:
-        #     self.max = prm_obj.max
-        # if prm_obj.scale is not None:
-        #     self.scale = prm_obj.scale
-        # if prm_obj.offset is not None:
-        #     self.offset = prm_obj.offset
-        #
-        # if prm_obj.mask is not None:
-        #     self.mask = prm_obj.mask
-        # if prm_obj.cloud is not None:
-        #     self.cloud = prm_obj.cloud
-        # if prm_obj.snow is not None:
-        #     self.snow = prm_obj.snow
-        # if prm_obj.sea is not None:
-        #     self.sea = prm_obj.sea
-        #
-        # if prm_obj.x_nm is not None:
-        #     self.x_nm = prm_obj.x_nm
-        # if prm_obj.y_nm is not None:
-        #     self.y_nm = prm_obj.y_nm
-        # if prm_obj.t_nm is not None:
-        #     self.t_nm = prm_obj.t_nm
-        #
-        # self.cube = cube
-        #
-        # self.scratch = stc
-    @staticmethod
-    def spot_no_data(px_coord, **kwargs):
 
-        cube = kwargs.pop('data', '')
-        param = kwargs.pop('param', '')
-        scratch = kwargs.pop('container', '')
+def spot_no_data(param, cube, scratch):
 
-        client = Client
-        g_gather = client.scatter(cube)
-        futures = client.map(nodata.extfix, px_coord, data=g_gather, param=param)
+    client = Client()
 
-        for batch in as_completed(futures, with_results=True).batches():
-            for future, result in batch:
-                ts, pixels = result
-                x, y = pixels
-                scratch.container[x, y, :] = ts
+    for rowi in range(len(param.row_val)):
 
-        return scratch
+        row = cube.isel(dict([(param.row_nm, rowi)])).persist()
+        vrow = np.empty((1, len(param.col_val), len(param.dim_val)))
+        px_list = [item for item in param.pixel_list if item[0] == rowi]
 
-        #
+        s_row = client.scatter(row)
+        futures = client.map(nodata.ext_fix, px_list, **{'data': s_row, 'param': param})
+
+        for future, result in as_completed(futures, with_results=True):
+            # print(result)
+            ts, pixels = result
+            row, col = pixels
+            vrow[:, col, :] = ts.values
+
+        scratch.container[rowi, :, :] = vrow
+
+    return scratch
+
         # try:
         #     fixed_cube = nodata.fix(self, self.cube, type='SCE')
         #     return fixed_cube
@@ -77,14 +45,15 @@ class PreProcessor(object):
         #     logger.debug('Error during the process of fixing')
         #     sys.exit(1)
 
-    def rescale(self, cube):
-        # Rescale values to  0-100
-        try:
-            return ((cube - self.min) / (self.max - self.min)) * 100
-        except (RuntimeError, Exception, ValueError):
-            print('Error in rescaling, in position')
-            logger.debug('Error in rescaling')
-            sys.exit()
+
+def rescale(self, cube):
+    # Rescale values to  0-100
+    try:
+        return ((cube - self.min) / (self.max - self.min)) * 100
+    except (RuntimeError, Exception, ValueError):
+        print('Error in rescaling, in position')
+        logger.debug('Error in rescaling')
+        sys.exit()
 
 
 
@@ -161,10 +130,6 @@ class PreProcessor(object):
     #         err_table['savgol'] = 1
     #         return err_table
 #end region
-
-    def analyse(self, cube):
-        pass
-
 
         #region prosecuzione
             # if hasattr(self, 'scale'):
