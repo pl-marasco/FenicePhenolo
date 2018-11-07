@@ -9,29 +9,19 @@ import numpy as np
 # import statsmodels.api as stm
 
 
-def ext_fix(px, **kwargs):
-    cube = kwargs.pop('data', '')
-    param = kwargs.pop('param', '')
+def climate_fx(ts, **kwargs):
 
-    row, col = px
-    ts = cube.isel(dict([(param.col_nm, col)])).to_series().astype(float)
-    tsc = fix(ts)
-    return tsc, px
-
-
-def fix(ts):
-
-    # 252 cloud
-    # 253 snow
+    param = kwargs.pop('settings', '')
+    cloud = param.cloud  # 252 cloud
+    snow = param.cloud  # 253 snow
     # 254 sea (not treated)
-    # 251/255 invalids or data error
+    nodata = param.mask  # 251/255 invalids or data error
+
     singleinterp = True
 
-    # mean without nan included
-    tsc = ts.mask(ts > 250)
-
     # TODO would be correct eliminate possible trend before the groupby
-    # climatic indices
+    # Rought climatic indices without nan included
+    tsc = ts.mask(ts > 250)
     clm = tsc.groupby([ts.index.month, ts.index.day]).median()
     clm_m = tsc.groupby([ts.index.month]).median()
     clm_q = tsc.groupby([ts.index.quarter]).median()

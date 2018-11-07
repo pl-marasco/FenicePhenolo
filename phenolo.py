@@ -12,7 +12,7 @@ import detect_peacks as dp
 from seasonal import fit_seasons, fit_trend
 
 
-def single_px(ts_dek, prmts):
+def single_px(ts_dek, param):
     coord = 'Single pixel'
 
     # Numpy error report
@@ -22,31 +22,9 @@ def single_px(ts_dek, prmts):
     err_table = pd.Series(0, index=['read', 'fix', 'rescaling', 'outlier', 'cleaning',
                                     's&t_ext', 's2d', 'savgol', 'valley'])
 
-    # # read x y
-    # try:
-    #     h0 = dataset.read(param['bdsIdx'], window=coord)
-    # except RuntimeError:
-    #     print('Error in read xy')
-    #     err_table['read'] = 1
-    #     return err_table
-    #
-    # coord = [coord[0][0], coord[1][0]]
-
     #
     # Core code equal across all the versions
     #
-
-    # # Water excluder
-    # if 254 in h0:
-    #     return err_table
-    # else:
-    #     h0 = h0.flatten().astype(np.float)
-    #
-    # # Output container
-    # ts_table = pd.DataFrame([])
-    #
-    # # Convert to pandas series
-    # ts_dek = pd.Series(h0, index=param['dates'])
 
     # Fix no data (works only for Spot Veg)
     try:
@@ -60,7 +38,7 @@ def single_px(ts_dek, prmts):
     # Rescale values to  0-100
     try:
         # ts_dek_resc_unfix = (ts_dek_unfix - param['min_v']) / (param['max_v'] - param['min_v']) * 100
-        ts_dek_resc = (ts_dek - prmts.min) / (prmts.max - prmts.min) * 100
+        ts_dek_resc = nodata.rescale()
     except (RuntimeError, Exception, ValueError):
         print('Error in rescaling, in position:{0}'.format(coord))
         err_table['rescaling'] = 1
@@ -68,7 +46,7 @@ def single_px(ts_dek, prmts):
 
     # Filter outlier
     try:
-        ts_clean = outlier.season(ts_dek_resc, 1, prmts['dys_x_yr'] * prmts['outMax'], 3)  # TODO make variable dek
+        ts_clean = outlier.season(ts_dek_resc, 1, param['dys_x_yr'] * param['outMax'], 3)  # TODO make variable dek
     except (RuntimeError, Exception, ValueError):
         print('Outlier research failed, in position:{0}'.format(coord))
         err_table['outlier'] = 1
@@ -106,25 +84,25 @@ def single_px(ts_dek, prmts):
 
     # Calculate season length and expected number of season
     try:
-        season_lng = len(seasons) * prmts['dys_mlt']
+        season_lng = len(seasons) * param['dys_mlt']
         expSeason = int((ts_cleaned.index.max() - ts_cleaned.index.min()) / pd.Timedelta(season_lng, unit='d'))
     except (RuntimeError, Exception, ValueError):
         print("Error! Season conversion to days failed, in position:{0}".format(coord))
         err_table['s2d'] = 1
         return err_table
 
-    if prmts['medspan'] == 0:
+    if param['medspan'] == 0:
         medspan = season_lng / 7
     else:
-        medspan = prmts['medspan']
+        medspan = param['medspan']
 
     # Interpolate data to daily sample
     ts_d = ts_cleaned.resample('D').asfreq().interpolate(method='linear').fillna(0)
 
     try:
-        if prmts['smp'] != 0:
+        if param['smp'] != 0:
             # Savinsky Golet filter
-            ps = savgol_filter(ts_d, prmts['medspan'], prmts['smp'], mode='nearest')
+            ps = savgol_filter(ts_d, param['medspan'], param['smp'], mode='nearest')
             # TODO automatic selection of savgol window
             ps = pd.Series(ps, ts_d.index)
         else:
@@ -144,7 +122,7 @@ def single_px(ts_dek, prmts):
         elif season_lng < 200:
             mpd_val = int(season_lng * 1/3)
         else:
-            mpd_val = int(season_lng * (prmts['tr']-prmts['tr']*1/3) / 100)
+            mpd_val = int(season_lng * (param['tr'] - param['tr'] * 1 / 3) / 100)
 
         ind = dp.detect_peaks(vdetr, mph=vdetr.mean(),
                               mpd=mpd_val,
@@ -255,7 +233,7 @@ def single_px(ts_dek, prmts):
             index = ts_table.iloc[i]['sbc']
 
             # specific mas
-            mas = (ts_table.iloc[i]['ed'] - ts_table.iloc[i]['sd']) - (2 * prmts['mavmet'] * ts_table.iloc[i]['ssd'])
+            mas = (ts_table.iloc[i]['ed'] - ts_table.iloc[i]['sd']) - (2 * param['mavmet'] * ts_table.iloc[i]['ssd'])
 
             if mas.days < 0:
                 continue

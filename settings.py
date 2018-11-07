@@ -3,6 +3,7 @@ import configparser as cp
 import numpy as np
 import pandas as pd
 import logging
+import frequancy
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +68,7 @@ class ProjectParameters(object):
                 dek = self.__read(config, section, 'dek')
                 if dek in ['s5', 's10', 's15', 's30']:
                     self.dek = dek
+                    self.yr_dys = frequancy.day_calc(self.dek)
                 else:
                     print("Dekad type unrecognised, please check: " + str(dek))
                     sys.exit(0)
@@ -224,6 +226,7 @@ class ProjectParameters(object):
         self.dim_val = data.coords[self.dim_nm].data
 
     def add_px_list(self, cube):
+        # TODO add other sensors or structures
         # Create a list of pixels to be analyzed
         masked = cube.isel(dict([(self.dim_nm, 0)])).where(~(cube.isel(dict([(self.dim_nm, 0)])) == self.sea))
         mask_iter = np.ndenumerate(masked.to_masked_array().mask)

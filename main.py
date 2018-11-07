@@ -2,10 +2,12 @@ import argparse, sys, importlib, time, os, logging
 from datetime import datetime
 import settings
 import reader
-import preprocessing as pp
+import analysis
 import phenolo
 import scratch
 import os
+import nodata
+import executor
 
 logger = logging.getLogger(__name__)
 
@@ -23,11 +25,14 @@ def main(param):
     _log_info(logging.getLogger('cube'), cube)
 
     if len(cube.shape) is not 1:
+        pp = executor.Processor(param)
 
-        scrt = scratch.ScratchFile(param, name='spot_clim')
+        scrt = scratch.ScratchFile(param)
 
-        if param.sensor_typ == 'spot':
-            ppo = pp.spot_no_data(param, cube, scrt)
+        result_cube = pp.analyse(cube, scrt, analysis.preingest)
+
+        print(result_cube)
+        # ppo = rescale(param, cube)
 
         # ph = phenolo.analyse(pp_cube)
 

@@ -24,7 +24,7 @@ class Reader(object):
 
 def _get_img(prmts, dim):
 
-    import dek as dk
+    import frequancy as dk
 
     try:
         # dataset = xr.open_rasterio(param.inFilePth, chunks={'x': 5, 'y': 5})
