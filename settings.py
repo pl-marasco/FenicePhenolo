@@ -3,7 +3,7 @@ import configparser as cp
 import numpy as np
 import pandas as pd
 import logging
-import frequancy
+import chronos
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +68,7 @@ class ProjectParameters(object):
                 dek = self.__read(config, section, 'dek')
                 if dek in ['s5', 's10', 's15', 's30']:
                     self.dek = dek
-                    self.yr_dys = frequancy.day_calc(self.dek)
+                    self.yr_dys = chronos.day_calc(self.dek)
                 else:
                     print("Dekad type unrecognised, please check: " + str(dek))
                     sys.exit(0)

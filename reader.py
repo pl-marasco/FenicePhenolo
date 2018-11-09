@@ -24,7 +24,7 @@ class Reader(object):
 
 def _get_img(prmts, dim):
 
-    import frequancy as dk
+    import chronos as dk
 
     try:
         # dataset = xr.open_rasterio(param.inFilePth, chunks={'x': 5, 'y': 5})

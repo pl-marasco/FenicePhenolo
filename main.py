@@ -6,7 +6,6 @@ import analysis
 import phenolo
 import scratch
 import os
-import nodata
 import executor
 
 logger = logging.getLogger(__name__)
@@ -29,7 +28,7 @@ def main(param):
 
         scrt = scratch.ScratchFile(param)
 
-        result_cube = pp.analyse(cube, scrt, analysis.preingest)
+        result_cube = pp.analyse(cube, scrt, analysis.phenolo)
 
         print(result_cube)
         # ppo = rescale(param, cube)
