@@ -3,7 +3,6 @@ from datetime import datetime
 import settings
 import reader
 import analysis
-import phenolo
 import scratch
 import os
 import executor
@@ -30,17 +29,9 @@ def main(param):
 
         result_cube = pp.analyse(cube, scrt, analysis.phenolo)
 
-        print(result_cube)
-        # ppo = rescale(param, cube)
-
-        # ph = phenolo.analyse(pp_cube)
-
-        # ph.to_netcdf(param.outFilePth)
-
-        print('done')
-
     else:
-        phen = phenolo.single_px(cube.to_series(), param)
+        # phen = phenolo.single_px(cube.to_series(), param)
+        pass
 
     end = time.process_time() - start_time
 

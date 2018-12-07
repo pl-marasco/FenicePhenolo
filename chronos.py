@@ -41,20 +41,19 @@ def day_calc(dekstr):
     return dys_mlt, dek_xyr
 
 
-def season_ext(tuple):
-     return int((tuple.ts_cleaned.index.max() - tuple.ts_cleaned.index.min()) /
-                pd.Timedelta(tuple.season_lng, unit='d'))
+def season_ext(pxdrl):
+    return int((pxdrl.ts_cleaned.index.max() - pxdrl.ts_cleaned.index.min()) /
+               pd.Timedelta(pxdrl.season_lng, unit='d'))
 
 
-def medspan(tuple, param):
+def medspan(season_lng, param):
 
     if param.medspan == 0:
-        tuple.medspan = tuple.season_lng / 7
+        medspan = season_lng / 7
     else:
-        tuple.medspan = param.medspan
-    return
+        medspan = param.medspan
+    return medspan
 
 
-def time_resample(tuple):
-    tuple.ts_d = tuple.ts_cleaned.resample('D').asfreq().interpolate(method='linear').fillna(0)
-    return
+def time_resample(ts):
+    return ts.resample('D').asfreq().interpolate(method='linear').fillna(0)

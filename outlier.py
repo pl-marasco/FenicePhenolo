@@ -3,54 +3,91 @@
 
 import numpy as np
 import pandas as pd
+from IPython.core.magic_arguments import kwds
 from seasonal import fit_seasons, adjust_seasons, fit_trend
 from statsmodels.robust import mad
-import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
 
 
-def cleanOLD(rs, sigma=2.575, method='polynomial', order=3):
+class MAD(object):
+    """
+    Based on:
 
-    # Initial standard deviation
-    std = rs.std()
+    http://eurekastatistics.com/using-the-median-absolute-deviation-to-find-outliers/
 
-    # Initial mean
-    mean = rs.mean()
+    Leys, C., et al.,
+    Detecting outliers: Do not use standard deviation around the mean, use absolute deviation around the median,
+    Journal of Experimental Social Psychology, Volume 49, Issue 4, July 2013, pp. 764-766. *
 
-    # Initial upper and lower bounds
-    LB = mean - sigma * std
+    Rousseeuw, P.J. and Croux C. (1993)
+    Alternatives to the Median Absolute Deviation,
+    Journal of the American Statistical Association, December 1993, pp. 1273-1283.
+    """
 
-    UB = mean + sigma * std
+    def __init__(self, sigma=2.575, **kwargs):
 
-    # check
-    rs[rs > UB] = np.nan
-    rs[rs < LB] = np.nan
+        self.median = None
+        self.sigma = sigma
+        self.c = kwargs.pop('c',  1.4826)
+        self.min_w = kwargs.pop('min_w',  1)
+        self.max_w = kwargs.pop('max_w', None)
+        self.left = None
+        self.right = None
+        self.MAD = None
 
-    # clean
-    rs = rs.interpolate(method=method, order=order)
+    def singular(self, residual):
+        # TODO not rechecked
+        self.median = np.median(residual)
 
-    return rs
+        residual[np.abs(residual - self.median) / mad(residual, c=self.c) > self.sigma] = np.nan
+
+        return residual
+
+    def double(self, x):
+        # TODO create an alternative in case the window is too short
+
+        if (self.min_w and self.max_w is not None) and len(x) > self.max_w:  # limit the lenght of the window to the imposed maxW value
+            x = x[-self.max_w:]
+
+        m = np.median(x)  # calculate the median inside the window
+        abs_dev = np.abs(x.copy() - m)  # absolute deviation
+
+        self.left = np.median(abs_dev[x <= m])  # median of the leftish part
+        self.right = np.median(abs_dev[x >= m])  # median of the rigtish part
+
+        # TODO implement different strategy
+        if self.left == 0:
+            self.left = np.NaN
+        if self.right == 0:
+            self.right = np.NaN
+
+        return
+
+    def dbl_frommedian(self, x):
+
+        x = x.astype(float)
+        self.median = np.median(x)
+        self.double(x)
+
+        madMap = x.copy()
+        madMap[x < self.median] = self.left
+        madMap[x > self.median] = self.right
+
+        self.MAD = np.abs(x - self.median) / madMap
+
+        self.MAD[x == self.median] = 0
+
+        # if self.MAD[-1] > self.sigma:
+        #     return np.NaN
+        # else:
+        #     return x[-1]
+
+        x[self.MAD >= self.sigma] = np.NaN
+
+        return x
 
 
-def old_clean(s, range=[0, 250], t=5):
-
-    minVal = range[0]
-    maxVal = range[1]
-
-    for i in range(1, s.size-1):
-        vb = (s.iloc[i-1]-minVal)/(maxVal-minVal)
-        va = (s.iloc[i+1]-minVal)/(maxVal-minVal)
-        out = (s.iloc[i]-minVal)/(maxVal-minVal)
-
-        if out < vb and (out-vb)*(out-va) > t**2:
-            s[s.index[i]] = np.nan
-
-    s = s.interpolate()
-
-    return s
-
-
-def season(t, minW, maxW, sigma):
+def madseason(t, minW, maxW, sigma):
 
     # seasonal decomposition by Season module
     seasons, trend = fit_seasons(t)
@@ -59,86 +96,37 @@ def season(t, minW, maxW, sigma):
     adjusted = adjust_seasons(t, seasons=seasons)
 
     if adjusted is not None:
-
         # Residuals
         residual = adjusted - trend
-        rs = residual.copy()
+        # rs = residual.copy()
 
         # Seasons
-        seasonsTS = t - adjusted
+        seasons = t - adjusted
 
         # Trend time series
-        trendTS = pd.Series(trend, index=adjusted.index)
+        trend = pd.Series(trend, index=adjusted.index)
 
         # Cleaner
-        # cleanedRS = cleanOLD(residual, sigma, method='linear')
-        cleanedRS = madCleaner(residual, minW, maxW, sigma)
-        #cleanedRS = MAD(residual, sigma)
+        cleaned = dbl_mad_clnr(residual, minW, maxW, sigma)
 
         # Reconstructed time series
-        timeseries = trendTS + seasonsTS + cleanedRS
+        timeseries = trend + seasons + cleaned
 
         return timeseries
 
     else:
-
         return None
 
 
-def MAD(residual, sigma=2.575):
+def dbl_mad_clnr(residual, min_w=1, max_w=108, sigma=2.575):
 
-    median = np.median(residual)
+    mado = MAD(sigma)
 
-    residual[np.abs(residual - median) / mad(residual, c=0.5) > sigma] = np.nan
+    # TODO implement a moving window that manage propeerly the first period
+    # double_mad = lambda x: mado.dbl_frommedian(x)
+    # return residual.expanding(min_w).apply(double_mad, raw=True)
 
-    return residual
-
-
-def madCleaner(residual, minW=1, maxW=108, sigma=2.575):
-
-    doubleMad = lambda x: doubleMADsFromMedian(x, sigma, maxW)
-
-    return residual.expanding(minW).apply(doubleMad)
-
-
-def doubleMAD(x, maxW):
-
-    if len(x) > maxW:
-        x = x[-maxW:]
-
-    m = np.median(x)
-    absDev = np.abs(x - m)
-    leftMAD = np.median(absDev[x <= m])
-    rightMAD = np.median(absDev[x >= m])
-
-    if leftMAD == 0:
-        leftMAD = np.NaN
-    if rightMAD == 0:
-        rightMAD = np.NaN
-
-    return [leftMAD, rightMAD]
-
-
-def doubleMADsFromMedian(x, sigma, maxW):
-
-    x = x.astype(float)
-
-    twoSidedMad = doubleMAD(x, maxW)
-
-    m = np.median(x)
-
-    madMap = x.copy()
-    madMap[x < m] = twoSidedMad[0]
-    madMap[x > m] = twoSidedMad[1]
-
-    madDistance = np.abs(x-m)/madMap
-
-    madDistance[x == m] = 0
-
-    if madDistance[-1] > sigma:
-        return np.NaN
-    else:
-        return x[-1]
+    return mado.dbl_frommedian(residual)
 
 
 def filler(ts):
@@ -236,3 +224,44 @@ def fillerSeason(ts):
     tsC.update(nanlist)
 
     return tsC
+
+
+# def cleanOLD(rs, sigma=2.575, method='polynomial', order=3):
+#
+#     # Initial standard deviation
+#     std = rs.std()
+#
+#     # Initial mean
+#     mean = rs.mean()
+#
+#     # Initial upper and lower bounds
+#     LB = mean - sigma * std
+#
+#     UB = mean + sigma * std
+#
+#     # check
+#     rs[rs > UB] = np.nan
+#     rs[rs < LB] = np.nan
+#
+#     # clean
+#     rs = rs.interpolate(method=method, order=order)
+#
+#     return rs
+#
+#
+# def old_clean(s, range=[0, 250], t=5):
+#
+#     minVal = range[0]
+#     maxVal = range[1]
+#
+#     for i in range(1, s.size-1):
+#         vb = (s.iloc[i-1]-minVal)/(maxVal-minVal)
+#         va = (s.iloc[i+1]-minVal)/(maxVal-minVal)
+#         out = (s.iloc[i]-minVal)/(maxVal-minVal)
+#
+#         if out < vb and (out-vb)*(out-va) > t**2:
+#             s[s.index[i]] = np.nan
+#
+#     s = s.interpolate()
+#
+#     return s
