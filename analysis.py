@@ -129,7 +129,7 @@ def phenolo(pxdrl, **kwargs):
 
     # Intercept
     try:
-        metrics.phen_metrics(pxdrl, param)
+        pxdrl.pheno = metrics.phen_metrics(pxdrl, param)
     except(RuntimeError, Exception, ValueError):
         logger.info('Error in intercept detection in pixel position:{0}'.format(pxdrl.position))
         pxdrl.error = True
