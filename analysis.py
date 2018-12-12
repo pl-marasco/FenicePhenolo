@@ -119,15 +119,23 @@ def phenolo(pxdrl, **kwargs):
         pxdrl.error = True
         return pxdrl
 
-    # Season metrics
+    # Cycle with matrics
     try:
-        metrics.seasons_metrics(pxdrl, param)
+        pxdrl.sincys = metrics.cycle_metrics(pxdrl, param)
     except(RuntimeError, Exception, ValueError):
         logger.info('Error in season detection for pixel position:{0}'.format(pxdrl.position))
         pxdrl.error = True
         return pxdrl
 
-    # Intercept
+    try:
+        import statistics
+        pxdrl.msdd = metrics.attr_statistic(pxdrl.sincys, statistics.median, 'csd')
+    except(RuntimeError, Exception, ValueError):
+        logger.info('Error in mean season detection for pixel position:{0}'.format(pxdrl.position))
+        pxdrl.error = True
+        return pxdrl
+
+    # Season metrics
     try:
         pxdrl.pheno = metrics.phen_metrics(pxdrl, param)
     except(RuntimeError, Exception, ValueError):

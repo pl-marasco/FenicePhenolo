@@ -22,7 +22,9 @@ def main(param):
     _log_info(logging.getLogger('paramters'), param)
     _log_info(logging.getLogger('cube'), cube)
 
-    if len(cube.shape) is not 1:
+    if len(cube.coords.get(param.col_nm)) is not 1 and \
+       len(cube.coords.get(param.row_nm)) is not 1:
+
         pp = executor.Processor(param)
 
         scrt = scratch.ScratchFile(param)
@@ -30,8 +32,13 @@ def main(param):
         result_cube = pp.analyse(cube, scrt, analysis.phenolo)
 
     else:
-        # phen = phenolo.single_px(cube.to_series(), param)
-        pass
+        import atoms
+        import analysis as aa
+        ts = cube.isel(dict([(param.col_nm, 0), (param.row_nm, 0)])).to_series().astype(float)
+        pxdrl = atoms.PixelDrill(ts, (0, 0))
+
+        pheno = aa.phenolo(pxdrl, settings=param)
+
 
     end = time.process_time() - start_time
 
