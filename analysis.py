@@ -16,7 +16,7 @@ def phenolo(pxdrl, **kwargs):
     # no data removing
     try:
         if param.sensor_typ == 'spot':
-            pxdrl.ts = nodata.climate_fx(pxdrl.ts, settings=param)
+            pxdrl.ts = nodata.climate_fx(pxdrl.ts_raw, settings=param)
     except(RuntimeError, ValueError, Exception):
         logger.info('Non data removal error in position:{0}'.format(pxdrl.position))
         pxdrl.error = True
@@ -43,7 +43,7 @@ def phenolo(pxdrl, **kwargs):
     # rescaling to 0-100
     try:
         if param.min is not None and param.max is not None:
-            pxdrl.ts = metrics.rescale(pxdrl.ts, settings=param)
+            pxdrl.ts_resc = metrics.rescale(pxdrl.ts, settings=param)
     except(RuntimeError, ValueError, Exception):
         logger.info('Scaling error in position:{0}'.format(pxdrl.position))
         pxdrl.error = True
@@ -51,7 +51,7 @@ def phenolo(pxdrl, **kwargs):
 
     # Filter outlier
     try:
-        pxdrl.ts_filtered = outlier.madseason(pxdrl.ts, param.yr_dek, param.yr_dys * param.outmax, 4)  # TODO make variable dek
+        pxdrl.ts_filtered = outlier.madseason(pxdrl.ts_resc, param.yr_dek, param.yr_dys * param.outmax, param.mad_pwr)  # TODO make variable dek
     except (RuntimeError, ValueError, Exception):
         logger.info('Error in filtering outlayer in position:{0}'.format(pxdrl.position))
         pxdrl.error = True
@@ -113,7 +113,7 @@ def phenolo(pxdrl, **kwargs):
     # TODO controllare da qui in avanti il processo di analisi
     # Valley detection
     try:
-        metrics.valley_detection(pxdrl, param)
+        pxdrl.pks = metrics.valley_detection(pxdrl, param)
     except(RuntimeError, Exception, ValueError):
         logger.info('Error in valley detection pixel position:{0}'.format(pxdrl.position))
         pxdrl.error = True

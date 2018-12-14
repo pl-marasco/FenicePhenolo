@@ -98,6 +98,10 @@ class ProjectParameters(object):
                 self.snow = self.__read(config, section, "snow", type='int')
                 self.sea = self.__read(config, section, "sea", type='int')
 
+                # [RUN_PARAMETERS_FILTER]
+                section = 'RUN_PARAMETERS_FILTER'
+                self.mad_pwr = self.__read(config, section, "mad_power", type='int')
+
                 # [RUN_PARAMETERS_SEGMENTATION]
                 section = 'RUN_PARAMETERS_SEGMENTATION'
                 self.ovrlp = self.__read(config, section, "ovrlp", type='int')

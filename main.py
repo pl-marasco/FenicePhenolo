@@ -34,11 +34,16 @@ def main(param):
     else:
         import atoms
         import analysis as aa
+        import viz
+
+        # TODO
+
         ts = cube.isel(dict([(param.col_nm, 0), (param.row_nm, 0)])).to_series().astype(float)
         pxdrl = atoms.PixelDrill(ts, (0, 0))
 
-        pheno = aa.phenolo(pxdrl, settings=param)
+        sngpx_pheno = aa.phenolo(pxdrl, settings=param)
 
+        viz.plot(sngpx_pheno)
 
     end = time.process_time() - start_time
 

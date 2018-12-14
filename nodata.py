@@ -11,6 +11,8 @@ import numpy as np
 
 def climate_fx(ts, **kwargs):
 
+    tscp = ts.copy()
+
     param = kwargs.pop('settings', '')
     cloud = param.cloud  # 252 cloud
     snow = param.cloud  # 253 snow
@@ -21,10 +23,10 @@ def climate_fx(ts, **kwargs):
 
     # TODO would be correct eliminate possible trend before the groupby
     # Rought climatic indices without nan included
-    tsc = ts.mask(ts > 250)
-    clm = tsc.groupby([ts.index.month, ts.index.day]).median()
-    clm_m = tsc.groupby([ts.index.month]).median()
-    clm_q = tsc.groupby([ts.index.quarter]).median()
+    tsc = tscp.mask(tscp > 250)
+    clm = tsc.groupby([tscp.index.month, tscp.index.day]).median()
+    clm_m = tsc.groupby([tscp.index.month]).median()
+    clm_q = tsc.groupby([tscp.index.quarter]).median()
     clm_min = tsc.min()
 
     if singleinterp:
@@ -32,7 +34,7 @@ def climate_fx(ts, **kwargs):
         df_int = tsc.where(~ (tsc.shift(-1).notnull() & tsc.shift(1).notnull()),
                            tsc.interpolate(method='linear'))
 
-    nans = ts[tsc.isna()]
+    nans = tscp[tsc.isna()]
 
     for index, value in nans.items():
         agg_vls = clm.loc[index.month, index.day]
@@ -45,7 +47,7 @@ def climate_fx(ts, **kwargs):
                         nans.loc[index] = clm_q.loc[index.quarter]
                 else:
                     if clm_m is None:
-                        clm_m = tsc.groupby([ts.index.month]).median()
+                        clm_m = tsc.groupby([tscp.index.month]).median()
                     nans.loc[index] = clm_m.loc[index.month]
             elif 252.5 <= agg_vls < 254.5:
                 nans.loc[index] = 0
@@ -59,12 +61,12 @@ def climate_fx(ts, **kwargs):
                 # nans.loc[index] = clm.loc[index.month, index.day] # TODO check alternatives
                 nans.loc[index] = np.NaN
 
-    ts.update(nans)
+    tscp.update(nans)
 
-    ts[(ts == 253) | (ts == 252)] = np.NaN
-    ts = ts.interpolate()
+    tscp[(tscp == 253) | (tscp == 252)] = np.NaN
+    tscp = tscp.interpolate()
 
-    return ts
+    return tscp
 
 #
 # def fix(param, cube, **kwargs):

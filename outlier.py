@@ -24,10 +24,10 @@ class MAD(object):
     Journal of the American Statistical Association, December 1993, pp. 1273-1283.
     """
 
-    def __init__(self, sigma=2.575, **kwargs):
+    def __init__(self, mad_pwr=2.575, **kwargs):
 
         self.median = None
-        self.sigma = sigma
+        self.mad_pwr = mad_pwr
         self.c = kwargs.pop('c',  1.4826)
         self.min_w = kwargs.pop('min_w',  1)
         self.max_w = kwargs.pop('max_w', None)
@@ -39,7 +39,7 @@ class MAD(object):
         # TODO not rechecked
         self.median = np.median(residual)
 
-        residual[np.abs(residual - self.median) / mad(residual, c=self.c) > self.sigma] = np.nan
+        residual[np.abs(residual - self.median) / mad(residual, c=self.c) > self.mad_pwr] = np.nan
 
         return residual
 
@@ -82,12 +82,12 @@ class MAD(object):
         # else:
         #     return x[-1]
 
-        x[self.MAD >= self.sigma] = np.NaN
+        x[self.MAD >= self.mad_pwr] = np.NaN
 
         return x
 
 
-def madseason(t, minW, maxW, sigma):
+def madseason(t, minW, maxW, mad_pwr):
 
     # seasonal decomposition by Season module
     seasons, trend = fit_seasons(t)
@@ -107,7 +107,7 @@ def madseason(t, minW, maxW, sigma):
         trend = pd.Series(trend, index=adjusted.index)
 
         # Cleaner
-        cleaned = dbl_mad_clnr(residual, minW, maxW, sigma)
+        cleaned = dbl_mad_clnr(residual, minW, maxW, mad_pwr)
 
         # Reconstructed time series
         timeseries = trend + seasons + cleaned
@@ -118,9 +118,9 @@ def madseason(t, minW, maxW, sigma):
         return None
 
 
-def dbl_mad_clnr(residual, min_w=1, max_w=108, sigma=2.575):
+def dbl_mad_clnr(residual, min_w=1, max_w=108, mad_pwr=2.575):
 
-    mado = MAD(sigma)
+    mado = MAD(mad_pwr)
 
     # TODO implement a moving window that manage propeerly the first period
     # double_mad = lambda x: mado.dbl_frommedian(x)
@@ -226,30 +226,7 @@ def fillerSeason(ts):
     return tsC
 
 
-# def cleanOLD(rs, sigma=2.575, method='polynomial', order=3):
-#
-#     # Initial standard deviation
-#     std = rs.std()
-#
-#     # Initial mean
-#     mean = rs.mean()
-#
-#     # Initial upper and lower bounds
-#     LB = mean - sigma * std
-#
-#     UB = mean + sigma * std
-#
-#     # check
-#     rs[rs > UB] = np.nan
-#     rs[rs < LB] = np.nan
-#
-#     # clean
-#     rs = rs.interpolate(method=method, order=order)
-#
-#     return rs
-#
-#
-# def old_clean(s, range=[0, 250], t=5):
+# def phenolo1_cleaner(s, range=[0, 250], t=5):
 #
 #     minVal = range[0]
 #     maxVal = range[1]
