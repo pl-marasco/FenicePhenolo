@@ -59,7 +59,11 @@ def phenolo(pxdrl, **kwargs):
 
     try:
         if pxdrl.ts_filtered is not None:
-            pxdrl.ts_cleaned = pxdrl.ts_filtered.interpolate()  # TODO make possible to use onother type of interpol
+            pxdrl.ts_cleaned = pxdrl.ts_filtered.interpolate()
+            # TODO make possible to use onother type of interpol
+            if len(pxdrl.ts_cleaned[pxdrl.ts_cleaned.isna()]) > 0:
+                pxdrl.ts_cleaned = pxdrl.ts_cleaned.fillna(method='bfill')
+
     except (RuntimeError, ValueError, Exception):
         logger.info('Error in interpolating outlayer in position:{0}'.format(pxdrl.position))
         pxdrl.error = True
@@ -137,10 +141,17 @@ def phenolo(pxdrl, **kwargs):
 
     # Season metrics
     try:
-        pxdrl.pheno = metrics.phen_metrics(pxdrl, param)
+        pxdrl.phen = metrics.phen_metrics(pxdrl, param)
     except(RuntimeError, Exception, ValueError):
         logger.info('Error in intercept detection in pixel position:{0}'.format(pxdrl.position))
         pxdrl.error = True
         return pxdrl
+
+    # General statistic agregation
+    pxdrl.sl = metrics.attribute_extractor(pxdrl, 'sl')
+    pxdrl.spi = metrics.attribute_extractor(pxdrl, 'spi')
+    pxdrl.si = metrics.attribute_extractor(pxdrl, 'si')
+    pxdrl.cf = metrics.attribute_extractor(pxdrl, 'cf')
+    pxdrl.afi = metrics.attribute_extractor(pxdrl, 'afi')
 
     return pxdrl

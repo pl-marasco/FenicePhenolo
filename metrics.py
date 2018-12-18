@@ -103,8 +103,7 @@ def cycle_metrics(pxdrl, param):
         import atoms
 
         # Minimum minimum time series
-        sincy = atoms.SingularCycle(pxdrl.ps[pxdrl.pks.index[i]:
-                                    pxdrl.pks.index[i + 1]])
+        sincy = atoms.SingularCycle(pxdrl.ps, pxdrl.pks.index[i], pxdrl.pks.index[i + 1])
 
         # avoid unusual results
         if sincy.ref_yr not in range(pxdrl.pks.index[i].year - 1, pxdrl.pks.index[i + 1].year + 1):
@@ -150,90 +149,94 @@ def phen_metrics(pxdrl, param):
     :return:
     """
 
-    try:
+    phen = []
+    for sincy in pxdrl.sincys:
+        # index = ts_table.iloc[i]['sbc'] # forse riferimento temporale
 
-        phen = []
+        # specific mas
+        sincy.mas = sincy.mml - (2 * param.mavmet * sincy.csdd)
+        # TODO verify the correctness of the standard devation
+        # mas = (ts_table.iloc[i]['ed'] - ts_table.iloc[i]['sd']) - (2 * param['mavmet'] * ts_table.iloc[i]['ssd'])
 
-        for i in range(len(pxdrl.seasons)):
+        if sincy.mas.days < 0:
+            continue
 
-            sincy = pxdrl.sincys[i]  # singular cycle
+        sincy.mmc = sincy.mms.copy()
+        #
+        # sincy.timedelta = sincy.mml * (1/3)
+        #
+        # # TODO refine as the buffering isn't applayed
+        # # this can cause the interseason problem
+        # sincy.buffered = sincy.mms[sincy.sd - sincy.timedelta: sincy.ed + sincy.timedelta]
+        sincy.buffered = sincy.mms_b.copy()
 
-            # index = ts_table.iloc[i]['sbc'] # forse riferimento temporale
+        try:
+            sincy.smth_crv = sincy.buffered.rolling(sincy.mas.days, win_type='boxcar', center=True).mean()
+        except (RuntimeError, Exception, ValueError):
+            logger.info('Warning! Smoothed curv calculation went wrong, in position:{0}'.format(pxdrl.position))
+            pxdrl.error = True
+            continue
 
-            # specific mas
-            sincy.mas = sincy.mml - (2 * param.mavmet * sincy.csdd)
-            # TODO verify the correctness of the standard devation
-            # mas = (ts_table.iloc[i]['ed'] - ts_table.iloc[i]['sd']) - (2 * param['mavmet'] * ts_table.iloc[i]['ssd'])
+        sincy.smoothed = sincy.smth_crv[sincy.sd - sincy.td:sincy.ed + sincy.td]
 
-            if sincy.mas.days < 0:
-                continue
+        # baricenter for the smoothed one
+        posix_t_smth = sincy.smoothed.index.values.astype(np.int64) // 10 ** 9
+        sincy.unx_sbc_Y_smth = (posix_t_smth * sincy.smoothed).sum() / posix_t_smth.sum()
 
-            sincy.mmc = sincy.mms.copy()
+        # smoothed -= unx_sbc_Y_smth - unx_sbc_Y
 
-            sincy.timedelta = sincy.mml * (1/3)
+        sincy.back = sincy.smoothed[:sincy.cbcd] \
+                          .shift(1, freq=pd.Timedelta(days=int(sincy.mas.days / 2)))[sincy.sd:].dropna()
 
-            # this can cause the interseason problem
-            sincy.buffered = sincy.mms[sincy.sd - sincy.timedelta: sincy.ed + sincy.timedelta]
+        sincy.forward = sincy.smoothed[sincy.cbcd:] \
+                             .shift(1, freq=pd.Timedelta(days=-int(sincy.mas.days / 2)))[:sincy.ed].dropna()
 
-            try:
-                sincy.smth_crv = sincy.buffered.rolling(sincy.mas.days, win_type='boxcar', center=True).mean()
-            except (RuntimeError, Exception, ValueError):
-                logger.info('Warning! Smoothed curv calculation went wrong, in position:{0}'.format(pxdrl.position))
-                pxdrl.error = True
-                continue
+        # sincy.mmc = sincy.mmc.reindex(pd.date_range(sincy.forward.index[0].date(),
+        #                             sincy.back.index[len(sincy.forward) - 1].date()))
 
-            sincy.smoothed = sincy.smth_crv[sincy.sd - sincy.timedelta:sincy.ed + sincy.timedelta]
+        sincy.sbd, sincy.sed, sincy.sbd_ts, sincy.sbd_ts = 4 * [None]
 
-            # baricenter for the smoothed one
-            posix_t_smth = sincy.smoothed.index.values.astype(np.int64) // 10 ** 9
-            sincy.unx_sbc_Y_smth = (posix_t_smth * sincy.smoothed).sum() / posix_t_smth.sum()
+        # research the starting point of the season (SBD)
+        try:
+            sincy.ge_sbd = sincy.mmc.ge(sincy.back)
+            change_sbd = sincy.ge_sbd.rolling(window=2, min_periods=2)\
+                              .apply(lambda x: np.array_equal(x, [False, True]), raw=True)
+            sincy.sbd = change_sbd[change_sbd == 1][:1] #[-1:]
+            sincy.sbd = pd.Series(sincy.mmc.loc[sincy.sbd.index], sincy.sbd.index)
 
-            # smoothed -= unx_sbc_Y_smth - unx_sbc_Y
+        except (RuntimeError, Exception, ValueError):
+            continue
 
-            sincy.back = sincy.smoothed[:sincy.cbcd] \
-                              .shift(1, freq=pd.Timedelta(days=int(sincy.mas.days / 2)))[sincy.sd:].dropna()
+        # research the end point of the season (SED)
+        try:
+            sincy.ge_sed = sincy.mmc.ge(sincy.forward)
+            change_sed = sincy.ge_sed.rolling(window=2, min_periods=2)\
+                                     .apply(lambda x: np.array_equal(x, [True, False]), raw=True)
+            sincy.sed = change_sed[change_sed == 1][-1:]
+            sincy.sed = pd.Series(sincy.mmc.loc[sincy.sed.index], sincy.sed.index)
 
-            sincy.forward = sincy.smoothed[sincy.cbcd:] \
-                                 .shift(1, freq=pd.Timedelta(days=-int(sincy.mas.days / 2)))[:sincy.ed].dropna()
+        except (RuntimeError, Exception, ValueError):
+            continue
 
-            # sincy.mmc = sincy.mmc.reindex(pd.date_range(sincy.forward.index[0].date(),
-            #                             sincy.back.index[len(sincy.forward) - 1].date()))
+        sincy.max = sincy.mmc[sincy.mmc == sincy.mmc.max()]
+        sincy.max_date = sincy.mmc.idxmax()
 
-            sincy.sbd, sincy.sed, sincy.sbd_ts, sincy.sbd_ts = 4 * [None]
+        if sincy.sed.empty is None or sincy.sbd.empty:
+            sincy.sl = np.NaN
+            sincy.sp = np.NaN
+            sincy.spi = np.NaN
+            sincy.si = np.NaN
+            sincy.cf = np.NaN
+            sincy.af = np.NaN
+            sincy.afi = np.NaN
+            sincy.ref_yr = np.NaN
+            continue
+        else:
+            # Season slope (SLOPE)
+            sincy.sslp = (sincy.sed.values[0] - sincy.sbd.values[0]) / \
+                           (sincy.sed.index[0] - sincy.sbd.index[0]).days
 
-            # research the starting point of the season (SBD)
-            try:
-                sincy.ge_sbd = sincy.mmc.ge(sincy.back)
-                change_sbd = sincy.ge_sbd.rolling(window=2, min_periods=2)\
-                                  .apply(lambda x: np.array_equal(x, [False, True]), raw=True)
-                sincy.sbd = change_sbd[change_sbd == 1][-1:]
-                sincy.sbd = pd.Series(sincy.mmc.loc[sincy.sbd.index], sincy.sbd.index)
-
-            except (RuntimeError, Exception, ValueError):
-                continue
-
-            # research the end point of the season (SED)
-            try:
-                sincy.ge_sed = sincy.mmc.ge(sincy.forward)
-                change_sed = sincy.ge_sed.rolling(window=2, min_periods=2)\
-                                         .apply(lambda x: np.array_equal(x, [True, False]),raw=True)
-                sincy.sed = change_sed[change_sed == 1][-1:]
-                sincy.sed = pd.Series(sincy.mmc.loc[sincy.sed.index], sincy.sed.index)
-
-            except (RuntimeError, Exception, ValueError):
-                continue
-
-            sincy.max_date = sincy.mmc.idxmax()
-
-            if sincy.sed is None or sincy.sbd is None:
-                continue
-            else:
-                # Season slope (SLOPE)
-                sincy.sslp = (sincy.sed.values[0] - sincy.sbd.values[0]) / \
-                               (sincy.sed.index[0] - sincy.sbd.index[0]).days
-                if not (abs(sincy.sslp) < 0.15):
-                    continue
-
+        try:
             # Season Lenght
             sincy.sl = (sincy.sed.index - sincy.sbd.index).to_pytimedelta()[0]
 
@@ -253,11 +256,30 @@ def phen_metrics(pxdrl, param):
             sincy.afi = sincy.af.sum()
 
             # reference yr
-            sincy.ref_yr = sincy.sbd.index + sincy.sl * 2 / 3
+            sincy.ref_yr = (sincy.sbd.index + sincy.sl * 2 / 3).year
 
-            phen.append(sincy)
+        except ValueError:
+            sincy.sl = np.NaN
+            sincy.sp = np.NaN
+            sincy.spi = np.NaN
+            sincy.si = np.NaN
+            sincy.cf = np.NaN
+            sincy.af = np.NaN
+            sincy.afi = np.NaN
+            sincy.ref_yr = np.NaN
+            continue
 
-        return phen
+        phen.append(sincy)
 
-    except (RuntimeError, Exception, ValueError):
-        return
+    return phen
+
+
+def attribute_extractor(pxdrl, attribute):
+    try:
+        index = []
+        for phency in pxdrl.phen:
+            value = getattr(phency, attribute)
+            index.append(pd.Series(value, phency.ref_yr))
+        return pd.concat(index, axis=0)
+    except RuntimeError:
+        raise RuntimeError('IMpossible to extract the attribute requested')

@@ -34,7 +34,7 @@ class PixelDrill(object):
 
 
 class SingularCycle(object):
-    def __init__(self, mms):
+    def __init__(self, ts, sd, ed):
         """
         Rappresent a singular cycle defined as the curve between two minima
 
@@ -56,10 +56,12 @@ class SingularCycle(object):
         :param mms: Time series as pandas.Series object
         """
 
-        self.mms = mms  # minimum minimum time series
-        self.sd = mms.index[0]  # Start date - MBD
-        self.ed = mms.index[-1]  # End date - MED
+        self.sd = sd  # Start date - MBD
+        self.ed = ed  # End date - MED
         self.mml = self._time_delta(self.sd, self.ed)  # Cycle lenght in days
+        self.mms = ts[sd:ed]  # minimum minimum time series
+        self.td = self.mml/3  # time delta
+        self.mms_b = ts[sd-self.td:ed+self.td]
         self.sb = self._integral(self.mms)  # Standing biomas
         self.mpf = self._min_min_line(self.mms)  # permanent fration
         self.mpi = self._integral(self.mpf)  # permanent fration integral
