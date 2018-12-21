@@ -4,6 +4,12 @@ import os
 
 class ScratchFile(object):
     def __init__(self, param, **kwargs):
+        """
+        Create a netCDF file to be used as memory dump for the pixeldrill analysis.
+
+        :param param: configuration parameters object
+        :param kwargs: name of the object
+        """
 
         pth = os.path.join(param.scratch_pth, '.'.join((kwargs.pop('name', 'scratch'), 'nc')))
         self.root = Dataset(pth, 'w', format='NETCDF4')

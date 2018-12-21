@@ -3,7 +3,7 @@ from datetime import datetime
 import settings
 import reader
 import analysis
-import scratch
+import output
 import os
 import executor
 
@@ -27,16 +27,14 @@ def main(param):
 
         pp = executor.Processor(param)
 
-        scrt = scratch.ScratchFile(param)
+        out = output.create(param, ['sl', 'spi', 'si', 'cf'])
 
-        result_cube = pp.analyse(cube, scrt, analysis.phenolo)
+        result_cube = pp.analyse(cube, out, analysis.phenolo)
 
     else:
         import atoms
         import analysis as aa
         import viz
-
-        # TODO
 
         ts = cube.isel(dict([(param.col_nm, 0), (param.row_nm, 0)])).to_series().astype(float)
         pxdrl = atoms.PixelDrill(ts, (0, 0))

@@ -3,11 +3,17 @@
 
 from netCDF4 import Dataset, date2num
 from datetime import datetime
-import numpy as np
+import numpy as np; import pandas as pd
 import os
 
 
 def create(path, orig_ds, yrs_in):
+    """
+    Create a netCDF file to be used as memory dump for the pixeldrill analysis.
+
+    :param param: configuration parameters object
+    :param kwargs: name of the object
+    """
 
     # calculate the center of pixels
     delta_x = ((orig_ds.bounds.right - orig_ds.bounds.left) / orig_ds.width)/2
@@ -113,7 +119,40 @@ def create(path, orig_ds, yrs_in):
     # output the file and the variables
     return root_ds, sl_int, spi_int, si_int, cf_int, sd_int, ed_int, sns_int
 
-#
+
+class OutputCointainer(object):
+    """
+    Create a netCDF file to be used as memory dump for the pixeldrill analysis.
+
+    :param param: configuration parameters object
+    :param kwargs: name of the object
+    """
+    def __init__(self, cube, param, **kwargs):
+
+        pth = os.path.join(param.scratch_pth, '.'.join((kwargs.pop('name', 'scratch'), 'nc')))
+        self.root = Dataset(pth, 'w', format='NETCDF4')
+
+        row = self.root.createDimension(param.row_nm, None)
+        col = self.root.createDimension(param.col_nm, None)
+        dim = self.root.createDimension(param.dim_nm, self._yrs_reducer(param.dim_val))
+
+        self.row_v = self.root.createVariable(param.row_nm, 'f8', (param.row_nm,))
+        self.col_v = self.root.createVariable(param.col_nm, 'f8', (param.col_nm,))
+        self.dim_v = self.root.createVariable(param.dim_nm, 'f8', (param.dim_nm,))
+
+        self.sl = self.root.createVariable('Season lenght', 'f8', (param.row_nm, param.col_nm, param.dim_nm))
+        self.spi = self.root.createVariable('Season Permanent integral', 'f8', (param.row_nm, param.col_nm, param.dim_nm))
+        self.si = self.root.createVariable('Season integral', 'f8', (param.row_nm, param.col_nm, param.dim_nm))
+        self.cf = self.root.createVariable('Cycle fraction', 'f8', (param.row_nm, param.col_nm, param.dim_nm))
+
+        self.row_v[:] = param.row_val
+        self.col_v[:] = param.col_val
+        self.dim_v[:] = param.dim_val
+
+    def _yrs_reducer(self, dim_val):
+        dim = pd.DatetimeIndex(dim_val).year.unique()
+        return dim
+
 # def scratcher(pth, dx, dy, dtime, **kwargs):
 #
 #     if 'name' in kwargs:

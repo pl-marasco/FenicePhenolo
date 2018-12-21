@@ -70,7 +70,7 @@ def plot(pxdrl):
     if pxdrl.afi is not None:
         pxdrl.afi.plot(style='r', title='Active fraction')
 
-    plt.show()
+    plt.show(block=True)
 
 
 

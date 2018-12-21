@@ -41,6 +41,7 @@ def scale(ts, **kwargs):
 
 def to_timeseries(values, index):
     if len(values) != len(index):
+        logger.debug('Lenght of the time series is different than the index provided')
         return ValueError
 
     return pd.Series(values, index=index)
@@ -116,11 +117,12 @@ def cycle_metrics(pxdrl, param):
     return sincys
 
 
-def attr_statistic(objects, statistic, attribute):
+def attr_statistic(objects, stat_type, attribute):
     """
-    Calculate a specific atrtibute statistic over an array of objects
+    Calculate a specific atrtibute stat_type over an array of objects
 
     :param objects: list of objects over withch must be calculated the statistics
+    :param stat_type:
     :param attribute: atrtibute to be analysed
     :return:
     """
@@ -128,60 +130,74 @@ def attr_statistic(objects, statistic, attribute):
     value = None
 
     try:
-        value = statistic(getattr(i, attribute) for i in objects)
+        value = stat_type(getattr(i, attribute) for i in objects)
     except ValueError:
-        ValueError('Statistic calculation had been unsuccessful.')
+        logger.debug('Statistic calculation has been unsuccessful.')
+        ValueError('Statistic calculation has been unsuccessful.')
 
     try:
         value_d = pd.to_datetime(value, unit='s')
     except ValueError:
-        raise ValueError('Date conversion of the statistic calculation had been unsuccessful.')
-
+        logger.debug('Date conversion of the stat_type calculation has been unsuccessful.')
+        raise ValueError('Date conversion of the stat_type calculation has been unsuccessful.')
     return value_d
 
 
 def phen_metrics(pxdrl, param):
 
     """
+    Calculate the Phenology paramter
 
-    :param pxdrl:
-    :param param:
-    :return:
+    :param pxdrl: provide a pixel drill object from the module atoms
+    :param param: provide a paramter object
+    :return: list of sincy objects with added values
     """
 
     phen = []
     for sincy in pxdrl.sincys:
-        # index = ts_table.iloc[i]['sbc'] # forse riferimento temporale
 
         # specific mas
-        sincy.mas = sincy.mml - (2 * param.mavmet * sincy.csdd)
+        sincy.mas = _mas(sincy.mml, param.mavmet, sincy.csdd)
         # TODO verify the correctness of the standard devation
-        # mas = (ts_table.iloc[i]['ed'] - ts_table.iloc[i]['sd']) - (2 * param['mavmet'] * ts_table.iloc[i]['ssd'])
 
         if sincy.mas.days < 0:
             continue
 
         sincy.mmc = sincy.mms.copy()
-        #
-        # sincy.timedelta = sincy.mml * (1/3)
-        #
-        # # TODO refine as the buffering isn't applayed
-        # # this can cause the interseason problem
-        # sincy.buffered = sincy.mms[sincy.sd - sincy.timedelta: sincy.ed + sincy.timedelta]
-        sincy.buffered = sincy.mms_b.copy()
+
+        try:
+            if sincy.sd-sincy.mas >= sincy.mms_b.index[0]:
+                sd = sincy.sd-sincy.mas
+            else:
+                sd = sincy.mms_b.index[0]
+            if sincy.ed-sincy.mas <= sincy.mms_b.index[-1]:
+                ed = sincy.ed+sincy.mas
+            else:
+                ed = sincy.mms_b.index[-1]
+
+            sincy.buffered = sincy.mms_b[sd:ed]
+        except (RuntimeError, Exception, ValueError):
+            logger.debug('Warning! Buffered curv not properly created, in position:{0}'.format(pxdrl.position))
+            pxdrl.error = True
+            continue
 
         try:
             sincy.smth_crv = sincy.buffered.rolling(sincy.mas.days, win_type='boxcar', center=True).mean()
         except (RuntimeError, Exception, ValueError):
-            logger.info('Warning! Smoothed curv calculation went wrong, in position:{0}'.format(pxdrl.position))
+            logger.debug('Warning! Smoothed curv calculation went wrong, in position:{0}'.format(pxdrl.position))
             pxdrl.error = True
             continue
 
         sincy.smoothed = sincy.smth_crv[sincy.sd - sincy.td:sincy.ed + sincy.td]
 
         # baricenter for the smoothed one
-        posix_t_smth = sincy.smoothed.index.values.astype(np.int64) // 10 ** 9
-        sincy.unx_sbc_Y_smth = (posix_t_smth * sincy.smoothed).sum() / posix_t_smth.sum()
+        try:
+            posix_t_smth = sincy.smoothed.index.values.astype(np.int64) // 10 ** 9
+            sincy.unx_sbc_Y_smth = (posix_t_smth * sincy.smoothed).sum() / posix_t_smth.sum()
+        except (RuntimeError, ValueError, Exception):
+            logger.debug('Warning! Baricenter not found in position {} for the cycle starting in{}'
+                         .format(pxdrl.position, sincy.sd))
+            continue
 
         # smoothed -= unx_sbc_Y_smth - unx_sbc_Y
 
@@ -202,9 +218,12 @@ def phen_metrics(pxdrl, param):
             change_sbd = sincy.ge_sbd.rolling(window=2, min_periods=2)\
                               .apply(lambda x: np.array_equal(x, [False, True]), raw=True)
             sincy.sbd = change_sbd[change_sbd == 1][:1] #[-1:]
+            # TODO [proposal] add the possibility to select the interesection point
             sincy.sbd = pd.Series(sincy.mmc.loc[sincy.sbd.index], sincy.sbd.index)
 
         except (RuntimeError, Exception, ValueError):
+            logger.debug('Warning! Start date not found in position {} for the cycle starting in{}'
+                         .format(pxdrl.position, sincy.sd))
             continue
 
         # research the end point of the season (SED)
@@ -212,10 +231,13 @@ def phen_metrics(pxdrl, param):
             sincy.ge_sed = sincy.mmc.ge(sincy.forward)
             change_sed = sincy.ge_sed.rolling(window=2, min_periods=2)\
                                      .apply(lambda x: np.array_equal(x, [True, False]), raw=True)
+            # TODO [proposal] add the possibility to select the interesection point
             sincy.sed = change_sed[change_sed == 1][-1:]
             sincy.sed = pd.Series(sincy.mmc.loc[sincy.sed.index], sincy.sed.index)
 
         except (RuntimeError, Exception, ValueError):
+            logger.debug('Warning! End date not found in position {} for the cycle starting in{}'
+                         .format(pxdrl.position, sincy.sd))
             continue
 
         sincy.max = sincy.mmc[sincy.mmc == sincy.mmc.max()]
@@ -272,6 +294,19 @@ def phen_metrics(pxdrl, param):
         phen.append(sincy)
 
     return phen
+
+
+def _mas(ts, mavmet, sdd):
+    """
+    Calculate the mas over the single cycle.
+
+    :param ts: pandas time serie
+    :param mavmet: strenght of the equation [normally ~ 1.5-2]
+    :param sdd: standard deviation expressed in yrs
+    :return: mas ( moving avarage yearly)
+    """
+    return ts - (2 * mavmet * sdd)
+    # TODO to be reviewed
 
 
 def attribute_extractor(pxdrl, attribute):

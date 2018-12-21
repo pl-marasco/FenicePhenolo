@@ -24,7 +24,6 @@ class Processor(object):
 
         try:
             for rowi in range(len(self.param.row_val)):
-                print(rowi)
                 row = cube.isel(dict([(self.param.row_nm, rowi)])).persist()
                 vrow = np.empty((1, len(self.param.col_val), len(self.param.dim_val)))
                 px_list = [item for item in self.param.pixel_list if item[0] == rowi]

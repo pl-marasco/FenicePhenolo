@@ -60,7 +60,7 @@ class SingularCycle(object):
         self.ed = ed  # End date - MED
         self.mml = self._time_delta(self.sd, self.ed)  # Cycle lenght in days
         self.mms = ts[sd:ed]  # minimum minimum time series
-        self.td = self.mml/3  # time delta
+        self.td = self.mml*2/3  # time delta
         self.mms_b = ts[sd-self.td:ed+self.td]
         self.sb = self._integral(self.mms)  # Standing biomas
         self.mpf = self._min_min_line(self.mms)  # permanent fration
