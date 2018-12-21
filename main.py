@@ -25,9 +25,11 @@ def main(param):
     if len(cube.coords.get(param.col_nm)) is not 1 and \
        len(cube.coords.get(param.row_nm)) is not 1:
 
+        out = output.create(cube, param, name='antaniello')
+
         pp = executor.Processor(param)
 
-        out = output.create(param, ['sl', 'spi', 'si', 'cf'])
+
 
         result_cube = pp.analyse(cube, out, analysis.phenolo)
 
