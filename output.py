@@ -134,7 +134,7 @@ class OutputCointainer(object):
 
         row = self.root.createDimension(param.row_nm, None)
         col = self.root.createDimension(param.col_nm, None)
-        dim = self.root.createDimension(param.dim_nm, self._yrs_reducer(param.dim_val))
+        dim = self.root.createDimension(param.dim_nm, len(self._yrs_reducer(param.dim_val)))
 
         self.row_v = self.root.createVariable(param.row_nm, 'f8', (param.row_nm,))
         self.col_v = self.root.createVariable(param.col_nm, 'f8', (param.col_nm,))
@@ -147,11 +147,11 @@ class OutputCointainer(object):
 
         self.row_v[:] = param.row_val
         self.col_v[:] = param.col_val
-        self.dim_v[:] = param.dim_val
+        self.dim_v[:] = pd.to_datetime(pd.to_datetime(param.dim_val).year.unique(), format='%Y')
 
     def _yrs_reducer(self, dim_val):
-        dim = pd.DatetimeIndex(dim_val).year.unique()
-        return dim
+        return pd.DatetimeIndex(dim_val).year.unique()
+
 
 # def scratcher(pth, dx, dy, dtime, **kwargs):
 #
