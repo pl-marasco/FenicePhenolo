@@ -53,6 +53,7 @@ class Processor(object):
                     if column == 0:
                         continue
 
+
                     out.sl[rowi, column, :] = t_sl.iloc[:, column].values
                     out.spi[rowi, column, :] = t_spi.iloc[:, column].values
                     out.si[rowi, column, :] = t_si.iloc[:, column].values
