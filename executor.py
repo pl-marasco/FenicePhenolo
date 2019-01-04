@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 class Processor(object):
     def __init__(self, param):
-        self.client = Client()  # processes=False, threads_per_worker=1
+        self.client = Client(processes=False, threads_per_worker=2)  #
         self.param = param
 
     def _transducer(self, px, **kwargs):
@@ -36,7 +36,7 @@ class Processor(object):
 
                 px_list = [item for item in self.param.pixel_list if item[0] == rowi]
 
-                s_row = self.client.scatter(row, broadcast=True)
+                s_row = self.client.scatter(row)
                 futures = self.client.map(self._transducer, px_list, **{'data': s_row,
                                                                         'param': self.param,
                                                                         'action': action})
@@ -49,12 +49,16 @@ class Processor(object):
                     t_si.iloc[:, col] = pxdrl.si
                     t_cf.iloc[:, col] = pxdrl.cf
 
-                out.sl[rowi, :, :] = t_sl.T
-                # out.spi[rowi, :, :] = t_spi.T
-                # out.si[rowi, :, :] = t_si.T
-                # out.cf[rowi, :, :] = t_cf.T
+                for column in t_sl:
+                    if column == 0:
+                        continue
+
+                    out.sl[rowi, column, :] = t_sl.iloc[:, column].values
+                    out.spi[rowi, column, :] = t_spi.iloc[:, column].values
+                    out.si[rowi, column, :] = t_si.iloc[:, column].values
+                    out.cf[rowi, column, :] = t_cf.iloc[:, column].values
 
             return out
 
         except (RuntimeError, Exception, ValueError):
-            logger.debug('Error during in the process of climat substitution')
+            logger.debug(f'Critical error in the main loop, latest position row{rowi}, col{col}')

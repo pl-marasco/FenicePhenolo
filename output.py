@@ -152,6 +152,9 @@ class OutputCointainer(object):
     def _yrs_reducer(self, dim_val):
         return pd.DatetimeIndex(dim_val).year.unique()
 
+    def close(self):
+        self.root.close()
+
 
 # def scratcher(pth, dx, dy, dtime, **kwargs):
 #

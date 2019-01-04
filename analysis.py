@@ -18,7 +18,7 @@ def phenolo(pxdrl, **kwargs):
         if param.sensor_typ == 'spot':
             pxdrl.ts = nodata.climate_fx(pxdrl.ts_raw, settings=param)
     except(RuntimeError, ValueError, Exception):
-        logger.info('Non data removal error in position:{0}'.format(pxdrl.position))
+        logger.info(f'Nodata removal error in position:{pxdrl.position}')
         pxdrl.error = True
         return pxdrl
 
@@ -27,7 +27,7 @@ def phenolo(pxdrl, **kwargs):
         if param.scale is not None:
             pxdrl.ts = metrics.scale(pxdrl.ts, settinngs=param)
     except(RuntimeError, ValueError, Exception):
-        logger.info('Scaling error in position:{0}'.format(pxdrl.position))
+        logger.info(f'Scaling error in position:{pxdrl.position}')
         pxdrl.error = True
         return pxdrl
 
@@ -36,7 +36,7 @@ def phenolo(pxdrl, **kwargs):
         if param.offset is not None:
             pxdrl.ts = metrics.offset(pxdrl.ts, settings=param)
     except(RuntimeError, ValueError, Exception):
-        logger.info('off set error in position:{0}'.format(pxdrl.position))
+        logger.info(f'Off set error in position:{pxdrl.position}')
         pxdrl.error = True
         return pxdrl
 
@@ -45,7 +45,7 @@ def phenolo(pxdrl, **kwargs):
         if param.min is not None and param.max is not None:
             pxdrl.ts_resc = metrics.rescale(pxdrl.ts, settings=param)
     except(RuntimeError, ValueError, Exception):
-        logger.info('Scaling error in position:{0}'.format(pxdrl.position))
+        logger.info(f'Scaling error in position:{pxdrl.position}')
         pxdrl.error = True
         return pxdrl
 
@@ -53,7 +53,7 @@ def phenolo(pxdrl, **kwargs):
     try:
         pxdrl.ts_filtered = outlier.madseason(pxdrl.ts_resc, param.yr_dek, param.yr_dys * param.outmax, param.mad_pwr)  # TODO make variable dek
     except (RuntimeError, ValueError, Exception):
-        logger.info('Error in filtering outlayer in position:{0}'.format(pxdrl.position))
+        logger.info(f'Error in filtering outlayer in position:{pxdrl.position}')
         pxdrl.error = True
         return pxdrl
 
@@ -65,7 +65,7 @@ def phenolo(pxdrl, **kwargs):
                 pxdrl.ts_cleaned = pxdrl.ts_cleaned.fillna(method='bfill')
 
     except (RuntimeError, ValueError, Exception):
-        logger.info('Error in interpolating outlayer in position:{0}'.format(pxdrl.position))
+        logger.info(f'Error in interpolating outlayer in position:{pxdrl.position}')
         pxdrl.error = True
         return pxdrl
 
@@ -76,7 +76,7 @@ def phenolo(pxdrl, **kwargs):
         pxdrl.trend_ts = metrics.to_timeseries(pxdrl.trend, pxdrl.ts_cleaned.index)
 
     except (RuntimeError, Exception, ValueError):
-        logger.info('Error in estimate seaason and trend in position:{0}'.format(pxdrl.position))
+        logger.info(f'Error in estimate seaason and trend in position:{pxdrl.position}')
         pxdrl.error = True
         return pxdrl
 
@@ -85,7 +85,7 @@ def phenolo(pxdrl, **kwargs):
         pxdrl.season_lng = len(pxdrl.seasons) * param.yr_dys
         pxdrl.expSeason = chronos.season_ext(pxdrl)
     except(RuntimeError, Exception, ValueError):
-        logger.info('Error! Season conversion to days failed, in position:{0}'.format(pxdrl.position))
+        logger.info(f'Error! Season conversion to days failed, in position:{pxdrl.position}')
         pxdrl.error = True
         return pxdrl
 
@@ -93,7 +93,7 @@ def phenolo(pxdrl, **kwargs):
     try:
         pxdrl.medspan = chronos.medspan(pxdrl.season_lng, param)
     except(RuntimeError, Exception, ValueError):
-        logger.info('Error! medspan calculation:{0}'.format(pxdrl.position))
+        logger.info(f'Error! Medspan calculation:{pxdrl.position}')
         pxdrl.error = True
         return pxdrl
 
@@ -102,7 +102,7 @@ def phenolo(pxdrl, **kwargs):
         pxdrl.ts_d = chronos.time_resample(pxdrl.ts_cleaned)
         pxdrl.trend_d = chronos.time_resample(pxdrl.trend_ts)
     except(RuntimeError, Exception, ValueError):
-        logger.info('Error! Conversion to days failed, in position:{0}'.format(pxdrl.position))
+        logger.info(f'Error! Conversion to days failed, in position:{pxdrl.position}')
         pxdrl.error = True
         return pxdrl
 
@@ -110,7 +110,7 @@ def phenolo(pxdrl, **kwargs):
     try:
         pxdrl.ps = filters.sv(pxdrl, param)
     except (RuntimeError, Exception, ValueError):
-        logger.info('Error! Savinsky Golet filter problem, in position:{0}'.format(pxdrl.position))
+        logger.info(f'Error! Savinsky Golet filter problem, in position:{pxdrl.position}')
         pxdrl.error = True
         return pxdrl
 
@@ -119,7 +119,7 @@ def phenolo(pxdrl, **kwargs):
     try:
         pxdrl.pks = metrics.valley_detection(pxdrl, param)
     except(RuntimeError, Exception, ValueError):
-        logger.info('Error in valley detection pixel position:{0}'.format(pxdrl.position))
+        logger.info(f'Error in valley detection pixel position:{pxdrl.position}')
         pxdrl.error = True
         return pxdrl
 
@@ -127,7 +127,7 @@ def phenolo(pxdrl, **kwargs):
     try:
         pxdrl.sincys = metrics.cycle_metrics(pxdrl, param)
     except(RuntimeError, Exception, ValueError):
-        logger.info('Error in season detection for pixel position:{0}'.format(pxdrl.position))
+        logger.info(f'Error in season detection for pixel position:{pxdrl.position}')
         pxdrl.error = True
         return pxdrl
 
@@ -135,7 +135,7 @@ def phenolo(pxdrl, **kwargs):
         import statistics
         pxdrl.msdd = metrics.attr_statistic(pxdrl.sincys, statistics.median, 'csd')
     except(RuntimeError, Exception, ValueError):
-        logger.info('Error in mean season detection for pixel position:{0}'.format(pxdrl.position))
+        logger.info(f'Error in mean season detection for pixel position:{pxdrl.position}')
         pxdrl.error = True
         return pxdrl
 
@@ -143,7 +143,7 @@ def phenolo(pxdrl, **kwargs):
     try:
         pxdrl.phen = metrics.phen_metrics(pxdrl, param)
     except(RuntimeError, Exception, ValueError):
-        logger.info('Error in intercept detection in pixel position:{0}'.format(pxdrl.position))
+        logger.info(f'Error in intercept detection in pixel position:{pxdrl.position}')
         pxdrl.error = True
         return pxdrl
 
