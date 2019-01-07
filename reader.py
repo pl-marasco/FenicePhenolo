@@ -307,7 +307,7 @@ def _slice_cube(dataset, dim):
 
     crd_x, crd_y, crd_t = _coord_names(data)
 
-    logger.debug('Coordinates names are: {},{},{}'.format(crd_x, crd_y, crd_t))
+    logger.debug(f'Coordinates names are: {crd_x},{crd_y},{crd_t}')
 
     # no slice
     if dim['time'] == slice(pd.NaT, pd.NaT) and dim['x'] == slice(None) and dim['y'] == slice(None):
@@ -334,7 +334,7 @@ def _slice_cube(dataset, dim):
 
         except ValueError:
             logger.debug('Coordinates slice has created an error')
-            raise sys.exit(0)
+            raise sys.exit(1)
     # Area
     else:
         try:
@@ -356,7 +356,7 @@ def _slice_cube(dataset, dim):
                     # TODO split time slice
         except ValueError:
             logger.debug('Coordinates slice has created an error')
-            raise sys.exit()
+            raise ValueError
 
 
 def _coord_range_check(dim, data, crd_x, crd_y, crd_t):
@@ -545,7 +545,7 @@ def ingest(prmts):
             else:
                 return _get_rasterio(prmts.inFilePth, dim)
     except IOError:
-        raise
+        raise IOError
 
     deltatime = time.time() - start
     logger.info('Loading data required:{}'.format(deltatime))

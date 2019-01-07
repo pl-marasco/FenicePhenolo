@@ -222,6 +222,9 @@ class ProjectParameters(object):
             crd_row = data.dims[dims.index('n')]
             crd_dim = data.dims[dims.index('time')]
 
+        elif 'time' in dims:
+            crd_dim = data.dims[dims.index('time')]
+
         return crd_row, crd_col, crd_dim
 
     def add_dims(self, data):

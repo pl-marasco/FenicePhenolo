@@ -108,7 +108,7 @@ def cycle_metrics(pxdrl, param):
 
         # avoid unusual results
         if sincy.ref_yr not in range(pxdrl.pks.index[i].year - 1, pxdrl.pks.index[i + 1].year + 1):
-            logger.info('Warning! sbc not in a valid range, in position:{0}'.format(pxdrl.position))
+            logger.info(f'Warning! sbc not in a valid range, in position:{pxdrl.position}')
             pxdrl.error = True
             continue
 
@@ -177,14 +177,14 @@ def phen_metrics(pxdrl, param):
 
             sincy.buffered = sincy.mms_b[sd:ed]
         except (RuntimeError, Exception, ValueError):
-            logger.debug('Warning! Buffered curv not properly created, in position:{0}'.format(pxdrl.position))
+            logger.debug(f'Warning! Buffered curv not properly created, in position:{pxdrl.position}')
             pxdrl.error = True
             continue
 
         try:
             sincy.smth_crv = sincy.buffered.rolling(sincy.mas.days, win_type='boxcar', center=True).mean()
         except (RuntimeError, Exception, ValueError):
-            logger.debug('Warning! Smoothed curv calculation went wrong, in position:{0}'.format(pxdrl.position))
+            logger.debug(f'Warning! Smoothed curv calculation went wrong, in position:{pxdrl.position}')
             pxdrl.error = True
             continue
 
@@ -195,8 +195,8 @@ def phen_metrics(pxdrl, param):
             posix_t_smth = sincy.smoothed.index.values.astype(np.int64) // 10 ** 9
             sincy.unx_sbc_Y_smth = (posix_t_smth * sincy.smoothed).sum() / posix_t_smth.sum()
         except (RuntimeError, ValueError, Exception):
-            logger.debug('Warning! Baricenter not found in position {} for the cycle starting in{}'
-                         .format(pxdrl.position, sincy.sd))
+            logger.debug(f'Warning! Baricenter not found in position {pxdrl.position} '
+                         f'for the cycle starting in {sincy.sd}')
             continue
 
         # smoothed -= unx_sbc_Y_smth - unx_sbc_Y
@@ -222,8 +222,8 @@ def phen_metrics(pxdrl, param):
             sincy.sbd = pd.Series(sincy.mmc.loc[sincy.sbd.index], sincy.sbd.index)
 
         except (RuntimeError, Exception, ValueError):
-            logger.debug('Warning! Start date not found in position {} for the cycle starting in{}'
-                         .format(pxdrl.position, sincy.sd))
+            logger.debug(f'Warning! Start date not found in position:{pxdrl.position} '
+                         f'for the cycle starting in{sincy.sd}')
             continue
 
         # research the end point of the season (SED)
@@ -236,8 +236,8 @@ def phen_metrics(pxdrl, param):
             sincy.sed = pd.Series(sincy.mmc.loc[sincy.sed.index], sincy.sed.index)
 
         except (RuntimeError, Exception, ValueError):
-            logger.debug('Warning! End date not found in position {} for the cycle starting in{}'
-                         .format(pxdrl.position, sincy.sd))
+            logger.debug(f'Warning! End date not found in position:{pxdrl.position} '
+                         f'for the cycle starting in{sincy.sd}')
             continue
 
         sincy.max = sincy.mmc[sincy.mmc == sincy.mmc.max()]
