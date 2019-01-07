@@ -227,9 +227,13 @@ class ProjectParameters(object):
     def add_dims(self, data):
         self.row_nm, self.col_nm, self.dim_nm = self.__coord_names(data)
 
-        self.row_val = data.coords[self.row_nm].data
-        self.col_val = data.coords[self.col_nm].data
-        self.dim_val = data.coords[self.dim_nm].data
+        self.row_nm, self.col_nm, self.dim_nm = self.__coord_names(data)
+        if self.row_nm is not None and self.col_nm is not None:
+            self.row_val = data.coords[self.row_nm].data
+            self.col_val = data.coords[self.col_nm].data
+            self.dim_val = data.coords[self.dim_nm].data
+        else:
+            self.dim_val = data.coords[self.dim_nm].data
 
     def add_px_list(self, cube):
         # TODO add other sensors or structures
