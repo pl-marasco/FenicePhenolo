@@ -222,12 +222,14 @@ class ProjectParameters(object):
             crd_row = data.dims[dims.index('n')]
             crd_dim = data.dims[dims.index('time')]
 
+        elif 'time' in dims:
+            crd_dim = data.dims[dims.index('time')]
+
         return crd_row, crd_col, crd_dim
 
     def add_dims(self, data):
         self.row_nm, self.col_nm, self.dim_nm = self.__coord_names(data)
 
-        self.row_nm, self.col_nm, self.dim_nm = self.__coord_names(data)
         if self.row_nm is not None and self.col_nm is not None:
             self.row_val = data.coords[self.row_nm].data
             self.col_val = data.coords[self.col_nm].data

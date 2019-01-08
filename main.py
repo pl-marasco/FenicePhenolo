@@ -22,28 +22,32 @@ def main(param):
     _log_info(logging.getLogger('paramters'), param)
     _log_info(logging.getLogger('cube'), cube)
 
-    if len(cube.coords.get(param.col_nm)) is not 1 and \
-       len(cube.coords.get(param.row_nm)) is not 1:
-
-        out = output.OutputCointainer(cube, param, name='test_cube')
-
-        pp = executor.Processor(param)
-
-        result_cube = pp.analyse(cube, out, analysis.phenolo)
-
-        result_cube.close()
-
-    else:
+    if param.col_nm is None and param.row_nm is None and param.dim_nm is not None:
         import atoms
         import analysis as aa
         import viz
 
-        ts = cube.isel(dict([(param.col_nm, 0), (param.row_nm, 0)])).to_series().astype(float)
+        if param.col_nm is not None and param.row_nm is not None:
+            ts = cube.isel(dict([(param.col_nm, 0), (param.row_nm, 0)])).to_series().astype(float)
+        else:
+            ts = cube.to_series()
+
         pxdrl = atoms.PixelDrill(ts, (0, 0))
 
         sngpx_pheno = aa.phenolo(pxdrl, settings=param)
 
         viz.plot(sngpx_pheno)
+
+    elif len(cube.coords.get(param.col_nm)) is not 1 and len(cube.coords.get(param.row_nm)) is not 1:
+
+        out = output.OutputCointainer(cube, param, name='test_cube')
+        pp = executor.Processor(param)
+
+        result_cube = pp.analyse(cube, out, analysis.phenolo)
+
+        result_cube.close()
+    else:
+        raise ValueError
 
     end = time.process_time() - start_time
 

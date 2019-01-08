@@ -154,4 +154,6 @@ def phenolo(pxdrl, **kwargs):
     pxdrl.cf = metrics.attribute_extractor(pxdrl, 'cf')
     pxdrl.afi = metrics.attribute_extractor(pxdrl, 'afi')
 
+    logger.info(f'Pixel {pxdrl.position[0]}-{pxdrl.position[1]} processed')
+
     return pxdrl

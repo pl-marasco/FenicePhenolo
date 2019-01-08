@@ -505,11 +505,9 @@ def _get_slicers(prmts):
             logger.debug('No coordinate slice selected')
             x_slice, y_slice = [slice(None)] * 2
 
-    logger.debug('Time slicer: {},{}\n'
-                 '\t\t\t X slicer   : {},{}\n'
-                 '\t\t\t Y slicer   : {}{}'.format(time_slice.start, time_slice.stop,
-                                                   x_slice.start, x_slice.stop,
-                                                   y_slice.start, y_slice.stop))
+    logger.debug(f'Time slicer: {time_slice.start}{"->" + str(time_slice.stop) if time_slice.stop is not time_slice.start else ""}\n'
+                 f'\t\t\t X slicer:    {x_slice.start}{" -> " + str(x_slice.stop) if x_slice.stop != x_slice.start else ""}\n'
+                 f'\t\t\t Y slicer:    {y_slice.start}{" -> " + str(y_slice.stop) if y_slice.stop != y_slice.start else ""}')
 
     return {'time': time_slice, 'x': x_slice, 'y': y_slice}
 

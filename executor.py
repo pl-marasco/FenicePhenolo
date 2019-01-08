@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 from dask.distributed import Client, as_completed
 import atoms
@@ -9,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 class Processor(object):
     def __init__(self, param):
-        self.client = Client(processes=False, threads_per_worker=2)  #
+        self.client = Client(processes=False, threads_per_worker=1)  #
         self.param = param
 
     def _transducer(self, px, **kwargs):
@@ -48,11 +47,11 @@ class Processor(object):
                     t_spi.iloc[:, col] = pxdrl.spi
                     t_si.iloc[:, col] = pxdrl.si
                     t_cf.iloc[:, col] = pxdrl.cf
+                    future.cancel()
 
                 for column in t_sl:
                     if column == 0:
                         continue
-
 
                     out.sl[rowi, column, :] = t_sl.iloc[:, column].values
                     out.spi[rowi, column, :] = t_spi.iloc[:, column].values
@@ -62,4 +61,4 @@ class Processor(object):
             return out
 
         except (RuntimeError, Exception, ValueError):
-            logger.debug(f'Critical error in the main loop, latest position row{rowi}, col{col}')
+            logger.debug(f'Critical error in the main loop, latest position row {rowi}, col {col}')
