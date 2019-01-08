@@ -181,9 +181,9 @@ if __name__ == '__main__':
 
     except KeyboardInterrupt:
         print('Process killed')
-        raise
+        raise sys.exit(1)
     except Exception:
         print('Exception occurred')
-        raise
+        raise sys.exit(1)
 
 

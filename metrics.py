@@ -108,7 +108,7 @@ def cycle_metrics(pxdrl, param):
 
         # avoid unusual results
         if sincy.ref_yr not in range(pxdrl.pks.index[i].year - 1, pxdrl.pks.index[i + 1].year + 1):
-            logger.info('Warning! sbc not in a valid range, in position:{0}'.format(pxdrl.position))
+            logger.info(f'Warning! sbc not in a valid range, in position:{pxdrl.position}')
             pxdrl.error = True
             continue
 
