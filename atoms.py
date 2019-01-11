@@ -46,7 +46,7 @@ class SingularCycle(object):
             sb: Standing biomas
             mpf: permanent fration
             mpi: permanent fration
-            vox: #
+            vox: Values between two minima substracted the permanet fraction
             voxi: integral
             cbc: cycle baricenter / ex season baricenter
             csd: cycle deviation standard / Season deviation standard
@@ -65,15 +65,15 @@ class SingularCycle(object):
         self.sb = self._integral(self.mms)  # Standing biomas
         self.mpf = self._min_min_line(self.mms)  # permanent fration
         self.mpi = self._integral(self.mpf)  # permanent fration integral
-        self.vox = self._difference(self.mms, self.mpf)  #
-        self.voxi = self._integral(self.vox)  # integral
+        self.vox = self._difference(self.mms, self.mpf)  # Values between two minima substracted the permanet fraction
+        self.voxi = self._integral(self.vox)  # integral of vox
         self.cbc = self._baricenter()  # cycle baricenter / ex season baricenter
         self.cbcd = self._to_gregorian_date(self.cbc)
         self.csd = self._cycle_deviation_standard()  # cycle deviation standard / Season deviation standard
         self.csdd = self._to_gregorian(self.csd)  # cycle deviation standard in days /Season deviation standard in days
         self.ref_yr = self.cbcd.year  # reference yr
 
-        self.sfs = None  #
+        self.sfs = None
         self.mas = None
         self.unx_sbc = None
 
@@ -112,14 +112,14 @@ class SingularCycle(object):
             else:
                 raise ValueError('date value is null')
         except (RuntimeError, Exception, ValueError):
-            logger.info('Warning! Datetime conversion went wrong')
+            logger.debug('Warning! Datetime conversion went wrong')
 
     @staticmethod
     def _to_gregorian(value):
         try:
             return pd.Timedelta(value, unit='s')
         except (RuntimeError, Exception, ValueError):
-            logger.info('Warning! Datetime conversion went wrong')
+            logger.debug('Warning! Datetime conversion went wrong')
 
     def _baricenter(self):
         """Barycenter"""
@@ -129,11 +129,11 @@ class SingularCycle(object):
             self.posix_time = [np.int64(i.timestamp()) for i in index]
             cbc = (self.posix_time * self.vox).sum() / self.vox.sum()
         except(RuntimeError, Exception, ValueError):
-            logger.info('Warning! Baricenter calculation whent wrong')
+            logger.debug('Warning! Baricenter calculation whent wrong in reference')
         if cbc > 0:
             return cbc
         else:
-            logger.info('Warning! Baricenter has a negative value')
+            logger.debug('Warning! Baricenter has a negative value')
             raise Exception()
 
     def _cycle_deviation_standard(self):
@@ -144,7 +144,7 @@ class SingularCycle(object):
             if not np.isnan(sd):
                 return sd
             else:
-                logger.info('Cycle standard deviation is Nan')
+                logger.debug('Cycle standard deviation is Nan')
                 raise ValueError('Cycle standard deviation is Nan')
         except ValueError:
-            logger.info(' Warning! Season deviatio standard failed')
+            logger.debug('Warning! Season deviation standard failed')

@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 class Processor(object):
     def __init__(self, param):
-        self.client = Client(processes=False, threads_per_worker=1)  #
+        self.client = Client() #(processes=False, n_workers=10, threads_per_worker=2)  #
         self.param = param
 
     def _transducer(self, px, **kwargs):
@@ -35,7 +35,7 @@ class Processor(object):
 
                 px_list = [item for item in self.param.pixel_list if item[0] == rowi]
 
-                s_row = self.client.scatter(row)
+                s_row = self.client.scatter(row, broadcast=True)
                 futures = self.client.map(self._transducer, px_list, **{'data': s_row,
                                                                         'param': self.param,
                                                                         'action': action})
@@ -49,9 +49,10 @@ class Processor(object):
                     t_cf.iloc[:, col] = pxdrl.cf
                     future.cancel()
 
+                #  TODO create a faster approach to instantiate the netcdf result file
                 for column in t_sl:
-                    if column == 0:
-                        continue
+                    # if column == 0:
+                    #     continue
 
                     out.sl[rowi, column, :] = t_sl.iloc[:, column].values
                     out.spi[rowi, column, :] = t_spi.iloc[:, column].values

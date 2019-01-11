@@ -119,7 +119,7 @@ def phenolo(pxdrl, **kwargs):
     try:
         pxdrl.pks = metrics.valley_detection(pxdrl, param)
     except(RuntimeError, Exception, ValueError):
-        logger.info(f'Error in valley detection pixel position:{pxdrl.position}')
+        logger.info(f'Error in valley detection in position:{pxdrl.position}')
         pxdrl.error = True
         return pxdrl
 
@@ -127,7 +127,7 @@ def phenolo(pxdrl, **kwargs):
     try:
         pxdrl.sincys = metrics.cycle_metrics(pxdrl, param)
     except(RuntimeError, Exception, ValueError):
-        logger.info(f'Error in season detection for pixel position:{pxdrl.position}')
+        logger.info(f'Error in season detection in position:{pxdrl.position}')
         pxdrl.error = True
         return pxdrl
 
@@ -135,7 +135,7 @@ def phenolo(pxdrl, **kwargs):
         import statistics
         pxdrl.msdd = metrics.attr_statistic(pxdrl.sincys, statistics.median, 'csd')
     except(RuntimeError, Exception, ValueError):
-        logger.info(f'Error in mean season detection for pixel position:{pxdrl.position}')
+        logger.info(f'Error in mean season detection in position:{pxdrl.position}')
         pxdrl.error = True
         return pxdrl
 
@@ -143,7 +143,7 @@ def phenolo(pxdrl, **kwargs):
     try:
         pxdrl.phen = metrics.phen_metrics(pxdrl, param)
     except(RuntimeError, Exception, ValueError):
-        logger.info(f'Error in intercept detection in pixel position:{pxdrl.position}')
+        logger.info(f'Error in intercept detection in position:{pxdrl.position}')
         pxdrl.error = True
         return pxdrl
 
@@ -154,6 +154,6 @@ def phenolo(pxdrl, **kwargs):
     pxdrl.cf = metrics.attribute_extractor(pxdrl, 'cf')
     pxdrl.afi = metrics.attribute_extractor(pxdrl, 'afi')
 
-    logger.info(f'Pixel {pxdrl.position[0]}-{pxdrl.position[1]} processed')
+    logger.debug(f'Pixel {pxdrl.position[0]}-{pxdrl.position[1]} processed')
 
     return pxdrl

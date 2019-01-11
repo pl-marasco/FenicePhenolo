@@ -144,7 +144,6 @@ def attr_statistic(objects, stat_type, attribute):
 
 
 def phen_metrics(pxdrl, param):
-
     """
     Calculate the Phenology paramter
 

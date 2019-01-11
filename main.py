@@ -23,6 +23,7 @@ def main(param):
     _log_info(logging.getLogger('cube'), cube)
 
     if param.col_nm is None and param.row_nm is None and param.dim_nm is not None:
+        # single pixel analysis
         import atoms
         import analysis as aa
         import viz

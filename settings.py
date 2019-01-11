@@ -11,6 +11,66 @@ logger = logging.getLogger(__name__)
 class ProjectParameters(object):
 
     def __init__(self, **kwargs):
+        """
+        Create an object containg all the parameters for the run.
+        The beset approach is to create an ini fille as below descripted:
+
+        # Configuration for Phenolo 2.0
+
+        [GENERAL_SETTINGS]
+        # input time series image file
+        InFile  =
+        # output in netCDF
+        OutFile =
+        # Scratch files (#True retain the scratch files, False overwrite over single file)
+        Retain_scratch = True
+        ScratchPath =
+        Sensor_type = Right now the only option is Spot but if not specyfy only the specific cleaning for
+                      that particular sensor isn't applayed
+
+        [RUN_PARAMETERS_INPUT]
+        # time span in format dd/mm/yyyy,dd/mm/yyyy
+        obs_start             =
+        obs_end               =
+        # analysis window
+        exm_start             =
+        exm_end               =
+        area                  =
+        # Single point (E, N) , Area (Top left E, N ; Bottom right E, N)
+        extent                =
+        # temporal range (decad) of input values (s10, s15, s30, ...)
+        dek                   = s10
+        # data range of values (comma separated 2 values max)
+        rng                   = 0, 250
+        scale                 =
+        offset                =
+        # data values to be used during masking (comma separated values)
+        msk                   = 251, 255
+        cloud                 = 252
+        snow                  = 253
+        sea                   = 254
+
+        [RUN_PARAMETERS_FILTER]
+        mad_power = 1.5
+
+        [RUN_PARAMETERS_SEGMENTATION]
+        # Detect peaks that are at least separated by the minimum peak distance, expressed in % of the estimated season length
+        ovrlp = 75
+        # Maximal moving avarage span in days
+        mavspan = 180
+        # Power of equation of not growing season
+        mavmet = 1.5
+
+        [RUN_PARAMETERS_SMOOTH]
+        # length of Savitzky-Golay window
+        medspan               = 51
+        # order of Savitzky-Golay polynomial
+        smp                   = 3
+        #Maximum window multiplication value to calculate outlayer
+        outmax                = 4
+
+        :param kwargs:
+        """
 
         if 'type' in kwargs and 'path' in kwargs:
             if kwargs['type'] == 'ini':
@@ -239,6 +299,8 @@ class ProjectParameters(object):
 
     def add_px_list(self, cube):
         # TODO add other sensors or structures
+        #  Verify the stability over the time period of water classification
+
         # Create a list of pixels to be analyzed
         masked = cube.isel(dict([(self.dim_nm, 0)])).where(~(cube.isel(dict([(self.dim_nm, 0)])) == self.sea))
         mask_iter = np.ndenumerate(masked.to_masked_array().mask)
