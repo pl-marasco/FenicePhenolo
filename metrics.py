@@ -319,6 +319,7 @@ def attribute_extractor(pxdrl, attribute):
         for phency in pxdrl.phen:
             value = getattr(phency, attribute)
             index.append(pd.Series(value, phency.ref_yr))
-        return pd.concat(index, axis=0)
+        concat = pd.concat(index, axis=0)
+        return concat.groupby(concat.index).sum()
     except RuntimeError:
         raise RuntimeError('Impossible to extract the attribute requested')

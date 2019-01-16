@@ -42,9 +42,8 @@ def main(param):
     elif len(cube.coords.get(param.col_nm)) is not 1 and len(cube.coords.get(param.row_nm)) is not 1:
 
         out = output.OutputCointainer(cube, param, name='test_cube')
-        pp = executor.Processor(param)
 
-        result_cube = pp.analyse(cube, out, analysis.phenolo)
+        result_cube = executor.analyse(cube, param, analysis.phenolo, out)
 
         result_cube.close()
     else:
