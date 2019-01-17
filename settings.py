@@ -302,9 +302,10 @@ class ProjectParameters(object):
         #  Verify the stability over the time period of water classification
 
         # Create a list of pixels to be analyzed
-        fst_dek = cube.isel(dict([(self.dim_nm, 0)])).values
-        self.pixel_list = np.argwhere(fst_dek != self.sea)
+        med = cube.median(dim=self.dim_nm)
+        self.pixel_list = np.argwhere(med != self.sea and med not in self.mask)
 
+        # fst_dek = cube.isel(dict([(self.dim_nm, 0)])).values
         # masked = cube.isel(dict([(self.dim_nm, 0)])).where(~(cube.isel(dict([(self.dim_nm, 0)])) == self.sea))
         # mask_iter = np.ndenumerate(masked.to_masked_array().mask)
         # self.pixel_list = [index for index, value in mask_iter if ~value]

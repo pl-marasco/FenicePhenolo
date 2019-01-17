@@ -34,7 +34,9 @@ def main(param):
             ts = cube.to_series()
 
         pxdrl = atoms.PixelDrill(ts, (0, 0))
-
+        if param.pixel_list is None:
+            print('No acceptable value in the position')
+            sys.exit(1)
         sngpx_pheno = aa.phenolo(pxdrl, settings=param)
 
         viz.plot(sngpx_pheno)

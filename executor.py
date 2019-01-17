@@ -26,7 +26,7 @@ def transducer(px, **kwarg):
 
 def analyse(cube, param, action, out):
 
-    client = Client(processes=False, n_workers=1, threads_per_worker=1)  #
+    client = Client()  #processes=False, n_workers=1, threads_per_worker=1
 
     try:
         for rowi in range(len(param.row_val)):
