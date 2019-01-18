@@ -45,7 +45,10 @@ def main(param):
 
         out = output.OutputCointainer(cube, param, name='test_cube')
 
-        result_cube = executor.analyse(cube, param, analysis.phenolo, out)
+        result_cube = executor.analyse(cube, param, analysis.phenolo, out,
+                                       **{'processes': param.processes,
+                                          'n_workers': param.n_workers,
+                                          'threads_per_worker': param.threads_per_worker})
 
         result_cube.close()
     else:

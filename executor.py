@@ -12,11 +12,11 @@ class Processor(object):
         pass
 
 
-def transducer(px, **kwarg):
+def transducer(px, **kwargs):
 
-    cube = kwarg.pop('data', '')
-    action = kwarg.pop('action', '')
-    param = kwarg.pop('param', '')
+    cube = kwargs.pop('data', '')
+    action = kwargs.pop('action', '')
+    param = kwargs.pop('param', '')
 
     row, col = px
     ts = cube.isel(dict([(param.col_nm, col)])).to_series().astype(float)
@@ -24,9 +24,16 @@ def transducer(px, **kwarg):
     return action(pxdrl, settings=param)
 
 
-def analyse(cube, param, action, out):
+def analyse(cube, param, action, out, **kwargs):
 
-    client = Client()  #processes=False, n_workers=1, threads_per_worker=1
+    localproc = kwargs.get('processes', True)
+    n_workers = kwargs.pop('n_workers', None)
+    threads_per_worker = kwargs.pop('threads_per_worker', None)
+
+    if ~localproc and n_workers and threads_per_worker:
+        client = Client(localproc=localproc, n_workers=n_workers, threads_per_worker=threads_per_worker)
+    else:
+        client = Client()
 
     try:
         for rowi in range(len(param.row_val)):
@@ -46,10 +53,12 @@ def analyse(cube, param, action, out):
 
             s_row = client.scatter(row, broadcast=True)
             s_param = client.scatter(param, broadcast=True)
+            s_logger = client.scatter(logger, broadcast=True)
 
             futures = client.map(transducer, px_list, **{'data': s_row,
                                                          'param': s_param,
-                                                         'action': action})
+                                                         'action': action,
+                                                         'logger': s_logger})
 
             for future, result in as_completed(futures, with_results=True):
                 pxdrl = result

@@ -102,6 +102,23 @@ class ProjectParameters(object):
                 self.scratch_pth = self.__read(config, section, 'ScratchPath')
                 self.sensor_typ = self.__read(config, section, 'Sensor_type').lower()
 
+                # [INFRASTRUCTURE_PARAMETERS]
+                section = 'INFRASTRUCTURE_PARAMETERS'
+                if self.__read(config, section, 'processes').lower == 'true':
+                    self.processes = True
+                else:
+                    self.processes = False
+
+                if self.__read(config, section, 'n_workers') is not '':
+                    self.n_workers = self.__read(config, section, 'n_workers')
+                else:
+                    self.n_workers = None
+
+                if self.__read(config, section, 'threads_per_worker') is not '':
+                    self.threads_per_worker = self.__read(config, section, 'threads_per_worker')
+                else:
+                    self.threads_per_worker = None
+
                 # [RUN_PARAMETERS_INPUT]
                 # Time dimension
                 section = 'RUN_PARAMETERS_INPUT'
@@ -303,7 +320,10 @@ class ProjectParameters(object):
 
         # Create a list of pixels to be analyzed
         med = cube.median(dim=self.dim_nm)
-        self.pixel_list = np.argwhere(med != self.sea and med not in self.mask)
+
+        mask = np.append(self.sea, self.mask)
+        masked = np.ma.MaskedArray(np.ma.MaskedArray(med, np.in1d(med, mask)))
+        self.pixel_list = np.argwhere(masked)
 
         # fst_dek = cube.isel(dict([(self.dim_nm, 0)])).values
         # masked = cube.isel(dict([(self.dim_nm, 0)])).where(~(cube.isel(dict([(self.dim_nm, 0)])) == self.sea))
