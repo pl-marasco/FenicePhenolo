@@ -1,5 +1,7 @@
 import pandas as pd
 from dask.distributed import Client, as_completed
+from dask.diagnostics import CacheProfiler
+from cachey import nbytes
 import atoms
 import logging
 import numpy as np
@@ -24,20 +26,22 @@ def transducer(px, **kwargs):
     return action(pxdrl, settings=param)
 
 
-def analyse(cube, param, action, out, **kwargs):
+def analyse(cube, param, action, out):
 
-    localproc = kwargs.get('processes', True)
-    n_workers = kwargs.pop('n_workers', None)
-    threads_per_worker = kwargs.pop('threads_per_worker', None)
+    localproc = param.processes
+    n_workers = param.n_workers
+    threads_per_worker = param.threads_per_worker
 
     if ~localproc and n_workers and threads_per_worker:
-        client = Client(localproc=localproc, n_workers=n_workers, threads_per_worker=threads_per_worker)
+        client = Client(processes=localproc, n_workers=n_workers, threads_per_worker=threads_per_worker)
+    elif localproc and n_workers and threads_per_worker:
+        client = Client(n_workers=n_workers, threads_per_worker=threads_per_worker)
     else:
         client = Client()
 
     try:
         for rowi in range(len(param.row_val)):
-            row = cube.isel(dict([(param.row_nm, rowi)])).persist()
+            row = cube.isel(dict([(param.row_nm, rowi)]))
 
             dim_val = pd.to_datetime(param.dim_val).year.unique()
             col_val = range(0, len(param.col_val))
@@ -47,35 +51,39 @@ def analyse(cube, param, action, out, **kwargs):
             t_cf = pd.DataFrame(index=dim_val, columns=col_val)
 
             px_list = [item for item in param.pixel_list if item[0] == rowi]
-            # px_list = np.where(param.pixel_list[:, 0] == rowi)
-
-            # px_list = pd.DataFrame(param.pixel_list).loc[param.pixel_list[:, 0] == rowi].values.tolist()
 
             s_row = client.scatter(row, broadcast=True)
             s_param = client.scatter(param, broadcast=True)
-            s_logger = client.scatter(logger, broadcast=True)
 
             futures = client.map(transducer, px_list, **{'data': s_row,
                                                          'param': s_param,
-                                                         'action': action,
-                                                         'logger': s_logger})
+                                                         'action': action})
 
-            for future, result in as_completed(futures, with_results=True):
-                pxdrl = result
-                row, col = pxdrl.position
-                t_sl.iloc[:, col] = pxdrl.sl
-                t_spi.iloc[:, col] = pxdrl.spi
-                t_si.iloc[:, col] = pxdrl.si
-                t_cf.iloc[:, col] = pxdrl.cf
-                future.cancel()
+            # for future, result in as_completed(futures, with_results=True):
+            for batch in as_completed(futures, with_results=True).batches():
+                for future, result in batch:
+                    pxdrl = result
+                    row, col = pxdrl.position
+                    t_sl.iloc[:, col] = pxdrl.sl
+                    t_spi.iloc[:, col] = pxdrl.spi
+                    t_si.iloc[:, col] = pxdrl.si
+                    t_cf.iloc[:, col] = pxdrl.cf
 
-            #  TODO create a faster approach to instantiate the netcdf result file
-            for column in t_sl:
+                    if pxdrl.error:
+                        print(pxdrl.position)
 
-                out.sl[rowi, column, :] = t_sl.iloc[:, column].values
-                out.spi[rowi, column, :] = t_spi.iloc[:, column].values
-                out.si[rowi, column, :] = t_si.iloc[:, column].values
-                out.cf[rowi, column, :] = t_cf.iloc[:, column].values
+            # client.restart()
+
+            out.sl[rowi] = np.expand_dims(t_sl.transpose().values, axis=0)
+            out.spi[rowi] = np.expand_dims(t_spi.transpose().values, axis=0)
+            out.si[rowi] = np.expand_dims(t_si.transpose().values, axis=0)
+            out.cf[rowi] = np.expand_dims(t_cf.transpose().values, axis=0)
+
+            client.cancel(s_row)
+            client.cancel(s_param)
+            client.cancel(futures)
+
+            del t_sl, t_cf, t_si, t_spi
 
         return out
 

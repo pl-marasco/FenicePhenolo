@@ -110,12 +110,12 @@ class ProjectParameters(object):
                     self.processes = False
 
                 if self.__read(config, section, 'n_workers') is not '':
-                    self.n_workers = self.__read(config, section, 'n_workers')
+                    self.n_workers = self.__read(config, section, 'n_workers', type='int')
                 else:
                     self.n_workers = None
 
                 if self.__read(config, section, 'threads_per_worker') is not '':
-                    self.threads_per_worker = self.__read(config, section, 'threads_per_worker')
+                    self.threads_per_worker = self.__read(config, section, 'threads_per_worker', type='int')
                 else:
                     self.threads_per_worker = None
 
@@ -325,7 +325,3 @@ class ProjectParameters(object):
         masked = np.ma.MaskedArray(np.ma.MaskedArray(med, np.in1d(med, mask)))
         self.pixel_list = np.argwhere(masked)
 
-        # fst_dek = cube.isel(dict([(self.dim_nm, 0)])).values
-        # masked = cube.isel(dict([(self.dim_nm, 0)])).where(~(cube.isel(dict([(self.dim_nm, 0)])) == self.sea))
-        # mask_iter = np.ndenumerate(masked.to_masked_array().mask)
-        # self.pixel_list = [index for index, value in mask_iter if ~value]

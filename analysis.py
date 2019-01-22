@@ -5,11 +5,12 @@ import nodata; import metrics; import outlier; import chronos; import filters
 import logging
 from seasonal import fit_seasons
 
+logger = logging.getLogger(__name__)
+
 
 def phenolo(pxdrl, **kwargs):
 
     param = kwargs.pop('settings', '')
-    logger = kwargs.get('logger', logging.getLogger(__name__))
 
     # no data removing
     try:
