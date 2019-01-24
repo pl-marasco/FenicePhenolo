@@ -1,7 +1,5 @@
 import pandas as pd
 from dask.distributed import Client, as_completed
-from dask.diagnostics import CacheProfiler
-from cachey import nbytes
 import atoms
 import logging
 import numpy as np
@@ -22,8 +20,8 @@ def transducer(px, **kwargs):
 
     row, col = px
     ts = cube.isel(dict([(param.col_nm, col)])).to_series().astype(float)
-    pxdrl = atoms.PixelDrill(ts, px)
-    return action(pxdrl, settings=param)
+    pxldrl = atoms.PixelDrill(ts, px)
+    return action(pxldrl, settings=param)
 
 
 def analyse(cube, param, action, out):
@@ -34,7 +32,7 @@ def analyse(cube, param, action, out):
 
     if ~localproc and n_workers and threads_per_worker:
         client = Client(processes=localproc, n_workers=n_workers, threads_per_worker=threads_per_worker)
-    elif localproc and n_workers and threads_per_worker:
+    elif localproc and n_workers:
         client = Client(n_workers=n_workers, threads_per_worker=threads_per_worker)
     else:
         client = Client()
@@ -43,7 +41,7 @@ def analyse(cube, param, action, out):
         for rowi in range(len(param.row_val)):
             row = cube.isel(dict([(param.row_nm, rowi)]))
 
-            dim_val = pd.to_datetime(param.dim_val).year.unique()
+            dim_val = pd.to_datetime(param.dim_val).year.unique() # <-- pd.to_datetime(pd.to_datetime(param.dim_val).year.unique(), format='%Y')
             col_val = range(0, len(param.col_val))
             t_sl = pd.DataFrame(index=dim_val, columns=col_val)
             t_spi = pd.DataFrame(index=dim_val, columns=col_val)
@@ -62,15 +60,15 @@ def analyse(cube, param, action, out):
             # for future, result in as_completed(futures, with_results=True):
             for batch in as_completed(futures, with_results=True).batches():
                 for future, result in batch:
-                    pxdrl = result
-                    row, col = pxdrl.position
-                    t_sl.iloc[:, col] = pxdrl.sl
-                    t_spi.iloc[:, col] = pxdrl.spi
-                    t_si.iloc[:, col] = pxdrl.si
-                    t_cf.iloc[:, col] = pxdrl.cf
+                    pxldrl = result
+                    row, col = pxldrl.position
+                    t_sl.iloc[:, col] = pxldrl.sl
+                    t_spi.iloc[:, col] = pxldrl.spi
+                    t_si.iloc[:, col] = pxldrl.si
+                    t_cf.iloc[:, col] = pxldrl.cf
 
-                    if pxdrl.error:
-                        print(pxdrl.position)
+                    if pxldrl.error:
+                        print(pxldrl.position)
 
             # client.restart()
 

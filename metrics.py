@@ -47,20 +47,20 @@ def to_timeseries(values, index):
     return pd.Series(values, index=index)
 
 
-def valley_detection(pxdrl, param):
+def valley_detection(pxldrl, param):
 
     # Valley detection
     # Detrending to catch better points
 
-    vtrend = pd.Series(pxdrl.trend_d, index=pxdrl.ps.index)
-    vdetr = pxdrl.ps - vtrend
+    vtrend = pd.Series(pxldrl.trend_d, index=pxldrl.ps.index)
+    vdetr = pxldrl.ps - vtrend
 
-    if 200.0 < pxdrl.season_lng < 400.0:
-        mpd_val = int(pxdrl.season_lng * 2 / 3)
-    elif pxdrl.season_lng < 200:
-        mpd_val = int(pxdrl.season_lng * 1 / 3)
+    if 200.0 < pxldrl.season_lng < 400.0:
+        mpd_val = int(pxldrl.season_lng * 2 / 3)
+    elif pxldrl.season_lng < 200:
+        mpd_val = int(pxldrl.season_lng * 1 / 3)
     else:
-        mpd_val = int(pxdrl.season_lng * (param.tr - param.tr * 1 / 3) / 100)
+        mpd_val = int(pxldrl.season_lng * (param.tr - param.tr * 1 / 3) / 100)
 
     ind = dp.detect_peaks(vdetr, mph=vdetr.mean(),
                           mpd=mpd_val,
@@ -78,7 +78,7 @@ def valley_detection(pxdrl, param):
     # Valley point time series conversion
     pks = pd.Series()
     for i in ind:
-        pks[pxdrl.ps.index[i]] = pxdrl.ps.iloc[i]
+        pks[pxldrl.ps.index[i]] = pxldrl.ps.iloc[i]
 
     # Points detrended
     pks0 = pd.Series()
@@ -88,28 +88,27 @@ def valley_detection(pxdrl, param):
     return pks
 
 
-def cycle_metrics(pxdrl, param):
+def cycle_metrics(pxldrl, param):
     """
     Create an array of cycles with all the atrtibutes populated
 
-    :param pxdrl: a pixel drill object
+    :param pxldrl: a pixel drill object
     :param param:
     :return: an array of single cycles
     """
 
     sincys = []
+    import atoms
 
-    for i in range(len(pxdrl.pks) - 1):
-
-        import atoms
+    for i in range(len(pxldrl.pks) - 1):
 
         # Minimum minimum time series
-        sincy = atoms.SingularCycle(pxdrl.ps, pxdrl.pks.index[i], pxdrl.pks.index[i + 1])
+        sincy = atoms.SingularCycle(pxldrl.ps, pxldrl.pks.index[i], pxldrl.pks.index[i + 1])
 
         # avoid unusual results
-        if sincy.ref_yr not in range(pxdrl.pks.index[i].year - 1, pxdrl.pks.index[i + 1].year + 1):
-            logger.info(f'Warning! sbc not in a valid range, in position:{pxdrl.position}')
-            pxdrl.error = True
+        if sincy.ref_yr not in range(pxldrl.pks.index[i].year - 1, pxldrl.pks.index[i + 1].year + 1):
+            logger.info(f'Warning! sbc not in a valid range, in position:{pxldrl.position}')
+            pxldrl.error = True
             continue
 
         sincys.append(sincy)
@@ -143,17 +142,17 @@ def attr_statistic(objects, stat_type, attribute):
     return value_d
 
 
-def phen_metrics(pxdrl, param):
+def phen_metrics(pxldrl, param):
     """
     Calculate the Phenology paramter
 
-    :param pxdrl: provide a pixel drill object from the module atoms
+    :param pxldrl: provide a pixel drill object from the module atoms
     :param param: provide a paramter object
     :return: list of sincy objects with added values
     """
 
     phen = []
-    for sincy in pxdrl.sincys:
+    for sincy in pxldrl.sincys:
 
         # specific mas
         sincy.mas = _mas(sincy.mml, param.mavmet, sincy.csdd)
@@ -176,15 +175,15 @@ def phen_metrics(pxdrl, param):
 
             sincy.buffered = sincy.mms_b[sd:ed]
         except (RuntimeError, Exception, ValueError):
-            logger.debug(f'Warning! Buffered curv not properly created, in position:{pxdrl.position}')
-            pxdrl.error = True
+            logger.debug(f'Warning! Buffered curv not properly created, in position:{pxldrl.position}')
+            pxldrl.error = True
             continue
 
         try:
             sincy.smth_crv = sincy.buffered.rolling(sincy.mas.days, win_type='boxcar', center=True).mean()
         except (RuntimeError, Exception, ValueError):
-            logger.debug(f'Warning! Smoothed curv calculation went wrong, in position:{pxdrl.position}')
-            pxdrl.error = True
+            logger.debug(f'Warning! Smoothed curv calculation went wrong, in position:{pxldrl.position}')
+            pxldrl.error = True
             continue
 
         sincy.smoothed = sincy.smth_crv[sincy.sd - sincy.td:sincy.ed + sincy.td]
@@ -194,7 +193,7 @@ def phen_metrics(pxdrl, param):
             posix_t_smth = sincy.smoothed.index.values.astype(np.int64) // 10 ** 9
             sincy.unx_sbc_Y_smth = (posix_t_smth * sincy.smoothed).sum() / posix_t_smth.sum()
         except (RuntimeError, ValueError, Exception):
-            logger.debug(f'Warning! Baricenter not found in position {pxdrl.position} '
+            logger.debug(f'Warning! Baricenter not found in position {pxldrl.position} '
                          f'for the cycle starting in{sincy.sd}')
             continue
 
@@ -221,7 +220,7 @@ def phen_metrics(pxdrl, param):
             sincy.sbd = pd.Series(sincy.mmc.loc[sincy.sbd.index], sincy.sbd.index)
 
         except (RuntimeError, Exception, ValueError):
-            logger.debug(f'Warning! Start date not found in position {pxdrl.position} '
+            logger.debug(f'Warning! Start date not found in position {pxldrl.position} '
                          f'for the cycle starting in{sincy.sd}')
             continue
 
@@ -235,7 +234,7 @@ def phen_metrics(pxdrl, param):
             sincy.sed = pd.Series(sincy.mmc.loc[sincy.sed.index], sincy.sed.index)
 
         except (RuntimeError, Exception, ValueError):
-            logger.debug(f'Warning! End date not found in position {pxdrl.position} '
+            logger.debug(f'Warning! End date not found in position {pxldrl.position} '
                          f'for the cycle starting in{sincy.sd}')
             continue
 
@@ -258,7 +257,7 @@ def phen_metrics(pxdrl, param):
                 sincy.sslp = (sincy.sed.values[0] - sincy.sbd.values[0]) / \
                                (sincy.sed.index[0] - sincy.sbd.index[0]).days
             except ValueError:
-                logger.debug(f'Warning! Error in slope calculation in pixel:{pxdrl.position} '
+                logger.debug(f'Warning! Error in slope calculation in pixel:{pxldrl.position} '
                              f'for the cycle starting in {sincy.sd}')
                 continue
 
@@ -313,12 +312,12 @@ def _mas(ts, mavmet, sdd):
     # TODO to be reviewed
 
 
-def attribute_extractor(pxdrl, attribute):
+def attribute_extractor(pxldrl, attribute):
     try:
         index = []
-        for phency in pxdrl.phen:
+        for phency in pxldrl.phen:
             value = getattr(phency, attribute)
-            index.append(pd.Series(value, phency.ref_yr))
+            index.append(pd.Series(value, phency.ref_yr))  # TODO decide if the reference yr must be int of date
         concat = pd.concat(index, axis=0)
         return concat.groupby(concat.index).sum()
     except RuntimeError:

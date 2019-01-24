@@ -147,7 +147,8 @@ class OutputCointainer(object):
 
         self.row_v[:] = param.row_val
         self.col_v[:] = param.col_val
-        self.dim_v[:] = pd.to_datetime(pd.to_datetime(param.dim_val).year.unique(), format='%Y')
+        self.dim_v[:] = pd.to_datetime(param.dim_val).year.unique().tolist()
+        # ^^^ pd.to_datetime(pd.to_datetime(param.dim_val).year.unique(), format='%Y') ^^^
 
     def _yrs_reducer(self, dim_val):
         return pd.DatetimeIndex(dim_val).year.unique()

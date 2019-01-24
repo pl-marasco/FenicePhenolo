@@ -85,11 +85,11 @@ class SingularCycle(object):
     @staticmethod
     def _integral(ts):
         """Return the integral of a time series"""
-        s = ts.sum()
-        if s > 0:
-            return s
-        else:
-            raise ValueError('Cycle integral is negative')
+        return ts.sum()
+        # if s > 0:
+        #     return s
+        # else:
+        #     raise ValueError('Cycle integral is negative')
 
     @staticmethod
     def _min_min_line(ts):
@@ -101,7 +101,11 @@ class SingularCycle(object):
     @staticmethod
     def _difference(crv_1, crv_2):
         """Return the differences between two time series"""
-        return crv_1 - crv_2
+        if crv_2.sum() > 0:
+            out = crv_1 - crv_2
+        else:
+            out = crv_1 + crv_2
+        return out
 
     @staticmethod
     def _to_gregorian_date(value):

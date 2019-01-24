@@ -1,37 +1,37 @@
 import matplotlib.pyplot as plt
 
 
-def plot(pxdrl):
+def plot(pxldrl):
 
     fig, axes = plt.subplots(3, 1, figsize=(20, 10))
 
-    pxdrl.ts_raw.plot(ax=axes[0], style='k', title='Original Time Series for pixel in {0}'.format(pxdrl.position))
+    pxldrl.ts_raw.plot(ax=axes[0], style='k', title='Original Time Series for pixel in {0}'.format(pxldrl.position))
 
-    pxdrl.ts_resc.plot(ax=axes[1], style='y', title='TS without masked values')
+    pxldrl.ts_resc.plot(ax=axes[1], style='y', title='TS without masked values')
 
-    # pxdrl.ts_cleaned.plot(ax=axes[1], style='y', title='TS interplated')
+    # pxldrl.ts_cleaned.plot(ax=axes[1], style='y', title='TS interplated')
 
-    gaps = pxdrl.ts_filtered[~(pxdrl.ts_filtered.shift(-1).notnull() & pxdrl.ts_filtered.shift(1).notnull())][1:-1]
+    gaps = pxldrl.ts_filtered[~(pxldrl.ts_filtered.shift(-1).notnull() & pxldrl.ts_filtered.shift(1).notnull())][1:-1]
 
     if len(gaps.values) > 0:
         gaps.plot(ax=axes[1], style='ro', title='TS without strong outlayers')
 
-    pxdrl.ps.plot(ax=axes[2], style='g', title='TS smoothed with Savinsky Golet and braking points')
+    pxldrl.ps.plot(ax=axes[2], style='g', title='TS smoothed with Savinsky Golet and braking points')
 
-    if len(pxdrl.pks > 0):
-        pxdrl.pks.plot(ax=axes[2], style='ro')
+    if len(pxldrl.pks > 0):
+        pxldrl.pks.plot(ax=axes[2], style='ro')
 
     plt.tight_layout()
 
     import math
     col = 3
-    rows = math.ceil(len(pxdrl.phen) / col)
+    rows = math.ceil(len(pxldrl.phen) / col)
 
     fig, axes = plt.subplots(rows, col, figsize=(22, 10))
     plt.tight_layout()
 
-    for i in range(0, len(pxdrl.phen)):
-        phency = pxdrl.phen[i]
+    for i in range(0, len(pxldrl.phen)):
+        phency = pxldrl.phen[i]
         plt.subplot(rows, col, i+1)
 
         if phency.buffered is not None:
@@ -52,23 +52,23 @@ def plot(pxdrl):
 
     plt.subplot(5, 1, 1)
     plt.tight_layout()
-    if pxdrl.sl is not None:
-        pxdrl.sl.plot(style='r', title='Season Lenght')
+    if pxldrl.sl is not None:
+        pxldrl.sl.plot(style='r', title='Season Lenght')
     plt.subplot(5, 1, 2)
     plt.tight_layout()
-    if pxdrl.spi is not None:
-        pxdrl.spi.plot(style='r', title='Season permanet')
+    if pxldrl.spi is not None:
+        pxldrl.spi.plot(style='r', title='Season permanet')
     plt.subplot(5, 1, 3)
     plt.tight_layout()
-    if pxdrl.si is not None:
-        pxdrl.si.plot(style='r', title='Season Integral')
+    if pxldrl.si is not None:
+        pxldrl.si.plot(style='r', title='Season Integral')
     plt.subplot(5, 1, 4)
     plt.tight_layout()
-    if pxdrl.cf is not None:
-        pxdrl.cf.plot(style='r', title='Cyclic fraction')
+    if pxldrl.cf is not None:
+        pxldrl.cf.plot(style='r', title='Cyclic fraction')
     plt.subplot(5, 1, 5)
-    if pxdrl.afi is not None:
-        pxdrl.afi.plot(style='r', title='Active fraction')
+    if pxldrl.afi is not None:
+        pxldrl.afi.plot(style='r', title='Active fraction')
 
     plt.show(block=True)
 
