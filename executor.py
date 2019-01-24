@@ -19,6 +19,7 @@ def transducer(px, **kwargs):
     param = kwargs.pop('param', '')
 
     row, col = px
+
     ts = cube.isel(dict([(param.col_nm, col)])).to_series().astype(float)
     pxldrl = atoms.PixelDrill(ts, px)
     return action(pxldrl, settings=param)
@@ -39,7 +40,7 @@ def analyse(cube, param, action, out):
 
     try:
         for rowi in range(len(param.row_val)):
-            row = cube.isel(dict([(param.row_nm, rowi)]))
+            row = cube.isel(dict([(param.row_nm, rowi)])).persist()
 
             dim_val = pd.to_datetime(param.dim_val).year.unique() # <-- pd.to_datetime(pd.to_datetime(param.dim_val).year.unique(), format='%Y')
             col_val = range(0, len(param.col_val))
@@ -57,9 +58,7 @@ def analyse(cube, param, action, out):
                                                          'param': s_param,
                                                          'action': action})
 
-            # for future, result in as_completed(futures, with_results=True):
-            for batch in as_completed(futures, with_results=True).batches():
-                for future, result in batch:
+            for future, result in as_completed(futures, with_results=True):
                     pxldrl = result
                     row, col = pxldrl.position
                     t_sl.iloc[:, col] = pxldrl.sl
