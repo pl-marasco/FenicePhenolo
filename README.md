@@ -49,7 +49,16 @@ In this way, the time series dynamics of each pixel is incorporated in the deriv
 
 Instructions
 -------------
-.ini file structure 
+
+    >main.py --conf ./../file_name.ini -l 1
+    
+    Options:
+        --conf   Ini file with all the settings
+        -l       Leavel of the logger accordin to the python value divided by 10 (es. python leavel 10 == 1)
+    
+    es. 
+    >main.py --conf./NDVI_1km_SPOTPROBA_98_18.ini -l 1
+
 
 Test areas
 -------------
