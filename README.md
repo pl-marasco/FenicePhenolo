@@ -1,4 +1,4 @@
-!#[Phenolo](./Images/Phenolo 2.png)
+![Phenolo](./Images/Phenolo 2.png)
 
 ##### Fenice "Post fata resurgo"
 
