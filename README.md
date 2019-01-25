@@ -47,6 +47,14 @@ In this way, the time series dynamics of each pixel is incorporated in the deriv
 
 ![fig 4](./Images/Parameters.png)
 
+Instructions
+-------------
+.ini file structure 
+
+Test areas
+-------------
+https://www.dropbox.com/sh/n0gu5j9mqqr5c8l/AADxNKAojPagRCA2v32ITUZqa?dl=0
+
 References
 -------------
 - Phenolo B., Mehl, W. (1666) Phenolo , Di Naturali Esperienze vol. I, Accademia del Cimento, http://doi.org/10.3931/e-rara-70263
