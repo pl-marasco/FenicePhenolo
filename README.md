@@ -45,7 +45,7 @@ In this way, the time series dynamics of each pixel is incorporated in the deriv
 
 ![fig 3](./Images/Curves.png)
 
-![fig 3](./Images/Parameters.png)
+![fig 4](./Images/Parameters.png)
 
 References
 -------------
