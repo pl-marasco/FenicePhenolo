@@ -68,7 +68,8 @@ if __name__ == '__main__':
 
     assert sys.version_info[:2] >= (3, 6), "You need at minimum python 3.6 to execute this script"
 
-    modules = ['numpy', 'pandas', 'xarray', 'rasterio', 'netCDF4', 'scipy', 'pyhdf', 'seasonal']
+    modules = ['numpy', 'pandas', 'xarray', 'rasterio', 'netCDF4', 'scipy', 'pyhdf', 'seasonal', 'dask', 'distributed',
+               'matplotlib', ]
 
     for module in modules:
         assert importlib.util.find_spec(module), "You need {0} module".format(module)
