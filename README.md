@@ -1,7 +1,4 @@
-![Phenolo](./Images/Phenolo 2.png)
-
-##### Fenice "Post fata resurgo"
-
+![Phenolo](./Images/Phenolo 2.3.png)
 
 Theory
 ------
@@ -30,7 +27,7 @@ For each individual pixel, the average length of the non-growing season that wil
 
 The size of the moving average window, i.e. the lag, used to obtain the forward and backward shifted moving average filtered time series is then the yearly complement of SLE and is calculated as:
 
- 		                                                                                    (eq. 2)
+  ![eq.2](./Images/eq2.png)
 
 where L is the lag (in days), N is the number of years in the time-series, and 365 is the number of days in the year. 
 
@@ -38,15 +35,17 @@ In this way, the time series dynamics of each pixel is incorporated in the deriv
 
 (5) The Season Begin Day (SBD) and Season End Day (SED) are determined as the intersections of the reference time-series and the forward and backward lagged moving average curves, respectively. Note that the data points SBD and SED cannot always be determined unambiguously. Determination fails when there is no significant seasonal variation, either due to extremely low vegetation density, or because the vegetation cover is not subject to seasonal variations. However, the failure to determine these points in itself allows deducing certain land cover characteristics. The intersections of the reference time-series and moving average curves might result in SBD values in the previous year and/or SED values in the next year. For the proper determination of these points in a given year the time-series should contain appropriate number of decades in the previous and in the next year. Once the SBD and SED data points are determined, a number of additional parameters can be computed which may allow to trace characteristics of the vegetation cover and their respective changes over time. Additional parameters comprise e.g. (see Figure 3):
 
-	season length: SL = SED-SBD 
-	Maximum day and value: MXD and MXV
-	Standing Biomass (SB): Approximation of gross primary production, defined as the integral area comprising a+b+c+d+e+f+g (Minimum-Minimum Integral, MI). .
-	Background fraction: Minimum-Permanent Integral (MPI), the area comprising a+b+c. This integral is not only characterising the presence of a perennial vegetation component but, depending on the vegetation index used, may also contain a component of soil substrate. 
-	Seasonal vegetation cover: Cyclic Fraction (CF), area g. This parameter can be directly related to purely seasonal growth.
-	Permanent vegetation cover: Permanent Fraction (PF), area d+e+f. This parameter can be related to the vegetation cover that does not have a seasonal cycle within the growing year.
-	Season exceeding residual integral: SER, area d+f. This parameter can be assumed to be related the amount of senescent vegetation outside the growing season.
+-	season length: SL = SED-SBD 
+-	Maximum day and value: MXD and MXV
+-	Standing Biomass (SB): Approximation of gross primary production, defined as the integral area comprising a+b+c+d+e+f+g (Minimum-Minimum Integral, MI). .
+-	Background fraction: Minimum-Permanent Integral (MPI), the area comprising a+b+c. This integral is not only characterising the presence of a perennial vegetation component but, depending on the vegetation index used, may also contain a component of soil substrate. 
+-	Seasonal vegetation cover: Cyclic Fraction (CF), area g. This parameter can be directly related to purely seasonal growth.
+-	Permanent vegetation cover: Permanent Fraction (PF), area d+e+f. This parameter can be related to the vegetation cover that does not have a seasonal cycle within the growing year.
+-	Season exceeding residual integral: SER, area d+f. This parameter can be assumed to be related the amount of senescent vegetation outside the growing season.
 
-Figure 5 presents the SPOT VEGETATION NDVI signal over rainfed arable land pixels for nine ecozones in Europe (Figure 4) and the forward and backward lagged moving average curves which determine the SBD and SED points. The moving average curves adjust to the typical seasonality profile of each ecozone due to the lag which is shifted according to the time series dynamics of the different bio-climatic regions. The SBD point is not biased by false season starts as e.g. in the northern F ecozone and the moving averages are not influenced by the strong inter-annual variability of NDVI minimums as e.g. in the H, I and J ecozones. Figure 6 presents examples for phenological and productivity variables averaged over the time-series calculated from SPOT Vegetation time-series data using Phenolo. The productivity variables are scaled in proportion of the total biomass (MImn) whereas the phenological variables are expressed in days.
+![fig 3](./Images/Curves.png)
+
+![fig 3](./Images/Parameters.png)
 
 References
 -------------
