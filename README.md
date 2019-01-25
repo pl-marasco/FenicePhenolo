@@ -1,4 +1,4 @@
-![Phenolo](Images/Phenolo2_3.png)
+![Phenolo](Images/Phenolo2_3_1.png)
 
 Theory
 ------
@@ -49,9 +49,17 @@ In this way, the time series dynamics of each pixel is incorporated in the deriv
 
 References
 -------------
+- Phenolo B., Mehl, W. (1666) Phenolo , Di Naturali Esperienze vol. I, Accademia del Cimento, http://doi.org/10.3931/e-rara-70263
+- Ivits, E., Cherlet, M., Sommer, S., & Mehl, W. (2013). Addressing the complexity in non-linear evolution of vegetation phenological change with time-series of remote sensing images. Ecological Indicators, 26, 49–60. https://doi.org/10.1016/j.ecolind.2012.10.012
+- Ivits, E., Cherlet, M., Tóth, G., Sommer, S., Mehl, W., Vogt, J., & Micale, F. (2012). Combining satellite derived phenology with climate data for climate change impact assessment. Global and Planetary Change, 88–89, 85–97. https://doi.org/10.1016/j.gloplacha.2012.03.010
+- Ivits, E., Horion, S., … Fensholt, R. (2014). Drought footprint on European ecosystems between 1999 and 2010 assessed by remotely sensed vegetation phenology and productivity. Global Change Biology, 20(2), 581–593. https://doi.org/10.1111/gcb.12393
+- Ivits, E., Cherlet, M., Mehl, W., & Sommer, S. (2013). Ecosystem functional units characterized by satellite observed phenology and productivity gradients: A case study for Europe. Ecological Indicators, 27, 17–28. https://doi.org/10.1016/j.ecolind.2012.11.010
+- Ivits, E., Horion, S., Fensholt, R., & Cherlet, M. (2014). Global ecosystem response types derived from the standardized precipitation evapotranspiration index and FPAR3g series. Remote Sensing, 6(5), 4266–4288. https://doi.org/10.3390/rs6054266
+- Ivits, E., Cherlet, M., Tóth, G., Sommer, S., Mehl, W., Vogt, J., & Micale, F. (2012). Combining satellite derived phenology with climate data for climate change impact assessment. Global and Planetary Change, 88–89, 85–97. https://doi.org/10.1016/j.gloplacha.2012.03.010
 
 Dependencies
 -------------
 minimum python version: 3.6
 
-package: numpy, pandas, xarray, rasterio, netCDF4, scipy, pyhdf, seasonal, dask, dask.distributed
+package: [Numpy](http://www.numpy.org/), [Pandas](https://pandas.pydata.org/), [Xarray](http://xarray.pydata.org/en/stable/), [Rasterio](https://github.com/mapbox/rasterio), [netCDF4](http://unidata.github.io/netcdf4-python/), [Scipy](https://www.scipy.org/), [Pyhdf](https://hdfeos.org/software/pyhdf.php), [Seasonal](https://github.com/welch/seasonal), [Dask](https://docs.dask.org/en/latest/), [Dask.distributed](https://distributed.dask.org/en/latest/)
+
