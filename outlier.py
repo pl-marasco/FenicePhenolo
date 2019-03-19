@@ -3,7 +3,6 @@
 
 import numpy as np
 import pandas as pd
-from IPython.core.magic_arguments import kwds
 from seasonal import fit_seasons, adjust_seasons, fit_trend
 from statsmodels.robust import mad
 from scipy.signal import savgol_filter

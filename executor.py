@@ -40,7 +40,7 @@ def analyse(cube, param, action, out):
 
     try:
         for rowi in range(len(param.row_val)):
-            row = cube.isel(dict([(param.row_nm, rowi)])).persist()
+            row = cube.isel(dict([(param.row_nm, rowi)]))
 
             dim_val = pd.to_datetime(param.dim_val).year.unique() # <-- pd.to_datetime(pd.to_datetime(param.dim_val).year.unique(), format='%Y')
             col_val = range(0, len(param.col_val))
