@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# !/usr/bin/env python
 
 from netCDF4 import Dataset, date2num
 from datetime import datetime

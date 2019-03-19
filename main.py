@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import argparse, sys, importlib, time, os, logging
 from datetime import datetime
 import settings

@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# !/usr/bin/env python
 
 import nodata; import metrics; import outlier; import chronos; import filters
 import logging

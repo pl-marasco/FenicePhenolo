@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import os, sys
 import configparser as cp
 import numpy as np

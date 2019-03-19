@@ -1,6 +1,7 @@
+# -*- coding: utf-8 -*-
+
 from netCDF4 import Dataset
 import os
-
 
 class ScratchFile(object):
     def __init__(self, param, **kwargs):
