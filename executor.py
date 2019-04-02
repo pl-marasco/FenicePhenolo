@@ -6,6 +6,7 @@ from dask.distributed import Client, as_completed
 import atoms
 import logging
 import numpy as np
+import copy
 
 logger = logging.getLogger(__name__)
 
@@ -21,10 +22,8 @@ def transducer(px, **kwargs):
     action = kwargs.pop('action', '')
     param = kwargs.pop('param', '')
 
-    row, col = px
+    pxldrl = atoms.PixelDrill(cube.isel(dict([(param.col_nm, px[1])])).to_series().astype(float), px)
 
-    ts = cube.isel(dict([(param.col_nm, col)])).to_series().astype(float)
-    pxldrl = atoms.PixelDrill(ts, px)
     return action(pxldrl, settings=param)
 
 
