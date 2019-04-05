@@ -26,7 +26,7 @@ def _get_img(prmts, dim):
     import chronos as dk
 
     try:
-        # dataset = xr.open_rasterio(param.inFilePth, chunks={'x': 5, 'y': 5})
+        # dataset = xr.open_rasterio(prmts.inFilePth, chunks={'x': 500, 'y': 500})
         dataset = xr.open_rasterio(prmts.inFilePth)
     except IOError:
         logger.debug('Error reading img file')
@@ -511,7 +511,7 @@ def _get_slicers(prmts):
 
 def _dasker(dataset, size=250):
     crd_x, crd_y, crd_t = _coord_names(dataset)
-    return dataset.chunk({crd_t: 1000, crd_x: size, crd_y: size})
+    return dataset.chunk({crd_t: size, crd_x: size, crd_y: size})
 
 
 def ingest(prmts):
@@ -521,26 +521,35 @@ def ingest(prmts):
     dim = _get_slicers(prmts)
 
     try:
+        cube = None
+
         if os.path.isfile(prmts.inFilePth):
             if fnmatch.fnmatch(prmts.inFilePth, '*.nc'):
-                return _get_netcdf(prmts, dim)
+                cube = _get_netcdf(prmts, dim)
             elif fnmatch.fnmatch(prmts.inFilePth, '*.hdf'):
-                return _get_hdf(prmts, dim)
+                cube = _get_hdf(prmts, dim)
             elif fnmatch.fnmatch(prmts.inFilePth, '*.vrt'):
-                return _get_rasterio(prmts, dim)
+                cube = _get_rasterio(prmts, dim)
             elif fnmatch.fnmatch(prmts.inFilePth, '*.img'):
-                return _get_img(prmts, dim)
+                cube = _get_img(prmts, dim)
             else:
-                return _get_rasterio(prmts.inFilePth, dim)
+                cube = _get_rasterio(prmts.inFilePth, dim)
         elif os.path.isdir(prmts.inFilePth):
             if glob.glob(os.path.join(prmts.inFilePth, '*.nc')):
-                return _get_multi_netcdf(prmts.inFilePth, dim)
+                cube = _get_multi_netcdf(prmts.inFilePth, dim)
             elif glob.glob(os.path.join(prmts.inFilePth, '*.hdf')):
-                return _get_multi_hdf(glob.glob(os.path.join(prmts.inFilePth, '*.hdf')), dim)
+                cube = _get_multi_hdf(glob.glob(os.path.join(prmts.inFilePth, '*.hdf')), dim)
             else:
-                return _get_rasterio(prmts.inFilePth, dim)
+                cube = _get_rasterio(prmts.inFilePth, dim)
+
+        if prmts.ext is None:
+            deltatime = time.time() - start
+            logger.info('Loading data required:{}'.format(deltatime))
+            return _dasker(cube)
+        else:
+            deltatime = time.time() - start
+            logger.info('Loading data required:{}'.format(deltatime))
+            return cube
+
     except IOError:
         raise IOError
-
-    deltatime = time.time() - start
-    logger.info('Loading data required:{}'.format(deltatime))

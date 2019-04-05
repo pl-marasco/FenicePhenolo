@@ -321,7 +321,7 @@ class ProjectParameters(object):
         #  Verify the stability over the time period of water classification
 
         # Create a list of pixels to be analyzed
-        med = cube.median(dim=self.dim_nm)
+        med = cube.quantile(0.80, dim=self.dim_nm)
 
         mask = np.append(self.sea, self.mask)
         masked = np.ma.MaskedArray(np.ma.MaskedArray(med, np.in1d(med, mask)))

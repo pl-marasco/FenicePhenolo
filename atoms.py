@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import sys
 
 import numpy as np
 import pandas as pd
@@ -33,6 +34,10 @@ class PixelDrill(object):
         self.error = None
         self.phen = []
 
+    def __del__(self):
+        for ith in self.__dict__.keys():
+            setattr(self, ith, None)
+
 
 class SingularCycle(object):
     def __init__(self, ts, sd, ed):
@@ -60,7 +65,7 @@ class SingularCycle(object):
         self.sd = sd  # Start date - MBD
         self.ed = ed  # End date - MED
         self.mml = self._time_delta(self.sd, self.ed)  # Cycle lenght in days
-        self.mms = ts[sd:ed]  # minimum minimum time series
+        self.mms = ts[sd:ed][:]  # minimum minimum time series
         self.td = self.mml*2/3  # time delta
         self.mms_b = ts[sd-self.td:ed+self.td]
         self.sb = self._integral(self.mms)  # Standing biomas
@@ -144,8 +149,7 @@ class SingularCycle(object):
     def _cycle_deviation_standard(self):
         """Season deviation standard"""
         try:
-            sd = np.sqrt((np.square(self.posix_time) * self.vox).sum()
-                         / self.vox.sum() - np.square(self.cbc))
+            sd = np.sqrt((np.square(self.posix_time) * self.vox).sum() / self.vox.sum() - np.square(self.cbc))
             if not np.isnan(sd):
                 return sd
             else:

@@ -154,8 +154,5 @@ def phenolo(pxldrl, **kwargs):
     pxldrl.afi = metrics.attribute_extractor(pxldrl, 'afi')
 
     logger.debug(f'Pixel {pxldrl.position[0]}-{pxldrl.position[1]} processed')
-    import sys
-    sys.getsizeof(pxldrl)
-    logger.debug(f'Pixel size {sys.getsizeof(pxldrl)}')
 
     return pxldrl
