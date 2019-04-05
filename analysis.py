@@ -49,6 +49,9 @@ def phenolo(pxldrl, **kwargs):
 
     # Filter outlier
     try:
+        if pxldrl.ts_resc.isnull().sum() > 0:
+            pxldrl.ts_resc.fillna(method='bfill', inplace=True)
+
         pxldrl.ts_filtered = outlier.madseason(pxldrl.ts_resc, param.yr_dek, param.yr_dys * param.outmax, param.mad_pwr)  # TODO make variable dek
     except (RuntimeError, ValueError, Exception):
         logger.info(f'Error in filtering outlayer in position:{pxldrl.position}')

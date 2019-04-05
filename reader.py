@@ -297,7 +297,7 @@ def _coord_names(data):
 
 def _slice_cube(dataset, dim):
 
-    if 'NDVI' in dataset:
+    if hasattr(dataset, 'NDVI'):
         data = dataset.NDVI
     else:
         data = dataset
