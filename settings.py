@@ -179,7 +179,7 @@ class ProjectParameters(object):
 
                 # [RUN_PARAMETERS_FILTER]
                 section = 'RUN_PARAMETERS_FILTER'
-                self.mad_pwr = self.__read(config, section, "mad_power", type='int')
+                self.mad_pwr = self.__read(config, section, "mad_power", type='float')
 
                 # [RUN_PARAMETERS_SEGMENTATION]
                 section = 'RUN_PARAMETERS_SEGMENTATION'
@@ -322,6 +322,7 @@ class ProjectParameters(object):
 
         # Create a list of pixels to be analyzed
         med = cube.quantile(0.80, dim=self.dim_nm)
+        # med = cube.median(dim=self.dim_nm)
 
         mask = np.append(self.sea, self.mask)
         masked = np.ma.MaskedArray(np.ma.MaskedArray(med, np.in1d(med, mask)))

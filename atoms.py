@@ -33,6 +33,8 @@ class PixelDrill(object):
         self.sincys = []
         self.error = None
         self.phen = []
+        self.error = False
+        self.errtyp = ''
 
     def __del__(self):
         for ith in self.__dict__.keys():
@@ -61,6 +63,7 @@ class SingularCycle(object):
 
         :param mms: Time series as pandas.Series object
         """
+        self.err = False
 
         self.sd = sd  # Start date - MBD
         self.ed = ed  # End date - MED
@@ -73,7 +76,7 @@ class SingularCycle(object):
         self.mpi = self._integral(self.mpf)  # permanent fration integral
         self.vox = self._difference(self.mms, self.mpf)  # Values between two minima substracted the permanet fraction
         self.voxi = self._integral(self.vox)  # integral of vox
-        self.cbc = self._baricenter()  # cycle baricenter / ex season baricenter
+        self.cbc = self._barycenter()  # cycle baricenter / ex season baricenter
         self.cbcd = self._to_gregorian_date(self.cbc)
         self.csd = self._cycle_deviation_standard()  # cycle deviation standard / Season deviation standard
         self.csdd = self._to_gregorian(self.csd)  # cycle deviation standard in days /Season deviation standard in days
@@ -83,55 +86,69 @@ class SingularCycle(object):
         self.mas = None
         self.unx_sbc = None
 
-    @staticmethod
-    def _time_delta(sd, ed):
+    def _time_delta(self, sd, ed):
         """Minimum minimum lenght"""
-        return ed - sd
-
-    @staticmethod
-    def _integral(ts):
-        """Return the integral of a time series"""
-        return ts.sum()
-        # if s > 0:
-        #     return s
-        # else:
-        #     raise ValueError('Cycle integral is negative')
-
-    @staticmethod
-    def _min_min_line(ts):
-        """Interpolated line between two min and give back a time series"""
-        pf = ts.copy()
-        pf.iloc[1:-1] = np.nan
-        return pf.interpolate()
-
-    @staticmethod
-    def _difference(crv_1, crv_2):
-        """Return the differences between two time series"""
-        if crv_2.sum() > 0:
-            out = crv_1 - crv_2
-        else:
-            out = crv_1 + crv_2
-        return out
-
-    @staticmethod
-    def _to_gregorian_date(value):
-        """Convert to pandas date format"""
         try:
-            if value is not None:
-                return pd.to_datetime(value, unit='s')
-            else:
-                raise ValueError('date value is null')
+            return ed - sd
         except (RuntimeError, Exception, ValueError):
-            logger.debug('Warning! Datetime conversion went wrong')
+            self.err = True
+            logger.debug('Warning! Minimum minimum lenght error')
+            return None
 
-    @staticmethod
-    def _to_gregorian(value):
+    def _integral(self, ts):
+        """Return the integral of a time series"""
+        try:
+            return ts.sum()
+        except (RuntimeError, Exception, ValueError):
+            self.err = True
+            logger.debug('Warning! error in the integral calculation')
+            return None
+
+    def _min_min_line(self, ts):
+        """Interpolated line between two min and give back a time series"""
+        try:
+            pf = ts.copy()
+            pf.iloc[1:-1] = np.nan
+            return pf.interpolate()
+        except (RuntimeError, Exception, ValueError):
+            self.err = True
+            logger.debug('Warning! Error in interpolated line between two min')
+            return None
+
+    def _difference(self, crv_1, crv_2):
+            """Return the differences between two time series"""
+            try:
+                if crv_2.sum() > 0:
+                    out = crv_1 - crv_2
+                else:
+                    out = crv_1 + crv_2
+                return out
+            except (RuntimeError, Exception, ValueError):
+                self.err = True
+                logger.debug('Warning! difference between two time series')
+                return None
+
+    def _to_gregorian_date(self, value):
+            """Convert to pandas date format"""
+            try:
+                if value is not None:
+                    return pd.to_datetime(value, unit='s')
+                else:
+                    raise ValueError('date value is null')
+            except (RuntimeError, Exception, ValueError):
+                self.err = True
+                logger.debug('Warning! Datetime conversion went wrong')
+                return None
+
+    def _to_gregorian(self, value):
         try:
             return pd.Timedelta(value, unit='s')
         except (RuntimeError, Exception, ValueError):
+            self.err = True
             logger.debug('Warning! Datetime conversion went wrong')
+            return None
 
-    def _baricenter(self):
+    def _barycenter(self):
         """Barycenter"""
         cbc = 0
         try:
@@ -139,21 +156,31 @@ class SingularCycle(object):
             self.posix_time = [np.int64(i.timestamp()) for i in index]
             cbc = (self.posix_time * self.vox).sum() / self.vox.sum()
         except(RuntimeError, Exception, ValueError):
-            logger.debug('Warning! Baricenter calculation whent wrong in reference')
+            self.err = True
+            logger.debug('Warning! Barycenter calculation went wrong in reference')
+            return None
+
         if cbc > 0:
             return cbc
         else:
-            logger.debug('Warning! Baricenter has a negative value')
-            raise Exception()
+            self.err = True
+            logger.debug('Warning! Barycenter has a negative value')
+            return None
 
     def _cycle_deviation_standard(self):
         """Season deviation standard"""
         try:
-            sd = np.sqrt((np.square(self.posix_time) * self.vox).sum() / self.vox.sum() - np.square(self.cbc))
-            if not np.isnan(sd):
-                return sd
+            if self.cbc is not None:
+                sup = (np.square(self.posix_time) * self.vox).sum() / self.vox.sum()
+                inf = np.square(self.cbc)
+                if sup >= inf:
+                    return np.sqrt(sup - inf)
+                else:
+                    self.err = True
+                    raise ValueError
             else:
-                logger.debug('Cycle standard deviation is Nan')
-                raise ValueError('Cycle standard deviation is Nan')
+                return None
         except ValueError:
+            self.err = True
             logger.debug('Warning! Season deviation standard failed')
+            return None

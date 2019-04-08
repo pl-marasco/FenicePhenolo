@@ -80,20 +80,20 @@ def create(path, orig_ds, yrs_in):
     time_var[:] = date2num(yrs_out, units=time_var.units, calendar=time_var.calendar)
 
     # Create the variables
-    sd_int = root_ds.createVariable('Start day of the season', 'i4', ('time', 'latitude', 'longitude'),
+    sd_int = root_ds.createVariable('Start_day_of_the_season', 'i4', ('time', 'latitude', 'longitude'),
                                     zlib=True)
-    ed_int = root_ds.createVariable('End date of the season', 'i4', ('time', 'latitude', 'longitude'),
+    ed_int = root_ds.createVariable('End_date_of_the_season', 'i4', ('time', 'latitude', 'longitude'),
                                     zlib=True)
-    sl_int = root_ds.createVariable('Season lenght', 'f4', ('time', 'latitude', 'longitude'),
+    sl_int = root_ds.createVariable('Season_lenght', 'f4', ('time', 'latitude', 'longitude'),
                                     least_significant_digit=2,
                                     zlib=True)
-    spi_int = root_ds.createVariable('Season permanent integral', 'f4', ('time', 'latitude', 'longitude'),
+    spi_int = root_ds.createVariable('Season_permanent_integral', 'f4', ('time', 'latitude', 'longitude'),
                                      least_significant_digit=2,
                                      zlib=True)
-    si_int = root_ds.createVariable('Season integral', 'f4', ('time', 'latitude', 'longitude'),
+    si_int = root_ds.createVariable('Season_integral', 'f4', ('time', 'latitude', 'longitude'),
                                     least_significant_digit=2,
                                     zlib=True)
-    cf_int = root_ds.createVariable('Cyclic fraction', 'f4', ('time', 'latitude', 'longitude'),
+    cf_int = root_ds.createVariable('Cyclic_fraction', 'f4', ('time', 'latitude', 'longitude'),
                                     least_significant_digit=2,
                                     zlib=True)
     sns_int = root_ds.createVariable('season lenght', 'i4', ('latitude', 'longitude'),
@@ -139,10 +139,10 @@ class OutputCointainer(object):
         self.col_v = self.root.createVariable(param.col_nm, 'f8', (param.col_nm,))
         self.dim_v = self.root.createVariable(param.dim_nm, 'f8', (param.dim_nm,))
 
-        self.sl = self.root.createVariable('Season lenght', 'f8', (param.row_nm, param.col_nm, param.dim_nm))
-        self.spi = self.root.createVariable('Season Permanent integral', 'f8', (param.row_nm, param.col_nm, param.dim_nm))
-        self.si = self.root.createVariable('Season integral', 'f8', (param.row_nm, param.col_nm, param.dim_nm))
-        self.cf = self.root.createVariable('Cycle fraction', 'f8', (param.row_nm, param.col_nm, param.dim_nm))
+        self.sl = self.root.createVariable('SeasonLenght', 'f8', (param.row_nm, param.col_nm, param.dim_nm))
+        self.spi = self.root.createVariable('SeasonPermanentIntegral', 'f8', (param.row_nm, param.col_nm, param.dim_nm))
+        self.si = self.root.createVariable('SeasonIntegral', 'f8', (param.row_nm, param.col_nm, param.dim_nm))
+        self.cf = self.root.createVariable('CycleFraction', 'f8', (param.row_nm, param.col_nm, param.dim_nm))
 
         self.row_v[:] = param.row_val
         self.col_v[:] = param.col_val

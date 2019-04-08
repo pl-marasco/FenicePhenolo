@@ -111,6 +111,7 @@ def cycle_metrics(pxldrl, param):
         if sincy.ref_yr not in range(pxldrl.pks.index[i].year - 1, pxldrl.pks.index[i + 1].year + 1):
             logger.info(f'Warning! sbc not in a valid range, in position:{pxldrl.position}')
             pxldrl.error = True
+            pxldrl.errtyp = 'sbc not in a valid range'
             continue
 
         sincys.append(sincy)
@@ -156,6 +157,9 @@ def phen_metrics(pxldrl, param):
     phen = []
     for sincy in pxldrl.sincys:
 
+        if sincy.err is True:
+            continue
+
         # specific mas
         sincy.mas = _mas(sincy.mml, param.mavmet, sincy.csdd)
         # TODO verify the correctness of the standard devation
@@ -179,6 +183,7 @@ def phen_metrics(pxldrl, param):
         except (RuntimeError, Exception, ValueError):
             logger.debug(f'Warning! Buffered curv not properly created, in position:{pxldrl.position}')
             pxldrl.error = True
+            pxldrl.errtyp = 'Bff crv'
             continue
 
         try:
@@ -186,6 +191,7 @@ def phen_metrics(pxldrl, param):
         except (RuntimeError, Exception, ValueError):
             logger.debug(f'Warning! Smoothed curv calculation went wrong, in position:{pxldrl.position}')
             pxldrl.error = True
+            pxldrl.errtyp = 'Smth crv'
             continue
 
         sincy.smoothed = sincy.smth_crv[sincy.sd - sincy.td:sincy.ed + sincy.td]
@@ -197,6 +203,7 @@ def phen_metrics(pxldrl, param):
         except (RuntimeError, ValueError, Exception):
             logger.debug(f'Warning! Baricenter not found in position {pxldrl.position} '
                          f'for the cycle starting in{sincy.sd}')
+            pxldrl.errtyp = 'Baricenter'
             continue
 
         # smoothed -= unx_sbc_Y_smth - unx_sbc_Y
@@ -224,6 +231,7 @@ def phen_metrics(pxldrl, param):
         except (RuntimeError, Exception, ValueError):
             logger.debug(f'Warning! Start date not found in position {pxldrl.position} '
                          f'for the cycle starting in{sincy.sd}')
+            pxldrl.errtyp = 'Start date'
             continue
 
         # research the end point of the season (SED)
@@ -238,6 +246,7 @@ def phen_metrics(pxldrl, param):
         except (RuntimeError, Exception, ValueError):
             logger.debug(f'Warning! End date not found in position {pxldrl.position} '
                          f'for the cycle starting in{sincy.sd}')
+            pxldrl.errtyp = 'End date'
             continue
 
         sincy.max = sincy.mmc[sincy.mmc == sincy.mmc.max()]
@@ -261,6 +270,7 @@ def phen_metrics(pxldrl, param):
             except ValueError:
                 logger.debug(f'Warning! Error in slope calculation in pixel:{pxldrl.position} '
                              f'for the cycle starting in {sincy.sd}')
+                pxldrl.errtyp = 'Slope'
                 continue
 
         try:
@@ -316,11 +326,23 @@ def _mas(ts, mavmet, sdd):
 
 def attribute_extractor(pxldrl, attribute):
     try:
-        index = []
-        for phency in pxldrl.phen:
-            value = getattr(phency, attribute)
-            index.append(pd.Series(value, phency.ref_yr))  # TODO decide if the reference yr must be int of date
-        concat = pd.concat(index, axis=0)
-        return concat.groupby(concat.index).sum()
+        values = list(
+            map(lambda phency:
+                {'index': phency.ref_yr.values[0],
+                 'value': getattr(phency, attribute)}, pxldrl.phen))
+
+        return pd.DataFrame(values).groupby('index').sum().squeeze()
+
+        # idx = list(map(lambda phency: phency.ref_yr.values[0], pxldrl.phen))
+        # values = list(map(lambda phency: getattr(phency, attribute), pxldrl.phen))
+        # i = pd.Series(values, idx)
+        # a = i.groupby(i.index).sum()
+
+        # index = []
+        # for phency in pxldrl.phen:
+        #     value = getattr(phency, attribute)
+        #     index.append(pd.Series(value, phency.ref_yr))  # TODO decide if the reference yr must be int of date
+        # concat = pd.concat(index, axis=0)
+        # return concat.groupby(concat.index).sum()
     except RuntimeError:
         raise RuntimeError('Impossible to extract the attribute requested')

@@ -37,7 +37,7 @@ def analyse(cube, client, param, action, out):
             row = cube.isel(dict([(param.row_nm, rowi)])).compute()
 
             trashold = 250
-            q_trashold = 0.2 # TODO change the percentage to be a parameter
+            q_trashold = 0.2  # TODO change the percentage to be a parameter
 
             med = ~np.less(row.quantile(q_trashold, dim=param.dim_nm), trashold)
             masked = np.ma.MaskedArray(row, np.resize(med, (row.sizes[param.dim_nm], len(med))))
@@ -77,6 +77,11 @@ def analyse(cube, client, param, action, out):
             out.spi[rowi] = np.expand_dims(t_spi.transpose().values, axis=0)
             out.si[rowi] = np.expand_dims(t_si.transpose().values, axis=0)
             out.cf[rowi] = np.expand_dims(t_cf.transpose().values, axis=0)
+
+            try:
+                out.root.sync()
+            except (RuntimeError, Exception, ValueError):
+                logger.debug(f'Error in the sync')
 
             client.cancel(s_row)
             client.cancel(futures)
