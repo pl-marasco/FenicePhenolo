@@ -44,7 +44,7 @@ def analyse(cube, client, param, action, out):
             px_list = list(map(lambda x: [rowi, x], np.argwhere(~med.values).flatten()))
 
             if px_list:
-                s_row = client.scatter(row, broadcast=True)
+                s_row = client.scatter(masked, broadcast=True)
             else:
                 del row; continue
 
@@ -60,8 +60,8 @@ def analyse(cube, client, param, action, out):
             for future, pxldrl in as_completed(futures, with_results=True):
 
                 if pxldrl.error:
-                    # logger.debug(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
-                    # print(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
+                    logger.debug(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
+                    print(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
                     pass
                 else:
                     col = pxldrl.position[1]
