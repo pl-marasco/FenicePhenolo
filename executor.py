@@ -42,7 +42,6 @@ def analyse(cube, client, param, action, out):
             med = ~np.less(row.quantile(q_trashold, dim=param.dim_nm), trashold)
             masked = np.ma.MaskedArray(row, np.resize(med, (row.sizes[param.dim_nm], len(med))))
             px_list = list(map(lambda x: [rowi, x], np.argwhere(~med.values).flatten()))
-            print(px_list)
 
             if px_list:
                 s_row = client.scatter(row, broadcast=True)
@@ -60,16 +59,19 @@ def analyse(cube, client, param, action, out):
 
             for future, pxldrl in as_completed(futures, with_results=True):
 
-                col = pxldrl.position[1]
-                t_sl.iloc[:, col] = pxldrl.sl[:]
-                t_spi.iloc[:, col] = pxldrl.spi[:]
-                t_si.iloc[:, col] = pxldrl.si[:]
-                t_cf.iloc[:, col] = pxldrl.cf[:]
-
                 if pxldrl.error:
-                    print(pxldrl.position)
+                    # logger.debug(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
+                    # print(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
+                    pass
+                else:
+                    col = pxldrl.position[1]
+                    t_sl.iloc[:, col] = pxldrl.sl[:]
+                    t_spi.iloc[:, col] = pxldrl.spi[:]
+                    t_si.iloc[:, col] = pxldrl.si[:]
+                    t_cf.iloc[:, col] = pxldrl.cf[:]
+
                 client.cancel(future)
-                del future, pxldrl, col
+                del future, pxldrl
 
             out.sl[rowi] = np.expand_dims(t_sl.transpose().values, axis=0)
             out.spi[rowi] = np.expand_dims(t_spi.transpose().values, axis=0)
