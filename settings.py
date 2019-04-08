@@ -106,7 +106,7 @@ class ProjectParameters(object):
 
                 # [INFRASTRUCTURE_PARAMETERS]
                 section = 'INFRASTRUCTURE_PARAMETERS'
-                if self.__read(config, section, 'processes').lower == 'true':
+                if self.__read(config, section, 'processes').lower() == 'true':
                     self.processes = True
                 else:
                     self.processes = False
