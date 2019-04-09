@@ -88,6 +88,8 @@ if __name__ == '__main__':
     for module in modules:
         assert importlib.util.find_spec(module), "You need {0} module".format(module)
 
+    print('~~~ Phenolo 2.0 ~~~')
+
     # Options
     try:
         parser = argparse.ArgumentParser()

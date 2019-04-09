@@ -7,7 +7,6 @@ from dask.distributed import Client, as_completed
 import atoms
 import logging
 import numpy as np
-import copy
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +21,9 @@ def process(px, **kwargs):
     cube = kwargs.pop('data', '')
     action = kwargs.pop('action', '')
     param = kwargs.pop('param', '')
+    row = kwargs.pop('row', '')
 
-    pxldrl = atoms.PixelDrill(cube.isel(dict([(param.col_nm, px[1])])).to_series().astype(float), px)
+    pxldrl = atoms.PixelDrill(cube.isel(dict([(param.col_nm, px)])).to_series().astype(float), [row, px])
 
     return action(pxldrl, settings=param)
 
@@ -34,17 +34,21 @@ def analyse(cube, client, param, action, out):
 
     try:
         for rowi in range(len(param.row_val)):
-            row = cube.isel(dict([(param.row_nm, rowi)])).compute()
 
             trashold = 250
             q_trashold = 0.2  # TODO change the percentage to be a parameter
+            row = cube.isel(dict([(param.row_nm, rowi)])).compute()
+            reduced = row.reduce(np.percentile, dim=param.dim_nm, q=q_trashold)
+            med = reduced.where(reduced < trashold)
+            finite = med.reduce(np.isfinite)
+            y_lst = np.argwhere(finite.values).flatten()
 
-            med = ~np.less(row.quantile(q_trashold, dim=param.dim_nm), trashold)
-            masked = np.ma.MaskedArray(row, np.resize(med, (row.sizes[param.dim_nm], len(med))))
-            px_list = list(map(lambda x: [rowi, x], np.argwhere(~med.values).flatten()))
+            # med = ~np.less(row.quantile(q_trashold, dim=param.dim_nm), trashold)
+            # masked = np.ma.MaskedArray(row, np.resize(med, (row.sizes[param.dim_nm], len(med))))
+            # px_list = list(map(lambda x: [rowi, x], np.argwhere(np.isfinite(med.values)).flatten()))
 
-            if px_list:
-                s_row = client.scatter(masked, broadcast=True)
+            if y_lst.any():
+                s_row = client.scatter(row, broadcast=True)
             else:
                 del row; continue
 
@@ -55,7 +59,7 @@ def analyse(cube, client, param, action, out):
             t_si = pd.DataFrame(index=dim_val, columns=col_val)
             t_cf = pd.DataFrame(index=dim_val, columns=col_val)
 
-            futures = client.map(process, px_list, **{'data': s_row, 'param': s_param, 'action': action})
+            futures = client.map(process, y_lst, **{'data': s_row, 'row': rowi, 'param': s_param, 'action': action})
 
             for future, pxldrl in as_completed(futures, with_results=True):
 
@@ -70,8 +74,8 @@ def analyse(cube, client, param, action, out):
                     t_si.iloc[:, col] = pxldrl.si[:]
                     t_cf.iloc[:, col] = pxldrl.cf[:]
 
-                client.cancel(future)
-                del future, pxldrl
+                # client.cancel(future)
+                # del future, pxldrl
 
             out.sl[rowi] = np.expand_dims(t_sl.transpose().values, axis=0)
             out.spi[rowi] = np.expand_dims(t_spi.transpose().values, axis=0)
@@ -83,11 +87,11 @@ def analyse(cube, client, param, action, out):
             except (RuntimeError, Exception, ValueError):
                 logger.debug(f'Error in the sync')
 
-            client.cancel(s_row)
-            client.cancel(futures)
-
-            del futures, t_sl, t_cf, t_si, t_spi, row, s_row, px_list
-            gc.collect()
+            # client.cancel(s_row)
+            # client.cancel(futures)
+            #
+            # del futures, t_sl, t_cf, t_si, t_spi, row, s_row
+            # gc.collect()
         return out
 
     except Exception as ex:
