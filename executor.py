@@ -59,14 +59,17 @@ def analyse(cube, client, param, action, out):
             t_si = pd.DataFrame(index=dim_val, columns=col_val)
             t_cf = pd.DataFrame(index=dim_val, columns=col_val)
 
+            t_season = pd.Series(0, index=col_val)
+            t_err = pd.Series(0, index=col_val)
+
             futures = client.map(process, y_lst, **{'data': s_row, 'row': rowi, 'param': s_param, 'action': action})
 
             for future, pxldrl in as_completed(futures, with_results=True):
                 col = pxldrl.position[1]
                 if pxldrl.error:
+                    # t_err.iloc[col] = 1
                     logger.debug(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
                     print(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
-                    pass
                 else:
                     t_sl.iloc[:, col] = pxldrl.sl[:]
                     t_spi.iloc[:, col] = pxldrl.spi[:]

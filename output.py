@@ -138,11 +138,14 @@ class OutputCointainer(object):
         self.row_v = self.root.createVariable(param.row_nm, 'f8', (param.row_nm,))
         self.col_v = self.root.createVariable(param.col_nm, 'f8', (param.col_nm,))
         self.dim_v = self.root.createVariable(param.dim_nm, 'f8', (param.dim_nm,))
-
+        #
         self.sl = self.root.createVariable('SeasonLenght', 'f8', (param.row_nm, param.col_nm, param.dim_nm))
         self.spi = self.root.createVariable('SeasonPermanentIntegral', 'f8', (param.row_nm, param.col_nm, param.dim_nm))
         self.si = self.root.createVariable('SeasonIntegral', 'f8', (param.row_nm, param.col_nm, param.dim_nm))
         self.cf = self.root.createVariable('CycleFraction', 'f8', (param.row_nm, param.col_nm, param.dim_nm))
+
+        self.n_seasons = self.root.createVariable('NSeasons', 'i8', (param.row_nm, param.col_nm))
+        self.err = self.root.createVariable('PixelError', 'i8', (param.row_nm, param.col_nm))
 
         self.row_v[:] = param.row_val
         self.col_v[:] = param.col_val
