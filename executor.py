@@ -62,13 +62,12 @@ def analyse(cube, client, param, action, out):
             futures = client.map(process, y_lst, **{'data': s_row, 'row': rowi, 'param': s_param, 'action': action})
 
             for future, pxldrl in as_completed(futures, with_results=True):
-
+                col = pxldrl.position[1]
                 if pxldrl.error:
                     logger.debug(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
                     print(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
                     pass
                 else:
-                    col = pxldrl.position[1]
                     t_sl.iloc[:, col] = pxldrl.sl[:]
                     t_spi.iloc[:, col] = pxldrl.spi[:]
                     t_si.iloc[:, col] = pxldrl.si[:]
@@ -81,6 +80,7 @@ def analyse(cube, client, param, action, out):
             out.spi[rowi] = np.expand_dims(t_spi.transpose().values, axis=0)
             out.si[rowi] = np.expand_dims(t_si.transpose().values, axis=0)
             out.cf[rowi] = np.expand_dims(t_cf.transpose().values, axis=0)
+            out.err[rowi] = np.expand_dims(t_err.transpose().values, axis=0)
 
             try:
                 out.root.sync()
