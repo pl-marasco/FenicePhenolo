@@ -72,6 +72,11 @@ def analyse(cube, client, param, action, out):
                     t_spi.iloc[:, col] = pxldrl.spi[:]
                     t_si.iloc[:, col] = pxldrl.si[:]
                     t_cf.iloc[:, col] = pxldrl.cf[:]
+                    if pxldrl.season_lng:
+                        if pxldrl.season_lng < 365:
+                            t_season[col] = int(365/pxldrl.season_lng)
+                        else:
+                            t_season[col] = int(pxldrl.season_lng)
 
                 # client.cancel(future)
                 # del future, pxldrl
@@ -80,6 +85,7 @@ def analyse(cube, client, param, action, out):
             out.spi[rowi] = np.expand_dims(t_spi.transpose().values, axis=0)
             out.si[rowi] = np.expand_dims(t_si.transpose().values, axis=0)
             out.cf[rowi] = np.expand_dims(t_cf.transpose().values, axis=0)
+            out.n_season = np.expand_dims(t_season.transpose().values, axis=0)
             out.err[rowi] = np.expand_dims(t_err.transpose().values, axis=0)
 
             try:
