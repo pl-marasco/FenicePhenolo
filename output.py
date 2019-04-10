@@ -131,18 +131,18 @@ class OutputCointainer(object):
         pth = os.path.join(param.scratch_pth, '.'.join((kwargs.pop('name', 'scratch'), 'nc')))
         self.root = Dataset(pth, 'w', format='NETCDF4')
 
-        row = self.root.createDimension(param.row_nm, None)
-        col = self.root.createDimension(param.col_nm, None)
+        row = self.root.createDimension(param.row_nm, len(param.row_val))
+        col = self.root.createDimension(param.col_nm, len(param.col_val))
         dim = self.root.createDimension(param.dim_nm, len(self._yrs_reducer(param.dim_val)))
 
         self.row_v = self.root.createVariable(param.row_nm, 'f8', (param.row_nm,))
         self.col_v = self.root.createVariable(param.col_nm, 'f8', (param.col_nm,))
         self.dim_v = self.root.createVariable(param.dim_nm, 'f8', (param.dim_nm,))
-        #
-        self.sl = self.root.createVariable('SeasonLenght', 'f8', (param.row_nm, param.col_nm, param.dim_nm))
-        self.spi = self.root.createVariable('SeasonPermanentIntegral', 'f8', (param.row_nm, param.col_nm, param.dim_nm))
-        self.si = self.root.createVariable('SeasonIntegral', 'f8', (param.row_nm, param.col_nm, param.dim_nm))
-        self.cf = self.root.createVariable('CycleFraction', 'f8', (param.row_nm, param.col_nm, param.dim_nm))
+
+        self.sl = self.root.createVariable('SeasonLenght', 'i8', (param.dim_nm, param.row_nm, param.col_nm))
+        self.spi = self.root.createVariable('SeasonPermanentIntegral', 'f8', (param.dim_nm, param.row_nm, param.col_nm))
+        self.si = self.root.createVariable('SeasonIntegral', 'f8', (param.dim_nm, param.row_nm, param.col_nm))
+        self.cf = self.root.createVariable('CycleFraction', 'f8', (param.dim_nm, param.row_nm, param.col_nm))
 
         self.n_seasons = self.root.createVariable('NSeasons', 'i8', (param.row_nm, param.col_nm))
         self.err = self.root.createVariable('PixelError', 'i8', (param.row_nm, param.col_nm))
@@ -152,7 +152,8 @@ class OutputCointainer(object):
         self.dim_v[:] = pd.to_datetime(param.dim_val).year.unique().tolist()
         # ^^^ pd.to_datetime(pd.to_datetime(param.dim_val).year.unique(), format='%Y') ^^^
 
-    def _yrs_reducer(self, dim_val):
+    @staticmethod
+    def _yrs_reducer(dim_val):
         return pd.DatetimeIndex(dim_val).year.unique()
 
     def close(self):

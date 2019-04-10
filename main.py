@@ -20,7 +20,6 @@ def main(param):
     cube = reader.ingest(param)
 
     param.add_dims(cube)
-    # param.add_px_list(cube)
 
     _log_info(logging.getLogger('paramters'), param)
     _log_info(logging.getLogger('cube'), cube)
@@ -31,12 +30,15 @@ def main(param):
         import analysis as aa
         import viz
 
+        param.add_px_list(cube)
+
         if param.col_nm is not None and param.row_nm is not None:
             ts = cube.isel(dict([(param.col_nm, 0), (param.row_nm, 0)])).to_series().astype(float)
         else:
             ts = cube.to_series()
 
         pxldrl = atoms.PixelDrill(ts, (0, 0))
+
         if len(param.pixel_list) == 0:
             print('No acceptable value in the position requested')
             sys.exit(1)

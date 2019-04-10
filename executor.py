@@ -54,7 +54,7 @@ def analyse(cube, client, param, action, out):
 
             dim_val = pd.to_datetime(param.dim_val).year.unique() # <-- pd.to_datetime(pd.to_datetime(param.dim_val).year.unique(), format='%Y')
             col_val = range(0, len(param.col_val))
-            t_sl = pd.DataFrame(index=dim_val, columns=col_val)
+            t_sl = pd.DataFrame(pd.Timedelta(0, unit='D'), index=dim_val, columns=col_val)
             t_spi = pd.DataFrame(index=dim_val, columns=col_val)
             t_si = pd.DataFrame(index=dim_val, columns=col_val)
             t_cf = pd.DataFrame(index=dim_val, columns=col_val)
@@ -67,7 +67,7 @@ def analyse(cube, client, param, action, out):
             for future, pxldrl in as_completed(futures, with_results=True):
                 col = pxldrl.position[1]
                 if pxldrl.error:
-                    # t_err.iloc[col] = 1
+                    t_err.iloc[col] = 1
                     logger.debug(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
                     print(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
                 else:
@@ -76,7 +76,7 @@ def analyse(cube, client, param, action, out):
                     t_si.iloc[:, col] = pxldrl.si[:]
                     t_cf.iloc[:, col] = pxldrl.cf[:]
                     if pxldrl.season_lng:
-                        if pxldrl.season_lng < 365:
+                        if pxldrl.season_lng <= 365.0:
                             t_season[col] = int(365/pxldrl.season_lng)
                         else:
                             t_season[col] = int(pxldrl.season_lng)
@@ -84,17 +84,19 @@ def analyse(cube, client, param, action, out):
                 # client.cancel(future)
                 # del future, pxldrl
 
-            out.sl[rowi] = np.expand_dims(t_sl.transpose().values, axis=0)
-            out.spi[rowi] = np.expand_dims(t_spi.transpose().values, axis=0)
-            out.si[rowi] = np.expand_dims(t_si.transpose().values, axis=0)
-            out.cf[rowi] = np.expand_dims(t_cf.transpose().values, axis=0)
-            out.n_season = np.expand_dims(t_season.transpose().values, axis=0)
-            out.err[rowi] = np.expand_dims(t_err.transpose().values, axis=0)
+            out.sl[:, rowi, :] = t_sl
+            out.spi[:, rowi, :] = t_spi
+            out.si[:, rowi, :] = t_si
+            out.cf[:, rowi, :] = t_cf
+            out.n_seasons[rowi] = t_season.values
+            out.err[rowi] = t_err.values
 
             try:
                 out.root.sync()
             except (RuntimeError, Exception, ValueError):
                 logger.debug(f'Error in the sync')
+
+            logger.debug(f'Row {rowi} processed')
 
             # client.cancel(s_row)
             # client.cancel(futures)
