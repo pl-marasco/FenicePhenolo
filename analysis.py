@@ -166,6 +166,8 @@ def phenolo(pxldrl, **kwargs):
 
     # General statistic agregation
     try:
+        pxldrl.sbw = metrics.attribute_extractor(pxldrl, 'sbw')
+        pxldrl.sew = metrics.attribute_extractor(pxldrl, 'sew')
         pxldrl.sl = metrics.attribute_extractor(pxldrl, 'sl')
         pxldrl.spi = metrics.attribute_extractor(pxldrl, 'spi')
         pxldrl.si = metrics.attribute_extractor(pxldrl, 'si')

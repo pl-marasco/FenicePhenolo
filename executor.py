@@ -54,6 +54,8 @@ def analyse(cube, client, param, action, out):
 
             dim_val = pd.to_datetime(param.dim_val).year.unique() # <-- pd.to_datetime(pd.to_datetime(param.dim_val).year.unique(), format='%Y')
             col_val = range(0, len(param.col_val))
+            t_sbw = pd.DataFrame(index=dim_val, columns=col_val)
+            t_sew = pd.DataFrame(index=dim_val, columns=col_val)
             t_sl = pd.DataFrame(pd.Timedelta(0, unit='D'), index=dim_val, columns=col_val)
             t_spi = pd.DataFrame(index=dim_val, columns=col_val)
             t_si = pd.DataFrame(index=dim_val, columns=col_val)
@@ -71,6 +73,8 @@ def analyse(cube, client, param, action, out):
                     logger.debug(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
                     print(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
                 else:
+                    t_sbw.iloc[:, col] = pxldrl.sbw[:]
+                    t_sew.iloc[:, col] = pxldrl.sew[:]
                     t_sl.iloc[:, col] = pxldrl.sl[:]
                     t_spi.iloc[:, col] = pxldrl.spi[:]
                     t_si.iloc[:, col] = pxldrl.si[:]

@@ -274,6 +274,12 @@ def phen_metrics(pxldrl, param):
                 continue
 
         try:
+            # week of start
+            sincy.sbw = sincy.sbd.index.week
+
+            # Week of ends
+            sincy.sew = sincy.sed.index.week
+
             # Season Lenght
             sincy.sl = (sincy.sed.index - sincy.sbd.index).to_pytimedelta()[0]
 
@@ -296,6 +302,8 @@ def phen_metrics(pxldrl, param):
             sincy.ref_yr = (sincy.sbd.index + sincy.sl * 2 / 3).year
 
         except ValueError:
+            sincy.sbw = np.NaN
+            sincy.sed = np.NaN
             sincy.sl = np.NaN
             sincy.sp = np.NaN
             sincy.spi = np.NaN

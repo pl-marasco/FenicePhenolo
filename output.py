@@ -139,6 +139,9 @@ class OutputCointainer(object):
         self.col_v = self.root.createVariable(param.col_nm, 'f8', (param.col_nm,))
         self.dim_v = self.root.createVariable(param.dim_nm, 'f8', (param.dim_nm,))
 
+        self.sd = self.root.createVariable('StartDate', 'i8', (param.dim_nm, param.row_nm, param.col_nm))
+        self.ed = self.root.createVariable('EndDate', 'i8', (param.dim_nm, param.row_nm, param.col_nm))
+
         self.sl = self.root.createVariable('SeasonLenght', 'i8', (param.dim_nm, param.row_nm, param.col_nm))
         self.spi = self.root.createVariable('SeasonPermanentIntegral', 'f8', (param.dim_nm, param.row_nm, param.col_nm))
         self.si = self.root.createVariable('SeasonIntegral', 'f8', (param.dim_nm, param.row_nm, param.col_nm))
