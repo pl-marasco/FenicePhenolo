@@ -220,13 +220,11 @@ def phen_metrics(pxldrl, param):
         sincy.sbd, sincy.sed, sincy.sbd_ts, sincy.sbd_ts = 4 * [None]
 
         # research the starting point of the season (SBD)
+
+        # -----------------
         try:
-            sincy.ge_sbd = sincy.mmc.ge(sincy.back)
-            change_sbd = sincy.ge_sbd.rolling(window=2, min_periods=2)\
-                              .apply(lambda x: np.array_equal(x, [False, True]), raw=True)
-            sincy.sbd = change_sbd[change_sbd == 1][:1] #[-1:]
-            # TODO [proposal] add the possibility to select the interesection point
-            sincy.sbd = pd.Series(sincy.mmc.loc[sincy.sbd.index], sincy.sbd.index)
+            sincy.intcpt_bk = intercept((sincy.mmc - sincy.back).values)
+            sincy.sbd = (sincy.mmc.iloc[sincy.intcpt_bk[0]]).index
 
         except (RuntimeError, Exception, ValueError):
             logger.debug(f'Warning! Start date not found in position {pxldrl.position} '
@@ -234,20 +232,49 @@ def phen_metrics(pxldrl, param):
             pxldrl.errtyp = 'Start date'
             continue
 
-        # research the end point of the season (SED)
+            # research the end point of the season (SED)
+
         try:
-            sincy.ge_sed = sincy.mmc.ge(sincy.forward)
-            change_sed = sincy.ge_sed.rolling(window=2, min_periods=2)\
-                                     .apply(lambda x: np.array_equal(x, [True, False]), raw=True)
-            # TODO [proposal] add the possibility to select the interesection point
-            sincy.sed = change_sed[change_sed == 1][-1:]
-            sincy.sed = pd.Series(sincy.mmc.loc[sincy.sed.index], sincy.sed.index)
+            sincy.intcpt_fw = intercept((sincy.mmc - sincy.forward).values)
+            sincy.sed = (sincy.mmc.iloc[sincy.intcpt_fw[0]]).index
 
         except (RuntimeError, Exception, ValueError):
             logger.debug(f'Warning! End date not found in position {pxldrl.position} '
                          f'for the cycle starting in{sincy.sd}')
             pxldrl.errtyp = 'End date'
             continue
+
+
+    # -----------------
+
+        # try:
+        #     sincy.ge_sbd = sincy.mmc.ge(sincy.back)
+        #     change_sbd = sincy.ge_sbd.rolling(window=2, min_periods=2)\
+        #                       .apply(lambda x: np.array_equal(x, [False, True]), raw=True)
+        #     sincy.sbd = change_sbd[change_sbd == 1][:1] #[-1:]
+        #     # TODO [proposal] add the possibility to select the interesection point
+        #     sincy.sbd = pd.Series(sincy.mmc.loc[sincy.sbd.index], sincy.sbd.index)
+        #
+        # except (RuntimeError, Exception, ValueError):
+        #     logger.debug(f'Warning! Start date not found in position {pxldrl.position} '
+        #                  f'for the cycle starting in{sincy.sd}')
+        #     pxldrl.errtyp = 'Start date'
+        #     continue
+        #
+        # # research the end point of the season (SED)
+        # try:
+        #     sincy.ge_sed = sincy.mmc.ge(sincy.forward)
+        #     change_sed = sincy.ge_sed.rolling(window=2, min_periods=2)\
+        #                              .apply(lambda x: np.array_equal(x, [True, False]), raw=True)
+        #     # TODO [proposal] add the possibility to select the interesection point
+        #     sincy.sed = change_sed[change_sed == 1][-1:]
+        #     sincy.sed = pd.Series(sincy.mmc.loc[sincy.sed.index], sincy.sed.index)
+
+        # except (RuntimeError, Exception, ValueError):
+        #     logger.debug(f'Warning! End date not found in position {pxldrl.position} '
+        #                  f'for the cycle starting in{sincy.sd}')
+        #     pxldrl.errtyp = 'End date'
+        #     continue
 
         sincy.max = sincy.mmc[sincy.mmc == sincy.mmc.max()]
         sincy.max_date = sincy.mmc.idxmax()
