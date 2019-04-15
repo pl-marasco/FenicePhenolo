@@ -88,6 +88,8 @@ def analyse(cube, client, param, action, out):
                 # client.cancel(future)
                 # del future, pxldrl
 
+            out.sbw[:, rowi, :] = t_sbw
+            out.sew[:, rowi, :] = t_sew
             out.sl[:, rowi, :] = t_sl
             out.spi[:, rowi, :] = t_spi
             out.si[:, rowi, :] = t_si

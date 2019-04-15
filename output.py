@@ -80,9 +80,9 @@ def create(path, orig_ds, yrs_in):
     time_var[:] = date2num(yrs_out, units=time_var.units, calendar=time_var.calendar)
 
     # Create the variables
-    sd_int = root_ds.createVariable('Start_day_of_the_season', 'i4', ('time', 'latitude', 'longitude'),
+    sbw_int = root_ds.createVariable('Start_week_of_the_season', 'i4', ('time', 'latitude', 'longitude'),
                                     zlib=True)
-    ed_int = root_ds.createVariable('End_date_of_the_season', 'i4', ('time', 'latitude', 'longitude'),
+    sew_int = root_ds.createVariable('End_week_of_the_season', 'i4', ('time', 'latitude', 'longitude'),
                                     zlib=True)
     sl_int = root_ds.createVariable('Season_lenght', 'f4', ('time', 'latitude', 'longitude'),
                                     least_significant_digit=2,
@@ -116,7 +116,7 @@ def create(path, orig_ds, yrs_in):
     cf_int.coordinates = 'time latitude longitude'
 
     # output the file and the variables
-    return root_ds, sl_int, spi_int, si_int, cf_int, sd_int, ed_int, sns_int
+    return root_ds, sl_int, spi_int, si_int, cf_int, sbw_int, sew_int, sns_int
 
 
 class OutputCointainer(object):
@@ -139,8 +139,8 @@ class OutputCointainer(object):
         self.col_v = self.root.createVariable(param.col_nm, 'f8', (param.col_nm,))
         self.dim_v = self.root.createVariable(param.dim_nm, 'f8', (param.dim_nm,))
 
-        self.sd = self.root.createVariable('StartDate', 'i8', (param.dim_nm, param.row_nm, param.col_nm))
-        self.ed = self.root.createVariable('EndDate', 'i8', (param.dim_nm, param.row_nm, param.col_nm))
+        self.sbw = self.root.createVariable('StartWeek', 'f8', (param.dim_nm, param.row_nm, param.col_nm))
+        self.sew = self.root.createVariable('Endweek', 'f8', (param.dim_nm, param.row_nm, param.col_nm))
 
         self.sl = self.root.createVariable('SeasonLenght', 'i8', (param.dim_nm, param.row_nm, param.col_nm))
         self.spi = self.root.createVariable('SeasonPermanentIntegral', 'f8', (param.dim_nm, param.row_nm, param.col_nm))
