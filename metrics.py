@@ -6,6 +6,7 @@ import detect_peacks as dp
 import pandas as pd; import numpy as np
 
 logger = logging.getLogger(__name__)
+np.warnings.filterwarnings('ignore')
 
 
 def rescale(ts, **kwargs):
@@ -220,11 +221,10 @@ def phen_metrics(pxldrl, param):
         sincy.sbd, sincy.sed, sincy.sbd_ts, sincy.sbd_ts = 4 * [None]
 
         # research the starting point of the season (SBD)
-
         # -----------------
         try:
             sincy.intcpt_bk = intercept((sincy.mmc - sincy.back).values)
-            sincy.sbd = (sincy.mmc.iloc[sincy.intcpt_bk[0]]).index
+            sincy.sbd = (sincy.mmc.iloc[sincy.intcpt_bk[0]])
 
         except (RuntimeError, Exception, ValueError):
             logger.debug(f'Warning! Start date not found in position {pxldrl.position} '
@@ -236,16 +236,14 @@ def phen_metrics(pxldrl, param):
 
         try:
             sincy.intcpt_fw = intercept((sincy.mmc - sincy.forward).values)
-            sincy.sed = (sincy.mmc.iloc[sincy.intcpt_fw[0]]).index
+            sincy.sed = (sincy.mmc.iloc[sincy.intcpt_fw[-1]])
 
         except (RuntimeError, Exception, ValueError):
             logger.debug(f'Warning! End date not found in position {pxldrl.position} '
                          f'for the cycle starting in{sincy.sd}')
             pxldrl.errtyp = 'End date'
             continue
-
-
-    # -----------------
+        # -----------------
 
         # try:
         #     sincy.ge_sbd = sincy.mmc.ge(sincy.back)
@@ -290,15 +288,26 @@ def phen_metrics(pxldrl, param):
             sincy.ref_yr = np.NaN
             continue
         else:
+            # # Season slope (SLOPE)
+            # try:
+            #     sincy.sslp = (sincy.sed.values[0] - sincy.sbd.values[0]) / \
+            #                    (sincy.sed.index[0] - sincy.sbd.index[0]).days
+            # except ValueError:
+            #     logger.debug(f'Warning! Error in slope calculation in pixel:{pxldrl.position} '
+            #                  f'for the cycle starting in {sincy.sd}')
+            #     pxldrl.errtyp = 'Slope'
+            #     continue
+
             # Season slope (SLOPE)
             try:
-                sincy.sslp = (sincy.sed.values[0] - sincy.sbd.values[0]) / \
-                               (sincy.sed.index[0] - sincy.sbd.index[0]).days
+                sincy.sslp = (sincy.sed.values - sincy.sbd.values) / \
+                               (sincy.sed.index.day - sincy.sbd.index.day)
             except ValueError:
                 logger.debug(f'Warning! Error in slope calculation in pixel:{pxldrl.position} '
                              f'for the cycle starting in {sincy.sd}')
                 pxldrl.errtyp = 'Slope'
                 continue
+
 
         try:
             # week of start
@@ -381,3 +390,7 @@ def attribute_extractor(pxldrl, attribute):
         # return concat.groupby(concat.index).sum()
     except RuntimeError:
         raise RuntimeError('Impossible to extract the attribute requested')
+
+
+def intercept(s):
+    return np.argwhere((np.diff(np.sign(s)) != 0) & np.isfinite(np.diff(np.sign(s))))
