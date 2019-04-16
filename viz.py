@@ -49,26 +49,40 @@ def plot(pxldrl):
         if phency.max is not None:
             phency.max.plot(style='rD')
 
-    fig, axes = plt.subplots(5, 1, figsize=(22, 10))
+    fig, axes = plt.subplots(7, 1, figsize=(22, 10))
     plt.tight_layout()
 
-    plt.subplot(5, 1, 1)
+    plt.subplot(7, 1, 1)
+    plt.tight_layout()
+    if pxldrl.sbw is not None:
+        pxldrl.sbw.plot(style='r', title='Season beginning week')
+
+    plt.subplot(7, 1, 2)
+    plt.tight_layout()
+    if pxldrl.sew is not None:
+        pxldrl.sew.plot(style='r', title='Season end week')
+
+    plt.subplot(7, 1, 3)
     plt.tight_layout()
     if pxldrl.sl is not None:
         pxldrl.sl.plot(style='r', title='Season Lenght')
-    plt.subplot(5, 1, 2)
+
+    plt.subplot(7, 1, 4)
     plt.tight_layout()
     if pxldrl.spi is not None:
         pxldrl.spi.plot(style='r', title='Season permanet')
-    plt.subplot(5, 1, 3)
+
+    plt.subplot(7, 1, 5)
     plt.tight_layout()
     if pxldrl.si is not None:
         pxldrl.si.plot(style='r', title='Season Integral')
-    plt.subplot(5, 1, 4)
+
+    plt.subplot(7, 1, 6)
     plt.tight_layout()
     if pxldrl.cf is not None:
         pxldrl.cf.plot(style='r', title='Cyclic fraction')
-    plt.subplot(5, 1, 5)
+
+    plt.subplot(7, 1, 7)
     if pxldrl.afi is not None:
         pxldrl.afi.plot(style='r', title='Active fraction')
 
