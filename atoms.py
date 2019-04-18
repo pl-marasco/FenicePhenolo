@@ -48,6 +48,7 @@ class SingularCycle(object):
 
         Attributes:
             mms: minimum minimum time series
+            mms_b : minimum minimum time series buffered by timdelta 2/3
             sd: Start date - MBD
             ed: End date - MED
             mml: Cycle lenght in days
