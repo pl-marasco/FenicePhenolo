@@ -42,9 +42,9 @@ def plot(pxldrl):
             phency.back.plot(style='-', color='gold')
         if phency.forward is not None:
             phency.forward.plot(style='-', color='olive')
-        if phency.sbd is not None:
+        if phency.sb is not None:
             phency.sbd.plot(style='r>',)
-        if phency.sed is not None:
+        if phency.se is not None:
             phency.sed.plot(style='r<',)
         if phency.max is not None:
             phency.max.plot(style='rD')
@@ -54,13 +54,13 @@ def plot(pxldrl):
 
     plt.subplot(7, 1, 1)
     plt.tight_layout()
-    if pxldrl.sbw is not None:
-        pxldrl.sbw.plot(style='r', title='Season beginning week')
+    if pxldrl.sb is not None:
+        pxldrl.sb.plot(style='r', title='Season beginning')
 
     plt.subplot(7, 1, 2)
     plt.tight_layout()
-    if pxldrl.sew is not None:
-        pxldrl.sew.plot(style='r', title='Season end week')
+    if pxldrl.se is not None:
+        pxldrl.se.plot(style='r', title='Season end')
 
     plt.subplot(7, 1, 3)
     plt.tight_layout()
