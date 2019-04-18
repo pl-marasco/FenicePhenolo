@@ -168,6 +168,10 @@ def phen_metrics(pxldrl, param):
         if sincy.mas.days < 0:
             continue
 
+        # Maximum point and date
+        sincy.max = sincy.mms[sincy.mms == sincy.mms.max()]
+        sincy.max_date = sincy.mms.idxmax()
+
         # TODO verifying buffer use and indexing
         try:
             if sincy.sd-sincy.mas >= sincy.mms_b.index[0]:
@@ -218,28 +222,29 @@ def phen_metrics(pxldrl, param):
         try:
             sincy.intcpt_bk = intercept((sincy.mms - sincy.back).values)
             sincy.sbd = (sincy.mms.iloc[sincy.intcpt_bk[0]])
+            if sincy.sbd.index > sincy.max_date:
+                raise Exception
 
         except (RuntimeError, Exception, ValueError):
             logger.debug(f'Warning! Start date not found in position {pxldrl.position} '
                          f'for the cycle starting in{sincy.sd}')
+            sincy.sbd = None
             pxldrl.errtyp = 'Start date'
-            continue
 
         # research the end point of the season (SED)
         try:
             sincy.intcpt_fw = intercept((sincy.mms - sincy.forward).values)
             sincy.sed = (sincy.mms.iloc[sincy.intcpt_fw[-1]])
+            if sincy.sed.index < sincy.max_date:
+                raise Exception
 
         except (RuntimeError, Exception, ValueError):
             logger.debug(f'Warning! End date not found in position {pxldrl.position} '
                          f'for the cycle starting in{sincy.sd}')
+            sincy.sed = None
             pxldrl.errtyp = 'End date'
-            continue
 
-        sincy.max = sincy.mms[sincy.mms == sincy.mms.max()]
-        sincy.max_date = sincy.mms.idxmax()
-
-        if sincy.sed.empty or sincy.sbd.empty:
+        if sincy.sed is None or sincy.sbd is None:
             sincy.sl = np.NaN
             sincy.sp = np.NaN
             sincy.spi = np.NaN
