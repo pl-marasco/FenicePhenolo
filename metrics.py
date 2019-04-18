@@ -168,8 +168,7 @@ def phen_metrics(pxldrl, param):
         if sincy.mas.days < 0:
             continue
 
-        sincy.mmc = sincy.mms.copy()
-
+        # TODO verifying buffer use and indexing
         try:
             if sincy.sd-sincy.mas >= sincy.mms_b.index[0]:
                 sd = sincy.sd-sincy.mas
@@ -207,24 +206,18 @@ def phen_metrics(pxldrl, param):
             pxldrl.errtyp = 'Baricenter'
             continue
 
-        # smoothed -= unx_sbc_Y_smth - unx_sbc_Y
-
         sincy.back = sincy.smoothed[:sincy.cbcd] \
-                          .shift(1, freq=pd.Timedelta(days=int(sincy.mas.days / 2)))[sincy.sd:].dropna()
+                          .shift(1, freq=pd.Timedelta(days=int(sincy.mas.days / 2)))[sincy.sd:].dropna()  # TODO speed up
 
         sincy.forward = sincy.smoothed[sincy.cbcd:] \
                              .shift(1, freq=pd.Timedelta(days=-int(sincy.mas.days / 2)))[:sincy.ed].dropna()
 
-        # sincy.mmc = sincy.mmc.reindex(pd.date_range(sincy.forward.index[0].date(),
-        #                             sincy.back.index[len(sincy.forward) - 1].date()))
-
         sincy.sbd, sincy.sed, sincy.sbd_ts, sincy.sbd_ts = 4 * [None]
 
         # research the starting point of the season (SBD)
-        # -----------------
         try:
-            sincy.intcpt_bk = intercept((sincy.mmc - sincy.back).values)
-            sincy.sbd = (sincy.mmc.iloc[sincy.intcpt_bk[0]])
+            sincy.intcpt_bk = intercept((sincy.mms - sincy.back).values)
+            sincy.sbd = (sincy.mms.iloc[sincy.intcpt_bk[0]])
 
         except (RuntimeError, Exception, ValueError):
             logger.debug(f'Warning! Start date not found in position {pxldrl.position} '
@@ -232,50 +225,19 @@ def phen_metrics(pxldrl, param):
             pxldrl.errtyp = 'Start date'
             continue
 
-            # research the end point of the season (SED)
-
+        # research the end point of the season (SED)
         try:
-            sincy.intcpt_fw = intercept((sincy.mmc - sincy.forward).values)
-            sincy.sed = (sincy.mmc.iloc[sincy.intcpt_fw[-1]])
+            sincy.intcpt_fw = intercept((sincy.mms - sincy.forward).values)
+            sincy.sed = (sincy.mms.iloc[sincy.intcpt_fw[-1]])
 
         except (RuntimeError, Exception, ValueError):
             logger.debug(f'Warning! End date not found in position {pxldrl.position} '
                          f'for the cycle starting in{sincy.sd}')
             pxldrl.errtyp = 'End date'
             continue
-        # -----------------
 
-        # try:
-        #     sincy.ge_sbd = sincy.mmc.ge(sincy.back)
-        #     change_sbd = sincy.ge_sbd.rolling(window=2, min_periods=2)\
-        #                       .apply(lambda x: np.array_equal(x, [False, True]), raw=True)
-        #     sincy.sbd = change_sbd[change_sbd == 1][:1] #[-1:]
-        #     # TODO [proposal] add the possibility to select the interesection point
-        #     sincy.sbd = pd.Series(sincy.mmc.loc[sincy.sbd.index], sincy.sbd.index)
-        #
-        # except (RuntimeError, Exception, ValueError):
-        #     logger.debug(f'Warning! Start date not found in position {pxldrl.position} '
-        #                  f'for the cycle starting in{sincy.sd}')
-        #     pxldrl.errtyp = 'Start date'
-        #     continue
-        #
-        # # research the end point of the season (SED)
-        # try:
-        #     sincy.ge_sed = sincy.mmc.ge(sincy.forward)
-        #     change_sed = sincy.ge_sed.rolling(window=2, min_periods=2)\
-        #                              .apply(lambda x: np.array_equal(x, [True, False]), raw=True)
-        #     # TODO [proposal] add the possibility to select the interesection point
-        #     sincy.sed = change_sed[change_sed == 1][-1:]
-        #     sincy.sed = pd.Series(sincy.mmc.loc[sincy.sed.index], sincy.sed.index)
-
-        # except (RuntimeError, Exception, ValueError):
-        #     logger.debug(f'Warning! End date not found in position {pxldrl.position} '
-        #                  f'for the cycle starting in{sincy.sd}')
-        #     pxldrl.errtyp = 'End date'
-        #     continue
-
-        sincy.max = sincy.mmc[sincy.mmc == sincy.mmc.max()]
-        sincy.max_date = sincy.mmc.idxmax()
+        sincy.max = sincy.mms[sincy.mms == sincy.mms.max()]
+        sincy.max_date = sincy.mms.idxmax()
 
         if sincy.sed.empty or sincy.sbd.empty:
             sincy.sl = np.NaN
@@ -288,16 +250,6 @@ def phen_metrics(pxldrl, param):
             sincy.ref_yr = np.NaN
             continue
         else:
-            # # Season slope (SLOPE)
-            # try:
-            #     sincy.sslp = (sincy.sed.values[0] - sincy.sbd.values[0]) / \
-            #                    (sincy.sed.index[0] - sincy.sbd.index[0]).days
-            # except ValueError:
-            #     logger.debug(f'Warning! Error in slope calculation in pixel:{pxldrl.position} '
-            #                  f'for the cycle starting in {sincy.sd}')
-            #     pxldrl.errtyp = 'Slope'
-            #     continue
-
             # Season slope (SLOPE)
             try:
                 sincy.sslp = (sincy.sed.values - sincy.sbd.values) / \
@@ -307,7 +259,6 @@ def phen_metrics(pxldrl, param):
                              f'for the cycle starting in {sincy.sd}')
                 pxldrl.errtyp = 'Slope'
                 continue
-
 
         try:
             # week of start
@@ -325,13 +276,13 @@ def phen_metrics(pxldrl, param):
             sincy.spi = sincy.sp.sum()
 
             # Season Integral
-            sincy.si = sincy.mmc[sincy.sbd.index[0]:sincy.sed.index[0]].sum()
+            sincy.si = sincy.mms[sincy.sbd.index[0]:sincy.sed.index[0]].sum()
 
             # Cyclic fraction
             sincy.cf = sincy.si - sincy.spi
 
             # Active fraction
-            sincy.af = sincy.mmc.loc[sincy.sbd.index[0]:sincy.max_date] - sincy.sp[:sincy.max_date]
+            sincy.af = sincy.mms.loc[sincy.sbd.index[0]:sincy.max_date] - sincy.sp[:sincy.max_date]
             sincy.afi = sincy.af.sum()
 
             # reference yr
@@ -377,17 +328,19 @@ def attribute_extractor(pxldrl, attribute):
 
         return pd.DataFrame(values).groupby('index').sum().squeeze()
 
-        # idx = list(map(lambda phency: phency.ref_yr.values[0], pxldrl.phen))
-        # values = list(map(lambda phency: getattr(phency, attribute), pxldrl.phen))
-        # i = pd.Series(values, idx)
-        # a = i.groupby(i.index).sum()
+    except RuntimeError:
+        raise RuntimeError('Impossible to extract the attribute requested')
 
-        # index = []
-        # for phency in pxldrl.phen:
-        #     value = getattr(phency, attribute)
-        #     index.append(pd.Series(value, phency.ref_yr))  # TODO decide if the reference yr must be int of date
-        # concat = pd.concat(index, axis=0)
-        # return concat.groupby(concat.index).sum()
+
+def attribute_extractor_se(pxldrl, attribute):
+    try:
+        values = list(
+            map(lambda phency:
+                {'index': phency.ref_yr.values[0],
+                 'value': getattr(phency, attribute)}, pxldrl.phen))
+
+        return pd.DataFrame(values).groupby('index').min().squeeze()
+
     except RuntimeError:
         raise RuntimeError('Impossible to extract the attribute requested')
 
