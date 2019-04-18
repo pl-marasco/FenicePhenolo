@@ -56,6 +56,7 @@ def analyse(cube, client, param, action, out):
             t_spi = pd.DataFrame(index=dim_val, columns=col_val)
             t_si = pd.DataFrame(index=dim_val, columns=col_val)
             t_cf = pd.DataFrame(index=dim_val, columns=col_val)
+            t_afi = pd.DataFrame(index=dim_val, columns=col_val)
 
             t_season = pd.Series(0, index=col_val)
             t_err = pd.Series(0, index=col_val)
@@ -69,12 +70,13 @@ def analyse(cube, client, param, action, out):
                     logger.debug(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
                     print(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
                 else:
-                    t_sb.iloc[:, col] = pxldrl.sbw[:]
-                    t_se.iloc[:, col] = pxldrl.sew[:]
+                    t_sb.iloc[:, col] = pxldrl.sb[:]
+                    t_se.iloc[:, col] = pxldrl.se[:]
                     t_sl.iloc[:, col] = pxldrl.sl[:]
                     t_spi.iloc[:, col] = pxldrl.spi[:]
                     t_si.iloc[:, col] = pxldrl.si[:]
                     t_cf.iloc[:, col] = pxldrl.cf[:]
+                    t_afi.iloc[:, col] = pxldrl.afi[:]
                     if pxldrl.season_lng:
                         if pxldrl.season_lng <= 365.0:
                             t_season[col] = int(365/pxldrl.season_lng)

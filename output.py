@@ -146,6 +146,7 @@ class OutputCointainer(object):
         self.spi = self.root.createVariable('SeasonPermanentIntegral', 'f8', (param.dim_nm, param.row_nm, param.col_nm))
         self.si = self.root.createVariable('SeasonIntegral', 'f8', (param.dim_nm, param.row_nm, param.col_nm))
         self.cf = self.root.createVariable('CycleFraction', 'f8', (param.dim_nm, param.row_nm, param.col_nm))
+        self.afi = self.root.createVariable('ActiveFractionIntegral', 'f8', (param.dim_nm, param.row_nm, param.col_nm))
 
         self.n_seasons = self.root.createVariable('NSeasons', 'i8', (param.row_nm, param.col_nm))
         self.err = self.root.createVariable('PixelError', 'i8', (param.row_nm, param.col_nm))
