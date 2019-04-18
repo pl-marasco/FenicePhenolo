@@ -134,7 +134,6 @@ class ProjectParameters(object):
                 self.area = self.__read(config, section, 'area')
                 # extent
                 self.typExt = 'Full'
-                # self.ext_UL_X, self.ext_UL_Y, self.ext_BR_X, self.ext_BR_X = [None]*4
                 ext = self.__read(config, section, 'extent', type='coord')
 
                 if ext is not None and (len(ext) in [1, 3] or len(ext) > 4):
@@ -156,7 +155,6 @@ class ProjectParameters(object):
 
                 # range, scale, offset
                 rng = self.__read(config, section, "rng", type='list')  # lan= can be used to define the minimum lenght
-                # self.min, self.max = None, None
                 try:
                     if rng is not None:
                         self.min = float(rng[0])
