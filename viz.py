@@ -37,7 +37,7 @@ def plot(pxldrl):
         plt.subplot(rows, col, i+1)
 
         if phency.buffered is not None:
-            phency.mmc.plot(style='b', title='{}'.format(phency.ref_yr.values[0]))
+            phency.mms.plot(style='b', title='{}'.format(phency.ref_yr.values[0]))
         if phency.back is not None:
             phency.back.plot(style='-', color='gold')
         if phency.forward is not None:
