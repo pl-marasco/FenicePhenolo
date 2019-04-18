@@ -43,16 +43,12 @@ def analyse(cube, client, param, action, out):
             finite = med.reduce(np.isfinite)
             y_lst = np.argwhere(finite.values).flatten()
 
-            # med = ~np.less(row.quantile(q_trashold, dim=param.dim_nm), trashold)
-            # masked = np.ma.MaskedArray(row, np.resize(med, (row.sizes[param.dim_nm], len(med))))
-            # px_list = list(map(lambda x: [rowi, x], np.argwhere(np.isfinite(med.values)).flatten()))
-
             if y_lst.any():
                 s_row = client.scatter(row, broadcast=True)
             else:
                 del row; continue
 
-            dim_val = pd.to_datetime(param.dim_val).year.unique() # <-- pd.to_datetime(pd.to_datetime(param.dim_val).year.unique(), format='%Y')
+            dim_val = pd.to_datetime(param.dim_val).year.unique()
             col_val = range(0, len(param.col_val))
             t_sbw = pd.DataFrame(index=dim_val, columns=col_val)
             t_sew = pd.DataFrame(index=dim_val, columns=col_val)
@@ -104,9 +100,9 @@ def analyse(cube, client, param, action, out):
 
             logger.debug(f'Row {rowi} processed')
 
-            # client.cancel(s_row)
+            client.cancel(s_row)
+
             # client.cancel(futures)
-            #
             # del futures, t_sl, t_cf, t_si, t_spi, row, s_row
             # gc.collect()
         return out
