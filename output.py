@@ -162,28 +162,3 @@ class OutputCointainer(object):
     def close(self):
         self.root.close()
 
-
-# def scratcher(pth, dx, dy, dtime, **kwargs):
-#
-#     if 'name' in kwargs:
-#         name = kwargs['name']+'.nc'
-#     else:
-#         name = 'scratch.nc'
-#     pth = os.path.join(pth, name)
-#
-#     scratch = Dataset(pth, "w", format="NETCDF4")
-#
-#     x = scratch.createDimension('x', None)
-#     y = scratch.createDimension('y', None)
-#     time = scratch.createDimension('time', None)
-#
-#     xv = scratch.createVariable('x', 'i8', ('x',))
-#     yv = scratch.createVariable('y', 'i8', ('y',))
-#     timev = scratch.createVariable('time', 'f8', ('time',))
-#     data = scratch.createVariable('data', 'f8', ('x', 'y', 'time'))
-#
-#     # xv[:] = np.arange(dx)
-#     # yv[:] = np.arange(dy)
-#     # timev[:] = dtime
-#
-#     return scratch

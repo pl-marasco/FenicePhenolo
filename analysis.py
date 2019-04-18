@@ -56,7 +56,8 @@ def phenolo(pxldrl, **kwargs):
         if pxldrl.ts_resc.isnull().sum() > 0:
             pxldrl.ts_resc.fillna(method='bfill', inplace=True)
 
-        pxldrl.ts_filtered = outlier.madseason(pxldrl.ts_resc, param.yr_dek, param.yr_dys * param.outmax, param.mad_pwr)  # TODO make variable dek
+        pxldrl.ts_filtered = outlier.doubleMAD(pxldrl.ts_resc, param.mad_pwr)
+
     except (RuntimeError, ValueError, Exception):
         logger.info(f'Error in filtering outlier in position:{pxldrl.position}')
         pxldrl.error = True
@@ -79,7 +80,6 @@ def phenolo(pxldrl, **kwargs):
     # Estimate Season length
     try:
         pxldrl.seasons, pxldrl.trend = fit_seasons(pxldrl.ts_cleaned)
-        # pxldrl.season_ts = metrics.to_timeseries(seasons, pxldrl.ps.index)
         pxldrl.trend_ts = metrics.to_timeseries(pxldrl.trend, pxldrl.ts_cleaned.index)
         # TODO add the no season option
         # pxldrl.season_lng
@@ -166,8 +166,8 @@ def phenolo(pxldrl, **kwargs):
 
     # General statistic agregation
     try:
-        pxldrl.sbw = metrics.attribute_extractor(pxldrl, 'sbw')
-        pxldrl.sew = metrics.attribute_extractor(pxldrl, 'sew')
+        pxldrl.sbw = metrics.attribute_extractor_se(pxldrl, 'sbw')
+        pxldrl.sew = metrics.attribute_extractor_se(pxldrl, 'sew')
         pxldrl.sl = metrics.attribute_extractor(pxldrl, 'sl')
         pxldrl.spi = metrics.attribute_extractor(pxldrl, 'spi')
         pxldrl.si = metrics.attribute_extractor(pxldrl, 'si')
