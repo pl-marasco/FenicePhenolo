@@ -257,8 +257,7 @@ def phen_metrics(pxldrl, param):
         else:
             # Season slope (SLOPE)
             try:
-                sincy.sslp = (sincy.sed.values - sincy.sbd.values) / \
-                               (sincy.sed.index.day - sincy.sbd.index.day)
+                sincy.sslp = ((sincy.sed.values - sincy.sbd.values) / (sincy.sed.index - sincy.sbd.index).days)*1e2
             except ValueError:
                 logger.debug(f'Warning! Error in slope calculation in pixel:{pxldrl.position} '
                              f'for the cycle starting in {sincy.sd}')
@@ -267,10 +266,10 @@ def phen_metrics(pxldrl, param):
 
         try:
             # week of start
-            sincy.sbw = sincy.sbd.index.week
+            sincy.sb = sincy.sbd.index.dayofyear
 
             # Week of ends
-            sincy.sew = sincy.sed.index.week
+            sincy.se = sincy.sed.index.dayofyear
 
             # Season Lenght
             sincy.sl = (sincy.sed.index - sincy.sbd.index).to_pytimedelta()[0]
@@ -294,8 +293,8 @@ def phen_metrics(pxldrl, param):
             sincy.ref_yr = (sincy.sbd.index + sincy.sl * 2 / 3).year
 
         except ValueError:
-            sincy.sbw = np.NaN
-            sincy.sed = np.NaN
+            sincy.sb = np.NaN
+            sincy.se = np.NaN
             sincy.sl = np.NaN
             sincy.sp = np.NaN
             sincy.spi = np.NaN
