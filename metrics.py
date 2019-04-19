@@ -198,15 +198,15 @@ def phen_metrics(pxldrl, param):
 
         sincy.smoothed = sincy.smth_crv.loc[sincy.sd - sincy.td:sincy.ed + sincy.td]
 
-        # baricenter for the smoothed one
-        try:
-            posix_t_smth = sincy.smoothed.index.values.astype(np.int64) // 10 ** 9
-            sincy.unx_sbc_Y_smth = (posix_t_smth * sincy.smoothed).sum() / posix_t_smth.sum()
-        except (RuntimeError, ValueError, Exception):
-            logger.debug(f'Warning! Baricenter not found in position {pxldrl.position} '
-                         f'for the cycle starting in{sincy.sd}')
-            pxldrl.errtyp = 'Baricenter'
-            continue
+        # # baricenter for the smoothed one
+        # try:
+        #     posix_t_smth = sincy.smoothed.index.values.astype(np.int64) // 10 ** 9
+        #     sincy.unx_sbc_Y_smth = (posix_t_smth * sincy.smoothed).sum() / posix_t_smth.sum()
+        # except (RuntimeError, ValueError, Exception):
+        #     logger.debug(f'Warning! Baricenter not found in position {pxldrl.position} '
+        #                  f'for the cycle starting in{sincy.sd}')
+        #     pxldrl.errtyp = 'Baricenter'
+        #     continue
 
         # shift of the smoothed curve
         delta = pd.Timedelta(days=int(sincy.mas.days / 2))
