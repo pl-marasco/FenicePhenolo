@@ -139,7 +139,7 @@ def phenolo(pxldrl, **kwargs):
 
     # Cycle with matrics
     try:
-        pxldrl.sincys = metrics.cycle_metrics(pxldrl, param)
+        pxldrl.sincys = metrics.cycle_metrics(pxldrl)
     except(RuntimeError, Exception, ValueError):
         logger.info(f'Error in season detection in position:{pxldrl.position}')
         pxldrl.error = True

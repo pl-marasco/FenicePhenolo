@@ -70,13 +70,11 @@ def valley_detection(pxldrl, param):
                           valley=True,
                           edge='both',
                           kpsh=False)
-    oversmp = False
+    # oversmp = False
 
     if not ind.any():
-        ind = dp.detect_peaks(vdetr, mph=-20,
-                              mpd=60,
-                              valley=True)
-        oversmp = True
+        ind = dp.detect_peaks(vdetr, mph=-20, mpd=60, valley=True)
+        # oversmp = True
 
     # Valley point time series conversion
     pks = pd.Series()
@@ -91,12 +89,11 @@ def valley_detection(pxldrl, param):
     return pks
 
 
-def cycle_metrics(pxldrl, param):
+def cycle_metrics(pxldrl):
     """
-    Create an array of cycles with all the atrtibutes populated
+    Create an array of cycles with all the attributes populated
 
     :param pxldrl: a pixel drill object
-    :param param:
     :return: an array of single cycles
     """
 
@@ -163,14 +160,14 @@ def phen_metrics(pxldrl, param):
 
         # specific mas
         sincy.mas = _mas(sincy.mml, param.mavmet, sincy.csdd)
-        # TODO verify the correctness of the standard devation
+        # TODO verify the correctness of the standard deviation
 
         if sincy.mas.days < 0:
             continue
 
         # Maximum point and date
-        sincy.max = sincy.mms[sincy.mms == sincy.mms.max()]
-        sincy.max_date = sincy.mms.idxmax()
+        # sincy.max = sincy.mms[sincy.mms == sincy.mms.max()]
+        sincy.max = sincy.mms.loc[[sincy.mms.idxmax()]]
 
         # TODO verifying buffer use and indexing
         try:
@@ -183,7 +180,8 @@ def phen_metrics(pxldrl, param):
             else:
                 ed = sincy.mms_b.index[-1]
 
-            sincy.buffered = sincy.mms_b[sd:ed]
+            sincy.buffered = sincy.mms_b.loc[sd:ed]
+
         except (RuntimeError, Exception, ValueError):
             logger.debug(f'Warning! Buffered curv not properly created, in position:{pxldrl.position}')
             pxldrl.error = True
@@ -191,14 +189,15 @@ def phen_metrics(pxldrl, param):
             continue
 
         try:
-            sincy.smth_crv = sincy.buffered.rolling(sincy.mas.days, win_type='boxcar', center=True).mean()
+            sincy.smth_crv = sincy.buffered.rolling(sincy.mas.days, win_type='boxcar', center=True)\
+                .mean(numeric_only=True)
         except (RuntimeError, Exception, ValueError):
             logger.debug(f'Warning! Smoothed curv calculation went wrong, in position:{pxldrl.position}')
             pxldrl.error = True
             pxldrl.errtyp = 'Smth crv'
             continue
 
-        sincy.smoothed = sincy.smth_crv[sincy.sd - sincy.td:sincy.ed + sincy.td]
+        sincy.smoothed = sincy.smth_crv.loc[sincy.sd - sincy.td:sincy.ed + sincy.td]
 
         # baricenter for the smoothed one
         try:
@@ -210,11 +209,13 @@ def phen_metrics(pxldrl, param):
             pxldrl.errtyp = 'Baricenter'
             continue
 
-        sincy.back = sincy.smoothed[:sincy.cbcd] \
-                          .shift(1, freq=pd.Timedelta(days=int(sincy.mas.days / 2)))[sincy.sd:].dropna()  # TODO speed up
+        # shift of the smoothed curve
+        delta = pd.Timedelta(days=int(sincy.mas.days / 2))
 
-        sincy.forward = sincy.smoothed[sincy.cbcd:] \
-                             .shift(1, freq=pd.Timedelta(days=-int(sincy.mas.days / 2)))[:sincy.ed].dropna()
+        # calculate the back curve
+        sincy.back = sincy.smoothed.loc[:sincy.cbcd].shift(1, freq=delta).loc[sincy.sd:].dropna()
+        # calculate the forward curve
+        sincy.forward = sincy.smoothed.loc[sincy.cbcd:].shift(1, freq=-delta).loc[:sincy.ed].dropna()
 
         sincy.sbd, sincy.sed, sincy.sbd_ts, sincy.sbd_ts = 4 * [None]
 
@@ -222,7 +223,7 @@ def phen_metrics(pxldrl, param):
         try:
             sincy.intcpt_bk = intercept((sincy.mms - sincy.back).values)
             sincy.sbd = (sincy.mms.iloc[sincy.intcpt_bk[0]])
-            if sincy.sbd.index > sincy.max_date:
+            if sincy.sbd.index > sincy.max.index:
                 raise Exception
 
         except (RuntimeError, Exception, ValueError):
@@ -235,7 +236,7 @@ def phen_metrics(pxldrl, param):
         try:
             sincy.intcpt_fw = intercept((sincy.mms - sincy.forward).values)
             sincy.sed = (sincy.mms.iloc[sincy.intcpt_fw[-1]])
-            if sincy.sed.index < sincy.max_date:
+            if sincy.sed.index < sincy.max.index:
                 raise Exception
 
         except (RuntimeError, Exception, ValueError):
@@ -280,13 +281,13 @@ def phen_metrics(pxldrl, param):
             sincy.spi = sincy.sp.sum()
 
             # Season Integral
-            sincy.si = sincy.mms[sincy.sbd.index[0]:sincy.sed.index[0]].sum()
+            sincy.si = sincy.mms.loc[sincy.sbd.index[0]:sincy.sed.index[0]].sum()
 
             # Cyclic fraction
             sincy.cf = sincy.si - sincy.spi
 
             # Active fraction
-            sincy.af = sincy.mms.loc[sincy.sbd.index[0]:sincy.max_date] - sincy.sp[:sincy.max_date]
+            sincy.af = sincy.mms.loc[sincy.sbd.index[0]:sincy.max.index[0]] - sincy.sp[:sincy.max.index[0]]
             sincy.afi = sincy.af.sum()
 
             # reference yr
@@ -310,16 +311,16 @@ def phen_metrics(pxldrl, param):
     return phen
 
 
-def _mas(ts, mavmet, sdd):
+def _mas(tsl, mavmet, sdd):
     """
     Calculate the mas over the single cycle.
 
-    :param ts: pandas time serie
+    :param tsl: pandas time serie lenght
     :param mavmet: strenght of the equation [normally ~ 1.5-2]
     :param sdd: standard deviation expressed in yrs
     :return: mas ( moving avarage yearly)
     """
-    return ts - (2 * mavmet * sdd)
+    return tsl - (2 * mavmet * sdd)
     # TODO to be reviewed
 
 
@@ -330,7 +331,7 @@ def attribute_extractor(pxldrl, attribute):
                 {'index': phency.ref_yr.values[0],
                  'value': getattr(phency, attribute)}, pxldrl.phen))
 
-        return pd.DataFrame(values).groupby('index').sum().squeeze()
+        return pd.DataFrame(values).groupby('index').sum(numeric_only=True).squeeze()
 
     except RuntimeError:
         raise RuntimeError('Impossible to extract the attribute requested')
@@ -343,7 +344,7 @@ def attribute_extractor_se(pxldrl, attribute):
                 {'index': phency.ref_yr.values[0],
                  'value': getattr(phency, attribute)}, pxldrl.phen))
 
-        return pd.DataFrame(values).groupby('index').min().squeeze()
+        return pd.DataFrame(values).groupby('index').min(numeric_only=True).squeeze()
 
     except RuntimeError:
         raise RuntimeError('Impossible to extract the attribute requested')

@@ -100,9 +100,9 @@ def analyse(cube, client, param, action, out):
             except (RuntimeError, Exception, ValueError):
                 logger.debug(f'Error in the sync')
 
-            logger.debug(f'Row {rowi} processed')
+            # logger.debug(f'Row {rowi} processed')
 
-            client.cancel(s_row)
+            # client.cancel(s_row)
 
             # client.cancel(futures)
             # del futures, t_sl, t_cf, t_si, t_spi, row, s_row
