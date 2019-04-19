@@ -2,7 +2,7 @@
 
 import logging
 import sys
-import detect_peacks as dp
+import detect_peaks as dp
 import pandas as pd; import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -166,8 +166,7 @@ def phen_metrics(pxldrl, param):
             continue
 
         # Maximum point and date
-        # sincy.max = sincy.mms[sincy.mms == sincy.mms.max()]
-        sincy.max = sincy.mms.loc[[sincy.mms.idxmax()]]
+        sincy.max_idx = sincy.mms.idxmax()
 
         # TODO verifying buffer use and indexing
         try:
@@ -223,7 +222,7 @@ def phen_metrics(pxldrl, param):
         try:
             sincy.intcpt_bk = intercept((sincy.mms - sincy.back).values)
             sincy.sbd = (sincy.mms.iloc[sincy.intcpt_bk[0]])
-            if sincy.sbd.index > sincy.max.index:
+            if sincy.sbd.index > sincy.max_idx:
                 raise Exception
 
         except (RuntimeError, Exception, ValueError):
@@ -236,7 +235,7 @@ def phen_metrics(pxldrl, param):
         try:
             sincy.intcpt_fw = intercept((sincy.mms - sincy.forward).values)
             sincy.sed = (sincy.mms.iloc[sincy.intcpt_fw[-1]])
-            if sincy.sed.index < sincy.max.index:
+            if sincy.sed.index < sincy.max_idx:
                 raise Exception
 
         except (RuntimeError, Exception, ValueError):
@@ -287,7 +286,7 @@ def phen_metrics(pxldrl, param):
             sincy.cf = sincy.si - sincy.spi
 
             # Active fraction
-            sincy.af = sincy.mms.loc[sincy.sbd.index[0]:sincy.max.index[0]] - sincy.sp[:sincy.max.index[0]]
+            sincy.af = sincy.mms.loc[sincy.sbd.index[0]:sincy.max_idx] - sincy.sp[:sincy.max_idx]
             sincy.afi = sincy.af.sum()
 
             # reference yr
