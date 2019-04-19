@@ -69,7 +69,7 @@ class SingularCycle(object):
         self.sd = sd  # Start date - MBD
         self.ed = ed  # End date - MED
         self.mml = self._time_delta(self.sd, self.ed)  # Cycle lenght in days
-        self.mms = ts.loc[sd:ed][:]  # minimum minimum time series
+        self.mms = ts.loc[sd:ed]  # minimum minimum time series
         self.td = self.mml*2/3  # time delta
         self.mms_b = ts.loc[sd-self.td:ed+self.td]
         self.sb = self._integral(self.mms)  # Standing biomas
@@ -117,29 +117,29 @@ class SingularCycle(object):
             return None
 
     def _difference(self, crv_1, crv_2):
-            """Return the differences between two time series"""
-            try:
-                if crv_2.sum() > 0:
-                    out = crv_1 - crv_2
-                else:
-                    out = crv_1 + crv_2
-                return out
-            except (RuntimeError, Exception, ValueError):
-                self.err = True
-                logger.debug('Warning! difference between two time series')
-                return None
+        """Return the differences between two time series"""
+        try:
+            if crv_2.sum() > 0:
+                out = crv_1 - crv_2
+            else:
+                out = crv_1 + crv_2
+            return out
+        except (RuntimeError, Exception, ValueError):
+            self.err = True
+            logger.debug('Warning! difference between two time series')
+            return None
 
     def _to_gregorian_date(self, value):
-            """Convert to pandas date format"""
-            try:
-                if value is not None:
-                    return pd.to_datetime(value, unit='s')
-                else:
-                    raise ValueError('date value is null')
-            except (RuntimeError, Exception, ValueError):
-                self.err = True
-                logger.debug('Warning! Datetime conversion went wrong')
-                return None
+        """Convert to pandas date format"""
+        try:
+            if value is not None:
+                return pd.to_datetime(value, unit='s')
+            else:
+                raise ValueError('date value is null')
+        except (RuntimeError, Exception, ValueError):
+            self.err = True
+            logger.debug('Warning! Datetime conversion went wrong')
+            return None
 
     def _to_gregorian(self, value):
         try:
