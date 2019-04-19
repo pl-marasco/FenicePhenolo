@@ -46,8 +46,8 @@ def plot(pxldrl):
             phency.sbd.plot(style='r>',)
         if phency.se is not None:
             phency.sed.plot(style='r<',)
-        if phency.max is not None:
-            phency.max.plot(style='rD')
+        if phency.max_idx is not None:
+            phency.mms.loc[[phency.max_idx]].plot(style='rD')
 
     fig, axes = plt.subplots(7, 1, figsize=(22, 10))
     plt.tight_layout()
