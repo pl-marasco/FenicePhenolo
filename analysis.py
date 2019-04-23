@@ -80,13 +80,17 @@ def phenolo(pxldrl, **kwargs):
     # Estimate Season length
     try:
         pxldrl.seasons, pxldrl.trend = fit_seasons(pxldrl.ts_cleaned)
-        pxldrl.trend_ts = metrics.to_timeseries(pxldrl.trend, pxldrl.ts_cleaned.index)
+        if pxldrl.seasons is not None and pxldrl.trend is not None:
+            pxldrl.trend_ts = metrics.to_timeseries(pxldrl.trend, pxldrl.ts_cleaned.index)
+        else:
+            raise Exception
         # TODO add the no season option
         # pxldrl.season_lng
     except (RuntimeError, Exception, ValueError):
-        logger.info(f'Error in estimate seaason and trend in position:{pxldrl.position}')
+        logger.info(f'Error in estimate season and trend in position:{pxldrl.position}')
         pxldrl.error = True
         pxldrl.errtyp = 'Season and trend estimation'
+        pxldrl.season_lng = 0
         return pxldrl
 
     # Calculate season length and expected number of season
