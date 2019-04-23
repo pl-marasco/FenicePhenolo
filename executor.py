@@ -35,11 +35,10 @@ def analyse(cube, client, param, action, out):
     try:
         for rowi in range(len(param.row_val)):
 
-            trashold = 250
-            q_trashold = 0.2  # TODO change the percentage to be a parameter
             row = cube.isel(dict([(param.row_nm, rowi)])).compute()
-            reduced = row.reduce(np.percentile, dim=param.dim_nm, q=q_trashold)
-            med = reduced.where(reduced < trashold)
+
+            reduced = row.reduce(np.percentile, dim=param.dim_nm, q=param.qt)
+            med = reduced.where(((reduced > param.min_th) & (reduced < param.max_th)))
             finite = med.reduce(np.isfinite)
             y_lst = np.argwhere(finite.values).flatten()
 
@@ -67,21 +66,25 @@ def analyse(cube, client, param, action, out):
                 col = pxldrl.position[1]
                 if pxldrl.error:
                     t_err.iloc[col] = 1
+                    t_season.iloc[col] = 0
                     logger.debug(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
                     print(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
                 else:
-                    t_sb.iloc[:, col] = pxldrl.sb[:]
-                    t_se.iloc[:, col] = pxldrl.se[:]
-                    t_sl.iloc[:, col] = pxldrl.sl[:]
-                    t_spi.iloc[:, col] = pxldrl.spi[:]
-                    t_si.iloc[:, col] = pxldrl.si[:]
-                    t_cf.iloc[:, col] = pxldrl.cf[:]
-                    t_afi.iloc[:, col] = pxldrl.afi[:]
-                    if pxldrl.season_lng:
-                        if pxldrl.season_lng <= 365.0:
-                            t_season[col] = int(365/pxldrl.season_lng)
-                        else:
-                            t_season[col] = int(pxldrl.season_lng)
+                    try:
+                        t_sb.iloc[:, col] = pxldrl.sb[:]
+                        t_se.iloc[:, col] = pxldrl.se[:]
+                        t_sl.iloc[:, col] = pxldrl.sl[:]
+                        t_spi.iloc[:, col] = pxldrl.spi[:]
+                        t_si.iloc[:, col] = pxldrl.si[:]
+                        t_cf.iloc[:, col] = pxldrl.cf[:]
+                        t_afi.iloc[:, col] = pxldrl.afi[:]
+                        if pxldrl.season_lng:
+                            if pxldrl.season_lng <= 365.0:
+                                t_season.iloc[col] = int(365/pxldrl.season_lng)
+                            else:
+                                t_season.iloc[col] = int(pxldrl.season_lng)
+                    except (RuntimeError, Exception, ValueError):
+                        continue
 
                 # client.cancel(future)
                 # del future, pxldrl
