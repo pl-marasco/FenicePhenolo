@@ -169,6 +169,18 @@ class ProjectParameters(object):
                 self.scale = self.__read(config, section, "scale", type='float')
                 self.offset = self.__read(config, section, "offset", type='float')
 
+                # validity range
+
+                self.qt = self.__read(config, section, "threshold", type='float')
+                if self.qt is None:
+                    self.qt = 0.25
+                self.min_th = self.__read(config, section, "min_th", type='float')
+                if self.min_th is None:
+                    self.min_th = self.min
+                self.max_th = self.__read(config, section, "max_th", type='float')
+                if self.max_th is None:
+                    self.max_th = self.max
+
                 # mask, cloud, snow, sea
                 self.mask = self.__read(config, section, "msk", type='list')
                 self.cloud = self.__read(config, section, "cloud", type='int')
