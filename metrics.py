@@ -329,10 +329,12 @@ def attribute_extractor(pxldrl, attribute):
             map(lambda phency:
                 {'index': phency.ref_yr.values[0],
                  'value': getattr(phency, attribute)}, pxldrl.phen))
+        if len(values) == 0:
+            raise Exception
 
         return pd.DataFrame(values).groupby('index').sum(numeric_only=True).squeeze()
 
-    except RuntimeError:
+    except (RuntimeError, Exception):
         raise RuntimeError('Impossible to extract the attribute requested')
 
 
@@ -342,10 +344,11 @@ def attribute_extractor_se(pxldrl, attribute):
             map(lambda phency:
                 {'index': phency.ref_yr.values[0],
                  'value': getattr(phency, attribute)}, pxldrl.phen))
-
+        if len(values) == 0:
+            raise Exception
         return pd.DataFrame(values).groupby('index').min(numeric_only=True).squeeze()
 
-    except RuntimeError:
+    except (RuntimeError, Exception):
         raise RuntimeError('Impossible to extract the attribute requested')
 
 
