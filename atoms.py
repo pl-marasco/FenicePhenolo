@@ -36,9 +36,9 @@ class PixelDrill(object):
         self.error = False
         self.errtyp = ''
 
-    def __del__(self):
-        for ith in self.__dict__.keys():
-            setattr(self, ith, None)
+    # def __del__(self):
+    #     for ith in self.__dict__.keys():
+    #         setattr(self, ith, None)
 
 
 class SingularCycle(object):
@@ -69,9 +69,9 @@ class SingularCycle(object):
         self.sd = sd  # Start date - MBD
         self.ed = ed  # End date - MED
         self.mml = self._time_delta(self.sd, self.ed)  # Cycle lenght in days
-        self.mms = ts.loc[sd:ed]  # minimum minimum time series
         self.td = self.mml*2/3  # time delta
-        self.mms_b = ts.loc[sd-self.td:ed+self.td]
+        self.mms_b = ts.loc[sd-self.td:ed+self.td]  # buffered time series
+        self.mms = self.mms_b.loc[sd:ed]  # minimum minimum time series                   <- possible self referencing
         self.sb = self._integral(self.mms)  # Standing biomas
         self.mpf = self._min_min_line(self.mms)  # permanent fration
         self.mpi = self._integral(self.mpf)  # permanent fration integral
@@ -153,8 +153,7 @@ class SingularCycle(object):
         """Barycenter"""
         cbc = 0
         try:
-            index = self.vox.index
-            self.posix_time = [np.int64(i.timestamp()) for i in index]
+            self.posix_time = self.vox.index.astype(np.int64) / 10 ** 9
             cbc = (self.posix_time * self.vox).sum() / self.vox.sum()
         except(RuntimeError, Exception, ValueError):
             self.err = True
