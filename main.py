@@ -54,8 +54,12 @@ def main(param):
 
         if ~localproc and n_workers and threads_per_worker:
             client = Client(processes=localproc, n_workers=n_workers, threads_per_worker=threads_per_worker)
+        elif ~localproc and n_workers:
+            client = Client(processes=localproc, n_workers=n_workers)
         elif localproc and n_workers:
             client = Client(n_workers=n_workers, threads_per_worker=threads_per_worker)
+        elif localproc:
+            client = Client(n_workers=n_workers)
         else:
             client = Client()
 
