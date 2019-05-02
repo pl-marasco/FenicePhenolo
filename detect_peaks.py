@@ -2,13 +2,12 @@
 
 from __future__ import division, print_function
 import numpy as np
-from numba import jit
+
 __author__ = "Marcos Duarte, https://github.com/demotu/BMC"
 __version__ = "1.0.5"
 __license__ = "MIT"
 
 
-@jit
 def detect_peaks(x, mph=None, mpd=1, threshold=0, edge='rising',
                  kpsh=False, valley=False, show=False, ax=None):
 
@@ -140,8 +139,7 @@ def detect_peaks(x, mph=None, mpd=1, threshold=0, edge='rising',
         for i in range(ind.size):
             if not idel[i]:
                 # keep peaks with the same height if kpsh is True
-                idel = idel | (ind >= ind[i] - mpd) & (ind <= ind[i] + mpd) \
-                    & (x[ind[i]] > x[ind] if kpsh else True)
+                idel = idel | (ind >= ind[i] - mpd) & (ind <= ind[i] + mpd) & (x[ind[i]] > x[ind] if kpsh else True)
                 idel[i] = 0  # Keep current peak
         # remove the small peaks and sort back the indices by their occurrence
         ind = np.sort(ind[~idel])
