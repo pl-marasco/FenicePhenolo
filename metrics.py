@@ -3,7 +3,7 @@
 import logging
 import sys
 import detect_peaks as dp
-import pandas as pd; import numpy as np
+import pandas as pd; import numpy as np; import scipy.signal as si
 
 logger = logging.getLogger(__name__)
 np.warnings.filterwarnings('ignore')
@@ -70,21 +70,11 @@ def valley_detection(pxldrl, param):
                           valley=True,
                           edge='both',
                           kpsh=False)
-    # oversmp = False
-
     if not ind.any():
         ind = dp.detect_peaks(vdetr, mph=-20, mpd=60, valley=True)
-        # oversmp = True
 
     # Valley point time series conversion
-    pks = pd.Series()
-    for i in ind:
-        pks[pxldrl.ps.index[i]] = pxldrl.ps.iloc[i]
-
-    # Points detrended
-    pks0 = pd.Series()
-    for i in ind:
-        pks0[vdetr.index[i]] = -vdetr.iloc[i]
+    pks = pxldrl.ps.iloc[ind]
 
     return pks
 
@@ -160,7 +150,6 @@ def phen_metrics(pxldrl, param):
 
         # specific mas
         sincy.mas = _mas(sincy.mml, param.mavmet, sincy.csdd)
-        # TODO verify the correctness of the standard deviation
 
         if sincy.mas.days < 0:
             continue
@@ -197,16 +186,6 @@ def phen_metrics(pxldrl, param):
             continue
 
         sincy.smoothed = sincy.smth_crv.loc[sincy.sd - sincy.td:sincy.ed + sincy.td]
-
-        # # baricenter for the smoothed one
-        # try:
-        #     posix_t_smth = sincy.smoothed.index.values.astype(np.int64) // 10 ** 9
-        #     sincy.unx_sbc_Y_smth = (posix_t_smth * sincy.smoothed).sum() / posix_t_smth.sum()
-        # except (RuntimeError, ValueError, Exception):
-        #     logger.debug(f'Warning! Baricenter not found in position {pxldrl.position} '
-        #                  f'for the cycle starting in{sincy.sd}')
-        #     pxldrl.errtyp = 'Baricenter'
-        #     continue
 
         # shift of the smoothed curve
         delta = pd.Timedelta(days=int(sincy.mas.days / 2))
