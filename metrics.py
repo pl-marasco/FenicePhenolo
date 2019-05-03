@@ -145,30 +145,28 @@ def phen_metrics(pxldrl, param):
     phen = []
     for sincy in pxldrl.sincys:
 
-        if sincy.err is True:
+        if sincy.err:
             continue
 
         # specific mas
         sincy.mas = _mas(sincy.mml, param.mavmet, sincy.csdd)
 
         if sincy.mas.days < 0:
-            continue
+            sincy.mas = pd.to_timedelta(param.mavspan, unit='D')
 
         # Maximum point and date
         sincy.max_idx = sincy.mms.idxmax()
 
-        # TODO verifying buffer use and indexing
         try:
+            sd, ed = None, None
             if sincy.sd-sincy.mas >= sincy.mms_b.index[0]:
                 sd = sincy.sd-sincy.mas
-            else:
-                sd = sincy.mms_b.index[0]
-            if sincy.ed-sincy.mas <= sincy.mms_b.index[-1]:
+            if sincy.ed+sincy.mas <= sincy.mms_b.index[-1]:
                 ed = sincy.ed+sincy.mas
+            if sd or ed:
+                sincy.buffered = sincy.mms_b.loc[sd:ed]
             else:
-                ed = sincy.mms_b.index[-1]
-
-            sincy.buffered = sincy.mms_b.loc[sd:ed]
+                sincy.buffered = sincy.mms_b
 
         except (RuntimeError, Exception, ValueError):
             logger.debug(f'Warning! Buffered curv not properly created, in position:{pxldrl.position}')
@@ -323,7 +321,7 @@ def attribute_extractor_se(pxldrl, attribute):
             map(lambda phency:
                 {'index': phency.ref_yr.values[0],
                  'value': getattr(phency, attribute)}, pxldrl.phen))
-        if len(values) == 0:
+        if not values:
             raise Exception
         return pd.DataFrame(values).groupby('index').min(numeric_only=True).squeeze()
 
