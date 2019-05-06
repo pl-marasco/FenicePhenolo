@@ -7,6 +7,7 @@ from dask.distributed import Client, as_completed
 import atoms
 import logging
 import numpy as np
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +63,8 @@ def analyse(cube, client, param, action, out):
 
             futures = client.map(process, y_lst, **{'data': s_row, 'row': rowi, 'param': s_param, 'action': action})
 
+            s = time.time()
+
             for future, pxldrl in as_completed(futures, with_results=True):
                 col = pxldrl.position[1]
                 if pxldrl.error:
@@ -88,6 +91,8 @@ def analyse(cube, client, param, action, out):
 
                 # client.cancel(future)
                 # del future, pxldrl
+
+            print(time.time()-s)
 
             out.sb[:, rowi, :] = t_sb
             out.se[:, rowi, :] = t_se
