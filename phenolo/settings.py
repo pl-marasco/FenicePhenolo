@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 
-import os, sys
 import configparser as cp
+import logging
+import os
+import sys
+
 import numpy as np
 import pandas as pd
-import logging
-import chronos
+
+from phenolo import chronos
 
 logger = logging.getLogger(__name__)
 
@@ -209,8 +212,8 @@ class ProjectParameters(object):
                 self.smp = self.__read(config, section, "smp", type='int')
                 self.outmax = self.__read(config, section, "outmax", type='int')
 
-                self.row_nm, self.col_nm, self.dim_nm, = [None]*3
-                self.row_val, self.col_val, self.dim_val = [None]*3
+                self.row_nm, self.col_nm, self.dim_nm, = [None] * 3
+                self.row_val, self.col_val, self.dim_val = [None] * 3
                 self.pixel_list = None
 
                 return
@@ -337,4 +340,3 @@ class ProjectParameters(object):
         mask = np.append(self.sea, self.mask)
         masked = np.ma.MaskedArray(np.ma.MaskedArray(med, np.in1d(med, mask)))
         self.pixel_list = np.argwhere(masked)
-

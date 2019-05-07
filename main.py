@@ -1,20 +1,22 @@
 # -*- coding: utf-8 -*-
 
-import argparse, sys, importlib, time, os, logging
-from datetime import datetime
-from dask.distributed import Client
-import settings
-import reader
-import analysis
-import output
+import argparse
+import importlib
+import logging
 import os
+import sys
+import time
+from datetime import datetime
+
+from dask.distributed import Client
+
 import executor
+from phenolo import atoms, settings, reader, viz, output, analysis as aa
 
 logger = logging.getLogger(__name__)
 
 
 def main(param):
-
     start_time = time.process_time()
 
     cube = reader.ingest(param)
@@ -26,9 +28,6 @@ def main(param):
 
     if param.col_nm is None and param.row_nm is None and param.dim_nm is not None:
         # single pixel analysis
-        import atoms
-        import analysis as aa
-        import viz
 
         param.add_px_list(cube)
 
@@ -65,7 +64,7 @@ def main(param):
 
         out = output.OutputCointainer(cube, param, name='test_cube')
 
-        result_cube = executor.analyse(cube, client, param, analysis.phenolo, out)
+        result_cube = executor.analyse(cube, client, param, aa.phenolo, out)
 
         result_cube.close()
     else:
@@ -77,7 +76,6 @@ def main(param):
 
 
 def _log_info(logger, param):
-
     logger.debug('-------------------- start values --------------------')
     for key, value in param.__dict__.items():
         logger.debug('{} = {}'.format(key, value))
@@ -110,7 +108,7 @@ if __name__ == '__main__':
         if args.log:
             logpth = os.path.join(os.path.dirname(args.conf), 'log.txt')
             log = logging.basicConfig(filename=logpth,
-                                      level=args.log*10,
+                                      level=args.log * 10,
                                       filemode='w')
         logger = logging.getLogger(__name__)
         logger.info('*** Phenolo 2.0 ***')
@@ -126,5 +124,3 @@ if __name__ == '__main__':
     except Exception:
         print('Exception occurred')
         raise sys.exit(1)
-
-

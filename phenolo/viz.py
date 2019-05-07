@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 
 
 def plot(pxldrl):
-
     fig, axes = plt.subplots(3, 1, figsize=(20, 10))
 
     pxldrl.ts_raw.plot(ax=axes[0], style='k', title='Original Time Series for pixel in {0}'.format(pxldrl.position))
@@ -34,7 +33,7 @@ def plot(pxldrl):
 
     for i in range(0, len(pxldrl.phen)):
         phency = pxldrl.phen[i]
-        plt.subplot(rows, col, i+1)
+        plt.subplot(rows, col, i + 1)
 
         if phency.buffered is not None:
             phency.mms.plot(style='b', title='{}'.format(phency.ref_yr.values[0]))
@@ -43,9 +42,9 @@ def plot(pxldrl):
         if phency.forward is not None:
             phency.forward.plot(style='-', color='olive')
         if phency.sb is not None:
-            phency.sbd.plot(style='r>',)
+            phency.sbd.plot(style='r>', )
         if phency.se is not None:
-            phency.sed.plot(style='r<',)
+            phency.sed.plot(style='r<', )
         if phency.max_idx is not None:
             phency.mms.loc[[phency.max_idx]].plot(style='rD')
 
@@ -87,6 +86,3 @@ def plot(pxldrl):
         pxldrl.afi.plot(style='r', title='Active fraction')
 
     plt.show(block=True)
-
-
-

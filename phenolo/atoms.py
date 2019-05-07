@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-import sys
+
+import logging
 
 import numpy as np
 import pandas as pd
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +14,7 @@ class PixelDrill(object):
 
     a single pixel drill rappresent the minimum unit of analye
     """
+
     def __init__(self, ts, px):
         self.ts_raw = ts
         self.position = px
@@ -36,9 +37,9 @@ class PixelDrill(object):
         self.error = False
         self.errtyp = ''
 
-    # def __del__(self):
-    #     for ith in self.__dict__.keys():
-    #         setattr(self, ith, None)
+    def __del__(self):
+        for ith in self.__dict__.keys():
+            setattr(self, ith, None)
 
 
 class SingularCycle(object):
@@ -68,26 +69,26 @@ class SingularCycle(object):
 
         self.sd = sd  # Start date - MBD
         self.ed = ed  # End date - MED
-        self.mml = self._time_delta(self.sd, self.ed)  # Cycle lenght in days
-        self.td = self.mml*2/3  # time delta
-        self.mms_b = ts.loc[sd-self.td:ed+self.td]  # buffered time series
+        self.mml = self.__time_delta(self.sd, self.ed)  # Cycle lenght in days
+        self.td = self.mml * 2 / 3  # time delta
+        self.mms_b = ts.loc[sd - self.td:ed + self.td]  # buffered time series
         self.mms = self.mms_b.loc[sd:ed]  # minimum minimum time series                   <- possible self referencing
-        self.sb = self._integral(self.mms)  # Standing biomas
-        self.mpf = self._min_min_line(self.mms)  # permanent fration
-        self.mpi = self._integral(self.mpf)  # permanent fration integral
-        self.vox = self._difference(self.mms, self.mpf)  # Values between two minima substracted the permanet fraction
-        self.voxi = self._integral(self.vox)  # integral of vox
-        self.cbc = self._barycenter()  # cycle baricenter / ex season baricenter
-        self.cbcd = self._to_gregorian_date(self.cbc)
-        self.csd = self._cycle_deviation_standard()  # cycle deviation standard / Season deviation standard
-        self.csdd = self._to_gregorian(self.csd)  # cycle deviation standard in days /Season deviation standard in days
+        self.sb = self.__integral(self.mms)  # Standing biomas
+        self.mpf = self.__min_min_line(self.mms)  # permanent fration
+        self.mpi = self.__integral(self.mpf)  # permanent fration integral
+        self.vox = self.__difference(self.mms, self.mpf)  # Values between two minima substracted the permanet fraction
+        self.voxi = self.__integral(self.vox)  # integral of vox
+        self.cbc = self.__barycenter()  # cycle baricenter / ex season baricenter
+        self.cbcd = self.__to_gregorian_date(self.cbc)
+        self.csd = self.__cycle_deviation_standard()  # cycle deviation standard / Season deviation standard
+        self.csdd = self.__to_gregorian(self.csd)  # cycle deviation standard in days /Season deviation standard in days
         self.ref_yr = self.cbcd.year  # reference yr
 
         self.sfs = None
         self.mas = None
         self.unx_sbc = None
 
-    def _time_delta(self, sd, ed):
+    def __time_delta(self, sd, ed):
         """Minimum minimum lenght"""
         try:
             return ed - sd
@@ -96,7 +97,7 @@ class SingularCycle(object):
             logger.debug('Warning! Minimum minimum lenght error')
             return None
 
-    def _integral(self, ts):
+    def __integral(self, ts):
         """Return the integral of a time series"""
         try:
             return ts.sum()
@@ -105,7 +106,7 @@ class SingularCycle(object):
             logger.debug('Warning! error in the integral calculation')
             return None
 
-    def _min_min_line(self, ts):
+    def __min_min_line(self, ts):
         """Interpolated line between two min and give back a time series"""
         try:
             pf = ts.copy()
@@ -116,7 +117,7 @@ class SingularCycle(object):
             logger.debug('Warning! Error in interpolated line between two min')
             return None
 
-    def _difference(self, crv_1, crv_2):
+    def __difference(self, crv_1, crv_2):
         """Return the differences between two time series"""
         try:
             if crv_2.sum() > 0:
@@ -129,7 +130,7 @@ class SingularCycle(object):
             logger.debug('Warning! difference between two time series')
             return None
 
-    def _to_gregorian_date(self, value):
+    def __to_gregorian_date(self, value):
         """Convert to pandas date format"""
         try:
             if value is not None:
@@ -141,7 +142,7 @@ class SingularCycle(object):
             logger.debug('Warning! Datetime conversion went wrong')
             return None
 
-    def _to_gregorian(self, value):
+    def __to_gregorian(self, value):
         try:
             return pd.Timedelta(value, unit='s')
         except (RuntimeError, Exception, ValueError):
@@ -149,7 +150,7 @@ class SingularCycle(object):
             logger.debug('Warning! Datetime conversion went wrong')
             return None
 
-    def _barycenter(self):
+    def __barycenter(self):
         """Barycenter"""
         cbc = 0
         try:
@@ -167,7 +168,7 @@ class SingularCycle(object):
             logger.debug('Warning! Barycenter has a negative value')
             return None
 
-    def _cycle_deviation_standard(self):
+    def __cycle_deviation_standard(self):
         """Season deviation standard"""
         try:
             if self.cbc is not None:

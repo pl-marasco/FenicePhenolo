@@ -4,7 +4,6 @@ import pandas as pd
 
 
 def create(dts, dte, dektyp):
-
     ms = pd.date_range(dts, dte)
 
     if dektyp.lower() == 's5':
@@ -42,11 +41,11 @@ def day_calc(dekstr):
 
 
 def season_ext(pxldrl):
-    return int((pxldrl.ts_cleaned.index.max() - pxldrl.ts_cleaned.index.min()) / pd.Timedelta(pxldrl.season_lng, unit='d'))
+    return int(
+        (pxldrl.ts_cleaned.index.max() - pxldrl.ts_cleaned.index.min()) / pd.Timedelta(pxldrl.season_lng, unit='d'))
 
 
 def medspan(season_lng, param):
-
     if param.medspan == 0:
         medspan = season_lng / 7
     else:

@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 
-import nodata; import metrics; import outlier; import chronos; import filters
 import logging
+
+from phenolo import chronos, filters, metrics, nodata, outlier
 from seasonal import fit_seasons
 
 logger = logging.getLogger(__name__)
 
 
 def phenolo(pxldrl, **kwargs):
-
     param = kwargs.pop('settings', '')
 
     # no data removing

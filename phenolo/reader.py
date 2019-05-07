@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 
+import fnmatch
+import glob
+import logging
 import os
 import sys
-import fnmatch
-from pyhdf.SD import *
-import numpy as np
-import xarray as xr
-import pandas as pd
-import glob
-import numpy.ma as ma
-import logging
 import time
 
+import numpy as np
+import numpy.ma as ma
+import pandas as pd
+import xarray as xr
+from pyhdf.SD import *
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +22,7 @@ class Reader(object):
 
 
 def _get_img(prmts, dim):
-
-    import chronos as dk
+    from phenolo import chronos as dk
 
     try:
         # dataset = xr.open_rasterio(prmts.inFilePth, chunks={'x': 500, 'y': 500})
@@ -55,7 +54,6 @@ def _get_img(prmts, dim):
 
 
 def _get_rasterio(prmts, dim):
-
     import rasterio as rs
 
     with rs.Env(CPL_DEBUG=True):
@@ -64,7 +62,6 @@ def _get_rasterio(prmts, dim):
 
 
 def _get_netcdf(prmts, dim):
-
     dataset = xr.open_dataset(prmts.inFilePth,
                               chunks={'lat': 250, 'lon': 250},
                               mask_and_scale=False,
@@ -74,7 +71,6 @@ def _get_netcdf(prmts, dim):
 
 
 def _get_multi_netcdf(path, dim):
-
     path = os.path.join(path, '*.nc')
 
     dataset = xr.open_mfdataset(path,
@@ -86,7 +82,6 @@ def _get_multi_netcdf(path, dim):
 
 
 def _get_hls(path):
-
     hdf = SD(path, SDC.READ)
 
     # dataset_dic = hdf.datasets()
@@ -262,7 +257,6 @@ def _get_hls(path):
 
 
 def _get_multi_hdf(f_list, dim):
-
     hls_lst = [_get_hls(file) for file in f_list]
 
     data_array = xr.concat(hls_lst, dim='Time')
@@ -278,7 +272,6 @@ def _get_hdf():
 
 
 def _coord_names(data):
-
     dims = [i.lower() for i in data.dims]
     crd_x, crd_y, crd_t = [None] * 3
 
@@ -296,7 +289,6 @@ def _coord_names(data):
 
 
 def _slice_cube(dataset, dim):
-
     if hasattr(dataset, 'NDVI'):
         data = dataset.NDVI
     else:
@@ -319,8 +311,8 @@ def _slice_cube(dataset, dim):
                 itrm_cube = data[dc]
             # Relative values (prj)
             elif isinstance(dim['x'].start, float) and isinstance(dim['y'].start, float):
-                    _coord_range_check(dim, data, crd_x, crd_y, crd_t)
-                    itrm_cube = data.sel(dc, method='nearest')
+                _coord_range_check(dim, data, crd_x, crd_y, crd_t)
+                itrm_cube = data.sel(dc, method='nearest')
             else:
                 raise ValueError
 
@@ -337,48 +329,47 @@ def _slice_cube(dataset, dim):
         try:
             # Absolute
             if isinstance(dim['x'].start, int) or isinstance(dim['x'].stop, int) and \
-               isinstance(dim['y'].start, int) or isinstance(dim['y'].stop, int):
-                    dc = dict([(crd_x, dim['x']), (crd_y, dim['y'])])
-                    _coord_range_check(dim, data, crd_x, crd_y, crd_t)
-                    itrm_cube = data[dc]
-                    if dim['time'] == slice(pd.NaT, pd.NaT, None):
-                        return itrm_cube
-                    else:
-                        return itrm_cube.sel(dict([(crd_t, dim['time'])]))
+                    isinstance(dim['y'].start, int) or isinstance(dim['y'].stop, int):
+                dc = dict([(crd_x, dim['x']), (crd_y, dim['y'])])
+                _coord_range_check(dim, data, crd_x, crd_y, crd_t)
+                itrm_cube = data[dc]
+                if dim['time'] == slice(pd.NaT, pd.NaT, None):
+                    return itrm_cube
+                else:
+                    return itrm_cube.sel(dict([(crd_t, dim['time'])]))
             # Relative (prj)
             elif isinstance(dim['x'].start, float) or isinstance(dim['x'].stop, float) and \
                     isinstance(dim['y'].start, float) or isinstance(dim['y'].stop, float):
-                    _coord_range_check(dim, data, crd_x, crd_y, crd_t)
-                    return data.sel(dict([(crd_t, dim['time']), (crd_x, dim['x']), (crd_y, dim['y'])]))
-                    # TODO split time slice
+                _coord_range_check(dim, data, crd_x, crd_y, crd_t)
+                return data.sel(dict([(crd_t, dim['time']), (crd_x, dim['x']), (crd_y, dim['y'])]))
+                # TODO split time slice
         except ValueError:
             logger.debug('Coordinates slice has created an error')
             raise ValueError
 
 
 def _coord_range_check(dim, data, crd_x, crd_y, crd_t):
-
     sizes = dict(data.sizes)
     # single pixel
     if dim['x'].start == dim['x'].stop and dim['y'].start == dim['y'].stop:
         # Absolute
         if isinstance(dim['x'].start, int) and isinstance(dim['y'].start, int):
-            if not(dim['x'].start <= sizes[crd_x]):
+            if not (dim['x'].start <= sizes[crd_x]):
                 logger.info('Coordinates {} out of range'.format(crd_x))
                 raise ValueError
-            if not(dim['y'].start <= sizes[crd_y]):
+            if not (dim['y'].start <= sizes[crd_y]):
                 logger.info('Coordinates {} out of range'.format(crd_y))
                 raise ValueError
 
         # Relative
         elif isinstance(dim['x'].start, float) and isinstance(dim['y'].start, float):
-            if not(data.coords[crd_x].values.min() <= dim['x'].start <= data.coords[crd_x].values.max()) or \
-                    not(data.coords[crd_x].values.min() <= dim['x'].stop <= data.coords[crd_x].values.max()):
+            if not (data.coords[crd_x].values.min() <= dim['x'].start <= data.coords[crd_x].values.max()) or \
+                    not (data.coords[crd_x].values.min() <= dim['x'].stop <= data.coords[crd_x].values.max()):
                 logger.info('Coordinates {} out of range'.format(crd_x))
                 raise ValueError
 
-            if not(data.coords[crd_y].values.min() <= dim['y'].start <= data.coords[crd_y].values.max()) or \
-                    not(data.coords[crd_y].values.min() <= dim['y'].stop <= data.coords[crd_y].values.max()):
+            if not (data.coords[crd_y].values.min() <= dim['y'].start <= data.coords[crd_y].values.max()) or \
+                    not (data.coords[crd_y].values.min() <= dim['y'].stop <= data.coords[crd_y].values.max()):
                 logger.info('Coordinates {} out of range'.format(crd_y))
                 raise ValueError
 
@@ -386,11 +377,11 @@ def _coord_range_check(dim, data, crd_x, crd_y, crd_t):
     else:
         # Absolute
         if isinstance(dim['x'].start, int) or isinstance(dim['x'].stop, int) and \
-           isinstance(dim['y'].start, int) or isinstance(dim['y'].stop, int):
-            if not(dim['x'].start <= sizes[crd_x]) or not(dim['x'].stop <= sizes[crd_x]):
+                isinstance(dim['y'].start, int) or isinstance(dim['y'].stop, int):
+            if not (dim['x'].start <= sizes[crd_x]) or not (dim['x'].stop <= sizes[crd_x]):
                 logger.info('Coordinates {} out of range'.format(crd_x))
                 raise ValueError
-            if not(dim['y'].start <= sizes[crd_y]) or not(dim['y'].stop <= sizes[crd_y]):
+            if not (dim['y'].start <= sizes[crd_y]) or not (dim['y'].stop <= sizes[crd_y]):
                 logger.info('Coordinates {} out of range'.format(crd_y))
                 raise ValueError
 
@@ -398,13 +389,13 @@ def _coord_range_check(dim, data, crd_x, crd_y, crd_t):
         elif isinstance(dim['x'].start, float) or isinstance(dim['x'].stop, float) and \
                 isinstance(dim['y'].start, float) or isinstance(dim['y'].stop, float):
 
-            if not(data.coords[crd_x].values.min() <= dim['x'].start <= data.coords[crd_x].values.max()) or \
-                    not(data.coords[crd_x].values.min() <= dim['x'].stop <= data.coords[crd_x].values.max()):
+            if not (data.coords[crd_x].values.min() <= dim['x'].start <= data.coords[crd_x].values.max()) or \
+                    not (data.coords[crd_x].values.min() <= dim['x'].stop <= data.coords[crd_x].values.max()):
                 logger.info('Coordinates {} out of range'.format(crd_x))
                 raise ValueError
 
-            if not(data.coords[crd_y].values.min() <= dim['y'].start <= data.coords[crd_y].values.max()) or \
-                    not(data.coords[crd_y].values.min() <= dim['y'].stop <= data.coords[crd_y].values.max()):
+            if not (data.coords[crd_y].values.min() <= dim['y'].start <= data.coords[crd_y].values.max()) or \
+                    not (data.coords[crd_y].values.min() <= dim['y'].stop <= data.coords[crd_y].values.max()):
                 logger.info('Coordinates {} out of range'.format(crd_y))
                 raise ValueError
 
@@ -427,7 +418,6 @@ def _coord_range_check(dim, data, crd_x, crd_y, crd_t):
 
 
 def _coord(coord):
-
     try:
         if coord is not '':
             if ':' in coord:
@@ -460,12 +450,11 @@ def _scale(band_obj):
 
 
 def _get_slicers(prmts):
-
     x_slice, y_slice, time_slice = [slice(None)] * 3
 
     if hasattr(prmts, 'exm_start') or hasattr(prmts, 'exm_end'):
 
-        tm_sl = [None]*2
+        tm_sl = [None] * 2
 
         if type(prmts.exm_start) is not pd.NaT:
             tm_sl[0] = prmts.exm_start
@@ -490,7 +479,7 @@ def _get_slicers(prmts):
                 elif len(extent) == 4:
                     logger.debug('Four cooridnates found')
                     if type(extent[1]) is not int:
-                        if not(extent[1] > extent[3]) or not(extent[0] < extent[1]):
+                        if not (extent[1] > extent[3]) or not (extent[0] < extent[1]):
                             logger.debug('Coordinates doesn\'t respect the descending order, please check')
                             raise sys.exit(0)
                     x_slice = slice(extent[0], extent[2])
@@ -502,9 +491,10 @@ def _get_slicers(prmts):
             logger.debug('No coordinate slice selected')
             x_slice, y_slice = [slice(None)] * 2
 
-    logger.debug(f'Time slicer: {time_slice.start}{"->" + str(time_slice.stop) if time_slice.stop is not time_slice.start else ""}\n'
-                 f'\t\t\t X slicer:    {x_slice.start}{" -> " + str(x_slice.stop) if x_slice.stop != x_slice.start else ""}\n'
-                 f'\t\t\t Y slicer:    {y_slice.start}{" -> " + str(y_slice.stop) if y_slice.stop != y_slice.start else ""}')
+    logger.debug(f'Time slicer:\
+        {time_slice.start}{"->" + str(time_slice.stop) if time_slice.stop is not time_slice.start else ""}\n'
+            f'\t\t\t X slicer:    {x_slice.start}{" -> " + str(x_slice.stop)if x_slice.stop != x_slice.start else ""}\n'
+            f'\t\t\t Y slicer:    {y_slice.start}{" -> " + str(y_slice.stop)if y_slice.stop != y_slice.start else ""}')
 
     return {'time': time_slice, 'x': x_slice, 'y': y_slice}
 
@@ -515,7 +505,6 @@ def _dasker(dataset, size=250):
 
 
 def ingest(prmts):
-
     start = time.time()
 
     dim = _get_slicers(prmts)

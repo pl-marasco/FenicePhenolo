@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-import sys
 
-import gc
-import pandas as pd
-from dask.distributed import Client, as_completed
-import atoms
 import logging
-import numpy as np
 import time
+
+import numpy as np
+import pandas as pd
+from dask.distributed import as_completed
+
+from phenolo import atoms
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,6 @@ class Processor(object):
 
 
 def process(px, **kwargs):
-
     cube = kwargs.pop('data', '')
     action = kwargs.pop('action', '')
     param = kwargs.pop('param', '')
@@ -30,7 +29,6 @@ def process(px, **kwargs):
 
 
 def analyse(cube, client, param, action, out):
-
     s_param = client.scatter(param, broadcast=True)
 
     try:
@@ -46,7 +44,8 @@ def analyse(cube, client, param, action, out):
             if y_lst.any():
                 s_row = client.scatter(row, broadcast=True)
             else:
-                del row; continue
+                del row;
+                continue
 
             dim_val = pd.to_datetime(param.dim_val).year.unique()
             col_val = range(0, len(param.col_val))
@@ -83,7 +82,7 @@ def analyse(cube, client, param, action, out):
                         t_afi.iloc[:, col] = pxldrl.afi[:]
                         if pxldrl.season_lng:
                             if pxldrl.season_lng <= 365.0:
-                                t_season.iloc[col] = int(365/pxldrl.season_lng)
+                                t_season.iloc[col] = int(365 / pxldrl.season_lng)
                             else:
                                 t_season.iloc[col] = int(pxldrl.season_lng)
                     except (RuntimeError, Exception, ValueError):
@@ -92,7 +91,7 @@ def analyse(cube, client, param, action, out):
                 # client.cancel(future)
                 # del future, pxldrl
 
-            print(time.time()-s)
+            print(time.time() - s)
 
             out.sb[:, rowi, :] = t_sb
             out.se[:, rowi, :] = t_se

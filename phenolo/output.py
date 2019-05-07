@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from netCDF4 import Dataset, date2num
-from datetime import datetime
-import numpy as np; import pandas as pd
 import os
+from datetime import datetime
+
+import numpy as np;
+import pandas as pd
+from netCDF4 import Dataset, date2num
 
 
 def create(path, orig_ds, yrs_in):
@@ -15,12 +17,12 @@ def create(path, orig_ds, yrs_in):
     """
 
     # calculate the center of pixels
-    delta_x = ((orig_ds.bounds.right - orig_ds.bounds.left) / orig_ds.width)/2
-    delta_y = ((orig_ds.bounds.top - orig_ds.bounds.bottom) / orig_ds.height)/2
+    delta_x = ((orig_ds.bounds.right - orig_ds.bounds.left) / orig_ds.width) / 2
+    delta_y = ((orig_ds.bounds.top - orig_ds.bounds.bottom) / orig_ds.height) / 2
 
     # Create an array of coordinates
-    lon_val = np.linspace(orig_ds.bounds.left+delta_x, orig_ds.bounds.right+delta_x, orig_ds.width, endpoint=False)
-    lat_val = np.linspace(orig_ds.bounds.top-delta_y, orig_ds.bounds.bottom-delta_y, orig_ds.height, endpoint=False)
+    lon_val = np.linspace(orig_ds.bounds.left + delta_x, orig_ds.bounds.right + delta_x, orig_ds.width, endpoint=False)
+    lat_val = np.linspace(orig_ds.bounds.top - delta_y, orig_ds.bounds.bottom - delta_y, orig_ds.height, endpoint=False)
 
     # Create the list of dates
     yrs_out = list(map(lambda x_val: datetime(x_val, 1, 1), yrs_in))
@@ -81,9 +83,9 @@ def create(path, orig_ds, yrs_in):
 
     # Create the variables
     sbw_int = root_ds.createVariable('Start_week_of_the_season', 'i4', ('time', 'latitude', 'longitude'),
-                                    zlib=True)
+                                     zlib=True)
     sew_int = root_ds.createVariable('End_week_of_the_season', 'i4', ('time', 'latitude', 'longitude'),
-                                    zlib=True)
+                                     zlib=True)
     sl_int = root_ds.createVariable('Season_lenght', 'f4', ('time', 'latitude', 'longitude'),
                                     least_significant_digit=2,
                                     zlib=True)
@@ -97,18 +99,18 @@ def create(path, orig_ds, yrs_in):
                                     least_significant_digit=2,
                                     zlib=True)
     sns_int = root_ds.createVariable('season lenght', 'i4', ('latitude', 'longitude'),
-                                    least_significant_digit=2,
-                                    zlib=True)
+                                     least_significant_digit=2,
+                                     zlib=True)
 
     # Attributes
     root_ds.title = 'Phen'
     root_ds.description = 'Phenolo results'
     root_ds.srs = 'GEOGCS["WGS 84",DATUM["WGS_1984",' \
-                          'SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
-                          'AUTHORITY["EPSG","6326"]],' \
-                          'PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],' \
-                          'UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],' \
-                          'AUTHORITY["EPSG","4326"]]'
+                  'SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
+                  'AUTHORITY["EPSG","6326"]],' \
+                  'PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],' \
+                  'UNIT["degree",0.01745329251994328,AUTHORITY["EPSG","9122"]],' \
+                  'AUTHORITY["EPSG","4326"]]'
 
     sl_int.coordinates = 'time latitude longitude '
     spi_int.coordinates = 'time latitude longitude'
@@ -126,8 +128,8 @@ class OutputCointainer(object):
     :param param: configuration parameters object
     :param kwargs: name of the object
     """
-    def __init__(self, cube, param, **kwargs):
 
+    def __init__(self, cube, param, **kwargs):
         pth = os.path.join(param.scratch_pth, '.'.join((kwargs.pop('name', 'scratch'), 'nc')))
         self.root = Dataset(pth, 'w', format='NETCDF4')
 
@@ -162,4 +164,3 @@ class OutputCointainer(object):
 
     def close(self):
         self.root.close()
-

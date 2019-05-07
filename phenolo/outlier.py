@@ -19,7 +19,6 @@ Journal of the American Statistical Association, December 1993, pp. 1273-1283.
 
 
 def mad_segments(x):
-
     m = np.nanmedian(x)  # calculate the median inside the window
     abs_dev = np.abs(x - m)  # absolute deviation
 
@@ -30,7 +29,6 @@ def mad_segments(x):
 
 
 def dblMAD(x, mad_pwr=2.575):
-
     median = np.median(x)
 
     lower, higher = mad_segments(x)
@@ -47,10 +45,8 @@ def dblMAD(x, mad_pwr=2.575):
 
 
 def doubleMAD(ts, mad_pwr=2.575):
-
     if ts.median() == 0:
         return ts
     else:
         r = dblMAD(ts.values, mad_pwr)
         return pd.Series(r, ts.index)
-

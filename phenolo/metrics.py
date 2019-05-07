@@ -2,8 +2,11 @@
 
 import logging
 import sys
-import detect_peaks as dp
-import pandas as pd; import numpy as np; import scipy.signal as si
+
+import numpy as np
+import pandas as pd
+
+from phenolo import peaks
 
 logger = logging.getLogger(__name__)
 np.warnings.filterwarnings('ignore')
@@ -51,7 +54,6 @@ def to_timeseries(values, index):
 
 
 def valley_detection(pxldrl, param):
-
     # Valley detection
     # Detrending to catch better points
 
@@ -65,13 +67,13 @@ def valley_detection(pxldrl, param):
     else:
         mpd_val = int(pxldrl.season_lng * (param.tr - param.tr * 1 / 3) / 100)
 
-    ind = dp.detect_peaks(vdetr, mph=vdetr.mean(),
-                          mpd=mpd_val,
-                          valley=True,
-                          edge='both',
-                          kpsh=False)
+    ind = peaks.detect_peaks(vdetr, mph=vdetr.mean(),
+                             mpd=mpd_val,
+                             valley=True,
+                             edge='both',
+                             kpsh=False)
     if not ind.any():
-        ind = dp.detect_peaks(vdetr, mph=-20, mpd=60, valley=True)
+        ind = peaks.detect_peaks(vdetr, mph=-20, mpd=60, valley=True)
 
     # Valley point time series conversion
     pks = pxldrl.ps.iloc[ind]
@@ -88,7 +90,7 @@ def cycle_metrics(pxldrl):
     """
 
     sincys = []
-    import atoms
+    from phenolo import atoms
 
     for i in range(len(pxldrl.pks) - 1):
 
@@ -159,10 +161,10 @@ def phen_metrics(pxldrl, param):
 
         try:
             sd, ed = None, None
-            if sincy.sd-sincy.mas >= sincy.mms_b.index[0]:
-                sd = sincy.sd-sincy.mas
-            if sincy.ed+sincy.mas <= sincy.mms_b.index[-1]:
-                ed = sincy.ed+sincy.mas
+            if sincy.sd - sincy.mas >= sincy.mms_b.index[0]:
+                sd = sincy.sd - sincy.mas
+            if sincy.ed + sincy.mas <= sincy.mms_b.index[-1]:
+                ed = sincy.ed + sincy.mas
             if sd or ed:
                 sincy.buffered = sincy.mms_b.loc[sd:ed]
             else:
@@ -175,7 +177,7 @@ def phen_metrics(pxldrl, param):
             continue
 
         try:
-            sincy.smth_crv = sincy.buffered.rolling(sincy.mas.days, win_type='boxcar', center=True)\
+            sincy.smth_crv = sincy.buffered.rolling(sincy.mas.days, win_type='boxcar', center=True) \
                 .mean(numeric_only=True)
         except (RuntimeError, Exception, ValueError):
             logger.debug(f'Warning! Smoothed curv calculation went wrong, in position:{pxldrl.position}')
@@ -234,7 +236,7 @@ def phen_metrics(pxldrl, param):
         else:
             # Season slope (SLOPE)
             try:
-                sincy.sslp = ((sincy.sed.values - sincy.sbd.values) / (sincy.sed.index - sincy.sbd.index).days)*1e2
+                sincy.sslp = ((sincy.sed.values - sincy.sbd.values) / (sincy.sed.index - sincy.sbd.index).days) * 1e2
             except ValueError:
                 logger.debug(f'Warning! Error in slope calculation in pixel:{pxldrl.position} '
                              f'for the cycle starting in {sincy.sd}')

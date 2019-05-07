@@ -2,7 +2,6 @@
 
 
 def climate_fx(ts, **kwargs):
-
     singleinterp = True
 
     tsm = ts.mask(ts > 250)
