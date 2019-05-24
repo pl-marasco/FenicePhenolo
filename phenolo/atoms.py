@@ -61,6 +61,7 @@ class SingularCycle(object):
             cbc: cycle baricenter / ex season baricenter
             csd: cycle deviation standard / Season deviation standard
             cdsdcycle: deviation standard in days /Season deviation standard in days
+            max_idx: date of maximum
             ref_yr: reference yr
 
         :param mms: Time series as pandas.Series object
@@ -69,19 +70,20 @@ class SingularCycle(object):
 
         self.sd = sd  # Start date - MBD
         self.ed = ed  # End date - MED
-        self.mml = self.__time_delta(self.sd, self.ed)  # Cycle lenght in days
+        self.mml = self.__time_delta(self.sd, self.ed)  # Cycle length in days
         self.td = self.mml * 2 / 3  # time delta
         self.mms_b = ts.loc[sd - self.td:ed + self.td]  # buffered time series
         self.mms = self.mms_b.loc[sd:ed]  # minimum minimum time series                   <- possible self referencing
-        self.sb = self.__integral(self.mms)  # Standing biomas
-        self.mpf = self.__min_min_line(self.mms)  # permanent fration
-        self.mpi = self.__integral(self.mpf)  # permanent fration integral
-        self.vox = self.__difference(self.mms, self.mpf)  # Values between two minima substracted the permanet fraction
+        self.sb = self.__integral(self.mms)  # Standing biomass
+        self.mpf = self.__min_min_line(self.mms)  # permanent fraction
+        self.mpi = self.__integral(self.mpf)  # permanent fraction integral
+        self.vox = self.__difference(self.mms, self.mpf)  # Values between two min subtracted the permanent fraction
         self.voxi = self.__integral(self.vox)  # integral of vox
-        self.cbc = self.__barycenter()  # cycle baricenter / ex season baricenter
+        self.cbc = self.__barycenter()  # cycle barycenter / ex season barycenter
         self.cbcd = self.__to_gregorian_date(self.cbc)
         self.csd = self.__cycle_deviation_standard()  # cycle deviation standard / Season deviation standard
         self.csdd = self.__to_gregorian(self.csd)  # cycle deviation standard in days /Season deviation standard in days
+        self.max_idx = self.__max(self.mms) # date of maximum
         self.ref_yr = self.cbcd.year  # reference yr
 
         self.sfs = None
@@ -89,12 +91,12 @@ class SingularCycle(object):
         self.unx_sbc = None
 
     def __time_delta(self, sd, ed):
-        """Minimum minimum lenght"""
+        """Minimum minimum length"""
         try:
             return ed - sd
         except (RuntimeError, Exception, ValueError):
             self.err = True
-            logger.debug('Warning! Minimum minimum lenght error')
+            logger.debug('Warning! Minimum minimum length error')
             return None
 
     def __integral(self, ts):
@@ -148,6 +150,14 @@ class SingularCycle(object):
         except (RuntimeError, Exception, ValueError):
             self.err = True
             logger.debug('Warning! Datetime conversion went wrong')
+            return None
+
+    def __max(self, ts):
+        try:
+            return ts.idxmax()
+        except(RuntimeError, Exception, ValueError):
+            self.err = True
+            logger.debug('Warning! Maximum research went wrong')
             return None
 
     def __barycenter(self):
