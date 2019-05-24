@@ -131,7 +131,6 @@ def phenolo(pxldrl, **kwargs):
         pxldrl.errtyp = 'Savinsky Golet'
         return pxldrl
 
-    # TODO controllare da qui in avanti il processo di analisi
     # Valley detection
     try:
         pxldrl.pks = metrics.valley_detection(pxldrl, param)
