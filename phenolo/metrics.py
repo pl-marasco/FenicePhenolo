@@ -156,9 +156,6 @@ def phen_metrics(pxldrl, param):
         if sincy.mas.days < 0:
             sincy.mas = pd.to_timedelta(param.mavspan, unit='D')
 
-        # Maximum point and date
-        sincy.max_idx = sincy.mms.idxmax()
-
         try:
             sd, ed = None, None
             if sincy.sd - sincy.mas >= sincy.mms_b.index[0]:
