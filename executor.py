@@ -44,7 +44,7 @@ def analyse(cube, client, param, action, out):
             if y_lst.any():
                 s_row = client.scatter(row, broadcast=True)
             else:
-                del row;
+                del row
                 continue
 
             dim_val = pd.to_datetime(param.dim_val).year.unique()
