@@ -21,8 +21,6 @@ def main(param):
 
     cube = reader.ingest(param)
 
-    param.add_dims(cube)
-
     _log_info(logging.getLogger('paramters'), param)
     _log_info(logging.getLogger('cube'), cube)
 
@@ -57,8 +55,6 @@ def main(param):
             client = Client(processes=localproc, n_workers=n_workers)
         elif localproc and n_workers:
             client = Client(n_workers=n_workers, threads_per_worker=threads_per_worker)
-        elif localproc:
-            client = Client(n_workers=n_workers)
         else:
             client = Client()
 
