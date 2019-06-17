@@ -499,9 +499,9 @@ def _get_slicers(prmts):
     return {'time': time_slice, 'x': x_slice, 'y': y_slice}
 
 
-def _dasker(dataset, size=250):
+def _dasker(dataset, dim_bloks, col_bloks, row_bloks):
     crd_x, crd_y, crd_t = _coord_names(dataset)
-    return dataset.chunk({crd_t: size, crd_x: size, crd_y: size})
+    return dataset.chunk({crd_t: dim_bloks, crd_x: row_bloks, crd_y: col_bloks})
 
 
 def ingest(prmts):
@@ -534,7 +534,19 @@ def ingest(prmts):
         if prmts.ext is None:
             deltatime = time.time() - start
             logger.info('Loading data required:{}'.format(deltatime))
-            return _dasker(cube)
+            prmts.add_dims(cube)
+
+            # cpu = 1
+            # col_bloks = np.round(prmts.col_val.size / cpu) + 1
+            # row_bloks = np.round(prmts.row_val.size / cpu) + 1
+            # dim_bloks =
+
+            # todo find the best option to parametrize this
+            col_bloks = prmts.col_val.size
+            row_bloks = prmts.row_val.size
+            dim_bloks = prmts.dim_val.size
+
+            return _dasker(cube, dim_bloks, col_bloks, row_bloks)
         else:
             deltatime = time.time() - start
             logger.info('Loading data required:{}'.format(deltatime))
