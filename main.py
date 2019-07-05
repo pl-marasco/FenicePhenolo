@@ -63,6 +63,8 @@ def main(param):
         result_cube = executor.analyse(cube, client, param, aa.phenolo, out)
 
         result_cube.close()
+
+        client.close()
     else:
         raise ValueError
 
