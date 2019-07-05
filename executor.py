@@ -32,6 +32,11 @@ def analyse(cube, client, param, action, out):
     s_param = client.scatter(param, broadcast=True)
 
     try:
+
+        s0s = np.zeros(0)
+        s1s = np.zeros(0)
+        s2s = np.zeros(0)
+
         for rowi in range(len(param.row_val)):
 
             row = cube.isel(dict([(param.row_nm, rowi)])).compute()
@@ -91,7 +96,8 @@ def analyse(cube, client, param, action, out):
                 # client.cancel(future)
                 # del future, pxldrl
 
-            print(time.time() - s)
+            s1_end = time.time() - s
+            s2 = time.time()
 
             out.sb[:, rowi, :] = t_sb
             out.se[:, rowi, :] = t_se
@@ -102,10 +108,21 @@ def analyse(cube, client, param, action, out):
             out.n_seasons[rowi] = t_season.values
             out.err[rowi] = t_err.values
 
-            try:
-                out.root.sync()
-            except (RuntimeError, Exception, ValueError):
-                logger.debug(f'Error in the sync')
+            s2_end = time.time() - s2
+            s0_end = time.time() - s
+
+            print(f'Single row statistics {round(s0_end,2)} | loop {round(s1_end,2)} | filler {round(s2_end,2)}')
+
+            s0s = np.append(s0s, s0_end)
+            s1s = np.append(s1s, s1_end)
+            s2s = np.append(s2s, s2_end)
+
+        print(f'Overall {round(np.mean(s0s), 2)} | loop {round(np.mean(s1s), 2)} | filler {round(np.mean(s2s), 2)}')
+
+            # try:
+            #     out.root.sync()
+            # except (RuntimeError, Exception, ValueError):
+            #     logger.debug(f'Error in the sync')
 
             # logger.debug(f'Row {rowi} processed')
 
