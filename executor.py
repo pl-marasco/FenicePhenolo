@@ -78,6 +78,7 @@ def analyse(cube, client, param, action, out):
                     print(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
                 else:
                     try:
+                        s4 = time.time()
                         t_sb.iloc[:, col] = pxldrl.sb[:]
                         t_se.iloc[:, col] = pxldrl.se[:]
                         t_sl.iloc[:, col] = pxldrl.sl[:]
@@ -90,6 +91,8 @@ def analyse(cube, client, param, action, out):
                                 t_season.iloc[col] = int(365 / pxldrl.season_lng)
                             else:
                                 t_season.iloc[col] = int(pxldrl.season_lng)
+                        s4_end = time.time() - s4
+                        print(s4)
                     except (RuntimeError, Exception, ValueError):
                         continue
 
