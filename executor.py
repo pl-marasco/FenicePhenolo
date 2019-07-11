@@ -67,7 +67,7 @@ def analyse(cube, client, param, action, out):
 
             futures = client.map(process, y_lst, **{'data': s_row, 'row': rowi, 'param': s_param, 'action': action})
 
-            s = time.time()
+            s = time.perf_counter()
 
             for future, pxldrl in as_completed(futures, with_results=True):
                 col = pxldrl.position[1]
@@ -78,7 +78,7 @@ def analyse(cube, client, param, action, out):
                     print(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
                 else:
                     try:
-                        s4 = time.time()
+                        s4 = time.perf_counter()
                         t_sb.iloc[:, col] = pxldrl.sb[:]
                         t_se.iloc[:, col] = pxldrl.se[:]
                         t_sl.iloc[:, col] = pxldrl.sl[:]
@@ -91,16 +91,15 @@ def analyse(cube, client, param, action, out):
                                 t_season.iloc[col] = int(365 / pxldrl.season_lng)
                             else:
                                 t_season.iloc[col] = int(pxldrl.season_lng)
-                        s4_end = time.time() - s4
-                        print(s4)
+                        s4_end = time.perf_counter() - s4
                     except (RuntimeError, Exception, ValueError):
                         continue
 
                 # client.cancel(future)
                 # del future, pxldrl
 
-            s1_end = time.time() - s
-            s2 = time.time()
+            s1_end = time.perf_counter() - s
+            s2 = time.perf_counter()
 
             out.sb[:, rowi, :] = t_sb
             out.se[:, rowi, :] = t_se
@@ -111,8 +110,8 @@ def analyse(cube, client, param, action, out):
             out.n_seasons[rowi] = t_season.values
             out.err[rowi] = t_err.values
 
-            s2_end = time.time() - s2
-            s0_end = time.time() - s
+            s2_end = time.perf_counter() - s2
+            s0_end = time.perf_counter() - s
 
             print(f'Single row statistics {round(s0_end,2)} | loop {round(s1_end,2)} | filler {round(s2_end,2)}')
 
@@ -120,7 +119,7 @@ def analyse(cube, client, param, action, out):
             s1s = np.append(s1s, s1_end)
             s2s = np.append(s2s, s2_end)
 
-        print(f'Overall {round(np.mean(s0s), 2)} | loop {round(np.mean(s1s), 2)} | filler {round(np.mean(s2s), 2)}')
+        print(f'Overall {round(np.mean(s0s), 4)}')
 
             # try:
             #     out.root.sync()
