@@ -33,9 +33,7 @@ def analyse(cube, client, param, action, out):
 
     try:
 
-        s0s = np.zeros(0)
-        s1s = np.zeros(0)
-        s2s = np.zeros(0)
+        s0s, s1s, s2s = [np.zeros(0)] * 3
 
         for rowi in range(len(param.row_val)):
 
@@ -49,7 +47,6 @@ def analyse(cube, client, param, action, out):
             if y_lst.any():
                 s_row = client.scatter(row, broadcast=True)
             else:
-                del row
                 continue
 
             dim_val = pd.to_datetime(param.dim_val).year.unique()
