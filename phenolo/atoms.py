@@ -53,6 +53,7 @@ class SingularCycle(object):
             sd: Start date - MBD
             ed: End date - MED
             mml: Cycle lenght in days
+            td: Time delta
             sb: Standing biomas
             mpf: permanent fration
             mpi: permanent fration
@@ -64,7 +65,7 @@ class SingularCycle(object):
             max_idx: date of maximum
             ref_yr: reference yr
 
-        :param mms: Time series as pandas.Series object
+        :param : Time series as pandas.Series object
         """
         self.err = False
 
@@ -83,7 +84,7 @@ class SingularCycle(object):
         self.cbcd = self.__to_gregorian_date(self.cbc)
         self.csd = self.__cycle_deviation_standard()  # cycle deviation standard / Season deviation standard
         self.csdd = self.__to_gregorian(self.csd)  # cycle deviation standard in days /Season deviation standard in days
-        self.max_idx = self.__max(self.mms) # date of maximum
+        self.max_idx = self.__max(self.mms)  # date of maximum
         self.ref_yr = self.cbcd.year  # reference yr
 
         self.sfs = None
