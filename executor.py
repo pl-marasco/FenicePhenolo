@@ -28,11 +28,9 @@ def process(px, **kwargs):
     return action(pxldrl, settings=param)
 
 
-def pre_feeder(nxt_row, param, dim_val, col_val):
+def pre_feeder(nxt_row, param):
     y_lst = _pxl_lst(nxt_row, param)
-    cache = _cache_def(dim_val, col_val)
-
-    return nxt_row, y_lst, cache
+    return nxt_row, y_lst
 
 
 def _pxl_lst(row, param):
@@ -57,9 +55,8 @@ def _filler(key, pxldrl, att, col):
     return
 
 
-def analyse(cube_re, client, param, action, out):
+def analyse(cube, client, param, action, out):
     s_param = client.scatter(param, broadcast=True)
-    cube = client.persist(cube_re)
 
     try:
         nxt_row, nxt_y_lst, nxt_cache = [None] * 3
@@ -67,23 +64,22 @@ def analyse(cube_re, client, param, action, out):
         dim_val = pd.to_datetime(param.dim_val).year.unique()
         col_val = range(0, len(param.col_val))
 
+        nxt = True
+
         for rowi in range(len(param.row_val)):
             if rowi == 0:
                 row = cube.isel(dict([(param.row_nm, rowi)])).compute()
                 y_lst = _pxl_lst(row, param)
                 cache = _cache_def(dim_val, col_val)
-                precalc = True
             elif rowi == len(param.row_val)-1:
                 row = cube.isel(dict([(param.row_nm, rowi)])).compute()
                 y_lst = _pxl_lst(row, param)
                 cache = _cache_def(dim_val, col_val)
-                precalc = False
+                nxt = False
             else:
                 row = nxt_row
                 cache = nxt_cache
                 y_lst = nxt_y_lst
-                precalc = True
-                nxt_row, nxt_y_lst, nxt_cache = [None]*3
 
             if y_lst.any():
                 s_row = client.scatter(row, broadcast=True)
@@ -93,16 +89,17 @@ def analyse(cube_re, client, param, action, out):
             futures = client.map(process, y_lst, **{'data': s_row, 'row': rowi, 'param': s_param, 'action': action})
             seq = as_completed(futures, with_results=True)
 
-            for future in seq:
-                if precalc and nxt_row is None:
-                    nxt_row = cube.isel(dict([(param.row_nm, rowi+1)])).compute()
-                    preload = client.submit(pre_feeder, **{'nxt_row': nxt_row,
-                                                           'param': s_param,
-                                                           'dim_val': dim_val,
-                                                           'col_val': col_val})
-                    precalc = True
-                    seq.add(preload)
+            if nxt:
+                nxt_row = cube.isel(dict([(param.row_nm, rowi + 1)])).compute()
+                preload = client.submit(pre_feeder, **{'nxt_row': nxt_row,
+                                                       'param': s_param})
+                seq.add(preload)
+                cleaner = client.submit(_cache_def, **{'dim_val': dim_val,
+                                                       'col_val': col_val},
+                                        priority=10)
+                seq.add(cleaner)
 
+            for future in seq:
                 result = future[1]
                 if isinstance(result, atoms.PixelDrill):
                     pxldrl = result
@@ -126,11 +123,11 @@ def analyse(cube_re, client, param, action, out):
 
                         except (RuntimeError, Exception, ValueError):
                             continue
+                elif isinstance(result, dict):
+                    nxt_cache = result
                 else:
-                    nxt_row, nxt_y_lst, nxt_cache = result
-
+                    nxt_row, nxt_y_lst = result
                 # client.cancel(future)
-                # del future, pxldrl
 
             out.sb[:, rowi, :] = cache['sb'].values
             out.se[:, rowi, :] = cache['se'].values

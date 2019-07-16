@@ -542,12 +542,12 @@ def ingest(prmts):
             # dim_bloks =
 
             # todo find the best option to parametrize this
-            col_bloks = prmts.col_val.size
-            row_bloks = prmts.row_val.size
-            dim_bloks = prmts.dim_val.size
+            # col_bloks = prmts.col_val.size
+            # row_bloks = prmts.row_val.size
+            # dim_bloks = prmts.dim_val.size
 
             col_bloks = prmts.col_val.size
-            row_bloks = 1
+            row_bloks = prmts.row_val.size
             dim_bloks = prmts.dim_val.size
 
             return _dasker(cube, dim_bloks, col_bloks, row_bloks)
