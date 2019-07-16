@@ -28,8 +28,7 @@ def process(px, **kwargs):
     return action(pxldrl, settings=param)
 
 
-def pre_feeder(cube, rowi, param, dim_val, col_val):
-    nxt_row = cube.isel(dict([(param.row_nm, rowi+1)]))
+def pre_feeder(nxt_row, param, dim_val, col_val):
     y_lst = _pxl_lst(nxt_row, param)
     cache = _cache_def(dim_val, col_val)
 
@@ -58,9 +57,9 @@ def _filler(key, pxldrl, att, col):
     return
 
 
-def analyse(cube, client, param, action, out):
+def analyse(cube_re, client, param, action, out):
     s_param = client.scatter(param, broadcast=True)
-    s_cube = client.scatter(cube, broadcast=True)
+    cube = client.persist(cube_re)
 
     try:
         nxt_row, nxt_y_lst, nxt_cache = [None] * 3
@@ -96,8 +95,8 @@ def analyse(cube, client, param, action, out):
 
             for future in seq:
                 if precalc and nxt_row is None:
-                    preload = client.submit(pre_feeder, **{'cube': s_cube,
-                                                           'rowi': rowi,
+                    nxt_row = cube.isel(dict([(param.row_nm, rowi+1)])).compute()
+                    preload = client.submit(pre_feeder, **{'nxt_row': nxt_row,
                                                            'param': s_param,
                                                            'dim_val': dim_val,
                                                            'col_val': col_val})
