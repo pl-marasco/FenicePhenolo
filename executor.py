@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import time
 
 import numpy as np
 import pandas as pd
@@ -18,6 +17,16 @@ class Processor(object):
 
 
 def process(px, **kwargs):
+    """
+    Wrapper for a function pass as "action" over a Pandas time series.
+
+    :param px: pandas time series position {int}
+    :param kwargs: **{'data': xarray cube,
+                      'action': function to be apply,
+                      'param': param object
+                      'row': row position in the cube as {int}
+    :return: Obj{pxdrl}
+    """
     cube = kwargs.pop('data', '')
     action = kwargs.pop('action', '')
     param = kwargs.pop('param', '')
@@ -28,108 +37,157 @@ def process(px, **kwargs):
     return action(pxldrl, settings=param)
 
 
+def _pre_feeder(nxt_row, param):
+    """
+
+    :param nxt_row:
+    :param param:
+    :return:
+    """
+    y_lst = _pxl_lst(nxt_row, param)
+    return nxt_row, y_lst
+
+
+def _pxl_lst(row, param):
+    """
+
+    :param row:
+    :param param:
+    :return:
+    """
+    reduced = row.reduce(np.percentile, dim=param.dim_nm, q=param.qt)
+    med = reduced.where(((reduced > param.min_th) & (reduced < param.max_th)))
+    finite = med.reduce(np.isfinite)
+    y_lst = np.argwhere(finite.values).flatten()
+    return y_lst
+
+
+def _cache_def(dim_val, col_val):
+    """
+
+    :param dim_val:
+    :param col_val:
+    :return:
+    """
+    attr = ['sb', 'se', 'sl', 'spi', 'si', 'cf', 'afi']
+    cache = {name: pd.DataFrame(index=dim_val, columns=col_val) for name in attr}
+    cache['sl'] = pd.DataFrame(pd.Timedelta(0, unit='D'), index=dim_val, columns=col_val)
+    cache['season'] = pd.Series(0, index=col_val)
+    cache['err'] = pd.Series(0, index=col_val)
+    return cache
+
+
+def _filler(key, pxldrl, att, col):
+    """
+    Fill the dictionary with the passes key and values
+    :param key: specific key to be filled
+    :param pxldrl:
+    :param att:
+    :param col:
+    :return:
+    """
+    key.iloc[:, col] = getattr(pxldrl, att)[:]
+    return
+
+
 def analyse(cube, client, param, action, out):
+    """
+
+    :param cube:
+    :param client:
+    :param param:
+    :param action:
+    :param out:
+    :return:
+    """
     s_param = client.scatter(param, broadcast=True)
 
     try:
+        nxt_row, nxt_y_lst, nxt_cache = [None] * 3
 
-        s0s, s1s, s2s = [np.zeros(0)] * 3
+        dim_val = pd.to_datetime(param.dim_val).year.unique()
+        col_val = range(0, len(param.col_val))
+
+        nxt = True
 
         for rowi in range(len(param.row_val)):
-
-            row = cube.isel(dict([(param.row_nm, rowi)])).compute()
-
-            reduced = row.reduce(np.percentile, dim=param.dim_nm, q=param.qt)
-            med = reduced.where(((reduced > param.min_th) & (reduced < param.max_th)))
-            finite = med.reduce(np.isfinite)
-            y_lst = np.argwhere(finite.values).flatten()
+            if rowi == 0:
+                row = cube.isel(dict([(param.row_nm, rowi)])).compute()
+                y_lst = _pxl_lst(row, param)
+                cache = _cache_def(dim_val, col_val)
+            elif rowi == len(param.row_val)-1:
+                row = cube.isel(dict([(param.row_nm, rowi)])).compute()
+                y_lst = _pxl_lst(row, param)
+                cache = _cache_def(dim_val, col_val)
+                nxt = False
+            else:
+                row = nxt_row
+                cache = nxt_cache
+                y_lst = nxt_y_lst
 
             if y_lst.any():
                 s_row = client.scatter(row, broadcast=True)
             else:
                 continue
 
-            dim_val = pd.to_datetime(param.dim_val).year.unique()
-            col_val = range(0, len(param.col_val))
-            t_sb = pd.DataFrame(index=dim_val, columns=col_val)
-            t_se = pd.DataFrame(index=dim_val, columns=col_val)
-            t_sl = pd.DataFrame(pd.Timedelta(0, unit='D'), index=dim_val, columns=col_val)
-            t_spi = pd.DataFrame(index=dim_val, columns=col_val)
-            t_si = pd.DataFrame(index=dim_val, columns=col_val)
-            t_cf = pd.DataFrame(index=dim_val, columns=col_val)
-            t_afi = pd.DataFrame(index=dim_val, columns=col_val)
-
-            t_season = pd.Series(0, index=col_val)
-            t_err = pd.Series(0, index=col_val)
-
             futures = client.map(process, y_lst, **{'data': s_row, 'row': rowi, 'param': s_param, 'action': action})
+            seq = as_completed(futures, with_results=True)
 
-            s = time.perf_counter()
+            if nxt:
+                nxt_row = cube.isel(dict([(param.row_nm, rowi + 1)])).compute()
+                preload = client.submit(_pre_feeder, **{'nxt_row': nxt_row,
+                                                       'param': s_param})
+                seq.add(preload)
+                cleaner = client.submit(_cache_def, **{'dim_val': dim_val,
+                                                       'col_val': col_val},
+                                        priority=10)
+                seq.add(cleaner)
 
-            for future, pxldrl in as_completed(futures, with_results=True):
-                col = pxldrl.position[1]
-                if pxldrl.error:
-                    t_err.iloc[col] = 1
-                    t_season.iloc[col] = 0
-                    logger.debug(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
-                    print(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
+            for future in seq:
+                result = future[1]
+                if isinstance(result, atoms.PixelDrill):
+                    pxldrl = result
+                    col = pxldrl.position[1]
+                    if pxldrl.error:
+                        cache['err'].iloc[col] = 1
+                        cache['season'].iloc[col] = 0
+                        logger.debug(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
+                        print(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
+                    else:
+                        try:
+                            for key in cache:
+                                if key is not 'season' and key is not 'err':
+                                    _filler(cache[key], pxldrl, key, col)
+
+                            if pxldrl.season_len:
+                                if pxldrl.season_len <= 365.0:
+                                    cache['season'].iloc[col] = int(365 / pxldrl.season_len)
+                                else:
+                                    cache['season'].iloc[col] = int(pxldrl.season_len)
+
+                        except (RuntimeError, Exception, ValueError):
+                            continue
+                elif isinstance(result, dict):
+                    nxt_cache = result
                 else:
-                    try:
-                        s4 = time.perf_counter()
-                        t_sb.iloc[:, col] = pxldrl.sb[:]
-                        t_se.iloc[:, col] = pxldrl.se[:]
-                        t_sl.iloc[:, col] = pxldrl.sl[:]
-                        t_spi.iloc[:, col] = pxldrl.spi[:]
-                        t_si.iloc[:, col] = pxldrl.si[:]
-                        t_cf.iloc[:, col] = pxldrl.cf[:]
-                        t_afi.iloc[:, col] = pxldrl.afi[:]
-                        if pxldrl.season_lng:
-                            if pxldrl.season_lng <= 365.0:
-                                t_season.iloc[col] = int(365 / pxldrl.season_lng)
-                            else:
-                                t_season.iloc[col] = int(pxldrl.season_lng)
-                        s4_end = time.perf_counter() - s4
-                    except (RuntimeError, Exception, ValueError):
-                        continue
+                    nxt_row, nxt_y_lst = result
 
-                # client.cancel(future)
-                # del future, pxldrl
-
-            s1_end = time.perf_counter() - s
-            s2 = time.perf_counter()
-
-            out.sb[:, rowi, :] = t_sb
-            out.se[:, rowi, :] = t_se
-            out.sl[:, rowi, :] = t_sl
-            out.spi[:, rowi, :] = t_spi
-            out.si[:, rowi, :] = t_si
-            out.cf[:, rowi, :] = t_cf
-            out.n_seasons[rowi] = t_season.values
-            out.err[rowi] = t_err.values
-
-            s2_end = time.perf_counter() - s2
-            s0_end = time.perf_counter() - s
-
-            print(f'Single row statistics {round(s0_end,2)} | loop {round(s1_end,2)} | filler {round(s2_end,2)}')
-
-            s0s = np.append(s0s, s0_end)
-            s1s = np.append(s1s, s1_end)
-            s2s = np.append(s2s, s2_end)
-
-        print(f'Overall {round(np.mean(s0s), 4)}')
+            out.sb[:, rowi, :] = cache['sb'].values
+            out.se[:, rowi, :] = cache['se'].values
+            out.sl[:, rowi, :] = cache['sl'].values
+            out.spi[:, rowi, :] = cache['spi'].values
+            out.si[:, rowi, :] = cache['si'].values
+            out.cf[:, rowi, :] = cache['cf'].values
+            out.n_seasons[rowi] = cache['season'].values
+            out.err[rowi] = cache['err'].values
 
             # try:
             #     out.root.sync()
             # except (RuntimeError, Exception, ValueError):
             #     logger.debug(f'Error in the sync')
 
-            # logger.debug(f'Row {rowi} processed')
+            logger.debug(f'Row {rowi} processed')
 
-            # client.cancel(s_row)
-
-            # client.cancel(futures)
-            # del futures, t_sl, t_cf, t_si, t_spi, row, s_row
-            # gc.collect()
         return out
 
     except Exception as ex:
