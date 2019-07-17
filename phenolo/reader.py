@@ -548,6 +548,7 @@ def ingest(prmts):
 
             return _dasker(cube, dim_bloks, col_bloks, row_bloks)
         else:
+            prmts.add_dims(cube)
             deltatime = time.time() - start
             logger.info('Loading data required:{}'.format(deltatime))
             return cube
