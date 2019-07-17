@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import time
 
 import numpy as np
 import pandas as pd
@@ -18,6 +17,16 @@ class Processor(object):
 
 
 def process(px, **kwargs):
+    """
+    Wrapper for a function pass as "action" over a Pandas time series.
+
+    :param px: pandas time series position {int}
+    :param kwargs: **{'data': xarray cube,
+                      'action': function to be apply,
+                      'param': param object
+                      'row': row position in the cube as {int}
+    :return: Obj{pxdrl}
+    """
     cube = kwargs.pop('data', '')
     action = kwargs.pop('action', '')
     param = kwargs.pop('param', '')
@@ -28,12 +37,24 @@ def process(px, **kwargs):
     return action(pxldrl, settings=param)
 
 
-def pre_feeder(nxt_row, param):
+def _pre_feeder(nxt_row, param):
+    """
+
+    :param nxt_row:
+    :param param:
+    :return:
+    """
     y_lst = _pxl_lst(nxt_row, param)
     return nxt_row, y_lst
 
 
 def _pxl_lst(row, param):
+    """
+
+    :param row:
+    :param param:
+    :return:
+    """
     reduced = row.reduce(np.percentile, dim=param.dim_nm, q=param.qt)
     med = reduced.where(((reduced > param.min_th) & (reduced < param.max_th)))
     finite = med.reduce(np.isfinite)
@@ -42,6 +63,12 @@ def _pxl_lst(row, param):
 
 
 def _cache_def(dim_val, col_val):
+    """
+
+    :param dim_val:
+    :param col_val:
+    :return:
+    """
     attr = ['sb', 'se', 'sl', 'spi', 'si', 'cf', 'afi']
     cache = {name: pd.DataFrame(index=dim_val, columns=col_val) for name in attr}
     cache['sl'] = pd.DataFrame(pd.Timedelta(0, unit='D'), index=dim_val, columns=col_val)
@@ -51,11 +78,28 @@ def _cache_def(dim_val, col_val):
 
 
 def _filler(key, pxldrl, att, col):
+    """
+    Fill the dictionary with the passes key and values
+    :param key: specific key to be filled
+    :param pxldrl:
+    :param att:
+    :param col:
+    :return:
+    """
     key.iloc[:, col] = getattr(pxldrl, att)[:]
     return
 
 
 def analyse(cube, client, param, action, out):
+    """
+
+    :param cube:
+    :param client:
+    :param param:
+    :param action:
+    :param out:
+    :return:
+    """
     s_param = client.scatter(param, broadcast=True)
 
     try:
@@ -91,7 +135,7 @@ def analyse(cube, client, param, action, out):
 
             if nxt:
                 nxt_row = cube.isel(dict([(param.row_nm, rowi + 1)])).compute()
-                preload = client.submit(pre_feeder, **{'nxt_row': nxt_row,
+                preload = client.submit(_pre_feeder, **{'nxt_row': nxt_row,
                                                        'param': s_param})
                 seq.add(preload)
                 cleaner = client.submit(_cache_def, **{'dim_val': dim_val,
@@ -115,11 +159,11 @@ def analyse(cube, client, param, action, out):
                                 if key is not 'season' and key is not 'err':
                                     _filler(cache[key], pxldrl, key, col)
 
-                            if pxldrl.season_lng:
-                                if pxldrl.season_lng <= 365.0:
-                                    cache['season'].iloc[col] = int(365 / pxldrl.season_lng)
+                            if pxldrl.season_len:
+                                if pxldrl.season_len <= 365.0:
+                                    cache['season'].iloc[col] = int(365 / pxldrl.season_len)
                                 else:
-                                    cache['season'].iloc[col] = int(pxldrl.season_lng)
+                                    cache['season'].iloc[col] = int(pxldrl.season_len)
 
                         except (RuntimeError, Exception, ValueError):
                             continue
@@ -127,7 +171,6 @@ def analyse(cube, client, param, action, out):
                     nxt_cache = result
                 else:
                     nxt_row, nxt_y_lst = result
-                # client.cancel(future)
 
             out.sb[:, rowi, :] = cache['sb'].values
             out.se[:, rowi, :] = cache['se'].values
@@ -143,13 +186,8 @@ def analyse(cube, client, param, action, out):
             # except (RuntimeError, Exception, ValueError):
             #     logger.debug(f'Error in the sync')
 
-            # logger.debug(f'Row {rowi} processed')
+            logger.debug(f'Row {rowi} processed')
 
-            # client.cancel(s_row)
-
-            # client.cancel(futures)
-            # del futures, t_sl, t_cf, t_si, t_spi, row, s_row
-            # gc.collect()
         return out
 
     except Exception as ex:
