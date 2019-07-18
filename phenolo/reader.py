@@ -536,16 +536,6 @@ def ingest(prmts):
             logger.info('Loading data required:{}'.format(deltatime))
             prmts.add_dims(cube)
 
-            # cpu = 1
-            # col_bloks = np.round(prmts.col_val.size / cpu) + 1
-            # row_bloks = np.round(prmts.row_val.size / cpu) + 1
-            # dim_bloks =
-
-            # todo find the best option to parametrize this
-            # col_bloks = prmts.col_val.size
-            # row_bloks = prmts.row_val.size
-            # dim_bloks = prmts.dim_val.size
-
             col_bloks = prmts.col_val.size
             row_bloks = prmts.row_val.size
             dim_bloks = prmts.dim_val.size
