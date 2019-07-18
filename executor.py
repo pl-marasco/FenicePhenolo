@@ -7,6 +7,7 @@ import pandas as pd
 from dask.distributed import as_completed
 
 from phenolo import atoms
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -38,22 +39,15 @@ def process(px, **kwargs):
 
 
 def _pre_feeder(nxt_row, param):
-    """
-
-    :param nxt_row:
-    :param param:
-    :return:
-    """
-    y_lst = _pxl_lst(nxt_row, param)
-    return nxt_row, y_lst
+    return _pxl_lst(nxt_row, param)
 
 
 def _pxl_lst(row, param):
     """
-
-    :param row:
-    :param param:
-    :return:
+    Map pixels that must analyzed
+    :param row: pd.Dataframe 2D
+    :param param: param Obj
+    :return: array of int representing pxl row position
     """
     reduced = row.reduce(np.percentile, dim=param.dim_nm, q=param.qt)
     med = reduced.where(((reduced > param.min_th) & (reduced < param.max_th)))
@@ -136,7 +130,7 @@ def analyse(cube, client, param, action, out):
             if nxt:
                 nxt_row = cube.isel(dict([(param.row_nm, rowi + 1)])).compute()
                 preload = client.submit(_pre_feeder, **{'nxt_row': nxt_row,
-                                                       'param': s_param})
+                                                        'param': s_param})
                 seq.add(preload)
                 cleaner = client.submit(_cache_def, **{'dim_val': dim_val,
                                                        'col_val': col_val},
@@ -170,7 +164,7 @@ def analyse(cube, client, param, action, out):
                 elif isinstance(result, dict):
                     nxt_cache = result
                 else:
-                    nxt_row, nxt_y_lst = result
+                    nxt_y_lst = result
 
             out.sb[:, rowi, :] = cache['sb'].values
             out.se[:, rowi, :] = cache['se'].values
