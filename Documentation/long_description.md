@@ -1,4 +1,4 @@
-![Phenolo](Images/Phenolo2_3_1.png)
+![Phenolo](../Images/Phenolo2_3_1.png)
 
 Theory
 ------
