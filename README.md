@@ -7,7 +7,7 @@ The solution to calculate the time lag for the moving average series, a crucial 
 For each individual pixel, the average length of the non-growing season that will define the size of the moving average window, with which the original time series is lagged forward or backward to find intersection points, is calculated using the yearly estimated growing season length (SLE). 
 The Season Begin Day (SBD) and Season End Day (SED) are determined as the intersections of the reference time-series and the forward and backward lagged moving average curves, respectively. Note that the data points SBD and SED cannot always be determined unambiguously. 
 
-Parameters calculated:
+**Parameters calculated:**
 
 -	season length: SL = SED-SBD 
 -	Maximum day and value: MXD and MXV
@@ -21,7 +21,7 @@ Parameters calculated:
 
 **For a full description have a look here:**
 
-[Documantation](./Docs/manual.html)
+[Documentation](./Docs/manual.html)
 
 
 Instructions
