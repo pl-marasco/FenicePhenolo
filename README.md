@@ -23,8 +23,11 @@ The Season Begin Day (SBD) and Season End Day (SED) are determined as the inters
 
 [Documentation](https://github.com/PhenoloBoy/FenicePhenolo/blob/master/Documentation/long_description.md)
 
+Installation
+-------------
+'pip install git+https://github.com/Phenoloboy/Phenolo'
 
-Instructions
+Usage
 -------------
 
     >main.py --conf ./../file_name.ini -l 1
