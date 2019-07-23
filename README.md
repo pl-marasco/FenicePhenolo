@@ -21,7 +21,7 @@ The Season Begin Day (SBD) and Season End Day (SED) are determined as the inters
 
 **For a full description have a look here:**
 
-[Documentation](https://github.com/PhenoloBoy/FenicePhenolo/blob/master/Documentation/long_description.mk)
+[Documentation](https://github.com/PhenoloBoy/FenicePhenolo/blob/master/Documentation/long_description.md)
 
 
 Instructions
