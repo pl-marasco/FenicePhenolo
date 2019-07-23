@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Phenolo
 
 Post fata resurgo
 
-'''
-
+"""
+name = "Phenolo"
 from .atoms import *
 from .chronos import *
 from .filters import *
