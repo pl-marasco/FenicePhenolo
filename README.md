@@ -51,9 +51,3 @@ References
 - Ivits, E., Horion, S., Fensholt, R., & Cherlet, M. (2014). Global ecosystem response types derived from the standardized precipitation evapotranspiration index and FPAR3g series. Remote Sensing, 6(5), 4266–4288. https://doi.org/10.3390/rs6054266
 - Ivits, E., Cherlet, M., Tóth, G., Sommer, S., Mehl, W., Vogt, J., & Micale, F. (2012). Combining satellite derived phenology with climate data for climate change impact assessment. Global and Planetary Change, 88–89, 85–97. https://doi.org/10.1016/j.gloplacha.2012.03.010
 
-Dependencies
--------------
-minimum python version: 3.6
-
-package: [Numpy](http://www.numpy.org/), [Pandas](https://pandas.pydata.org/), [Xarray](http://xarray.pydata.org/en/stable/),[GDAL](https://www.gdal.org/) [Rasterio](https://github.com/mapbox/rasterio), [netCDF4](http://unidata.github.io/netcdf4-python/), [Scipy](https://www.scipy.org/), [Pyhdf](https://hdfeos.org/software/pyhdf.php), [Seasonal](https://github.com/welch/seasonal), [Dask](https://docs.dask.org/en/latest/), [Dask.distributed](https://distributed.dask.org/en/latest/)
-
