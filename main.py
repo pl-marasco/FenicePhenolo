@@ -119,6 +119,11 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print('Process killed')
         raise sys.exit(1)
-    except Exception:
-        print('Exception occurred')
+    except Exception as ex:
+        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+        message = template.format(type(ex).__name__, ex.args)
+
+        logger.debug(f'Critical error in the main loop, error: {type(ex).__name__, ex.args}')
+        print(message)
+
         raise sys.exit(1)
