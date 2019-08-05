@@ -10,8 +10,7 @@ from datetime import datetime
 
 from dask.distributed import Client
 
-import executor
-from phenolo import atoms, settings, reader, viz, output, analysis as aa
+from phenolo import atoms, settings, reader, viz, output, analysis as aa, executor
 
 logger = logging.getLogger(__name__)
 
