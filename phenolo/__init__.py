@@ -17,3 +17,4 @@ from .output import *
 from .peaks import *
 from .reader import *
 from .settings import *
+from .executor import *
