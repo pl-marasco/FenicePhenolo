@@ -95,16 +95,28 @@ class ProjectParameters(object):
                 self.inFilePth = self.__read(config, section, 'InFile')
 
                 if self.__read(config, section, 'OutFile') != '':
-                    self.outFilePth = self.__read(config, section, 'OutFile')
+                    read_out_pth = self.__read(config, section, 'OutFile')
+
+                    root, file = os.path.split(read_out_pth)
+                    if file == '':
+                        file = os.path.split(self.inFilePth)[1]
+                        file_nm = os.path.splitext(file)[0]
+                    else:
+                        file_nm = os.path.splitext(file)[0]
+
+                    self.outFilePth = root
+                    self.outName = file_nm
                 else:
-                    root, file = os.path.split(self.inFilePth)
-                    self.outFilePth = os.path.join(root, 'results.nc')
+                    root, file_nm = os.path.split(self.inFilePth)
+                    self.outFilePth = root
+                    self.outName = file_nm
 
                 if self.__read(config, section, 'Retain_scratch').lower() == 'true':
                     self.ovr_scratch = True
                 else:
                     self.ovr_scratch = False
                 self.scratch_pth = self.__read(config, section, 'ScratchPath')
+
                 self.sensor_typ = self.__read(config, section, 'Sensor_type').lower()
 
                 # [INFRASTRUCTURE_PARAMETERS]
