@@ -33,17 +33,17 @@ def _get_img(prmts, dim):
 
     if prmts.start_time is not pd.NaT and prmts.end_time is not pd.NaT:
         logger.debug('Dates comes from the setting file')
-        timedom = dk.create(prmts.start_time, prmts.end_time, prmts.dek)
+        time_dom = dk.create(prmts.start_time, prmts.end_time, prmts.dek)
     else:
         if 'band_names' in dataset.attrs:
             import re
-            timedom = pd.to_datetime(re.findall(r'\d\d\d\d\d\d\d\d', dataset.attrs['band_names']))
+            time_dom = pd.to_datetime(re.findall(r'\d\d\d\d\d\d\d\d', dataset.attrs['band_names']))
         else:
             logger.debug('Bands name doesn\'t contains datase')
             raise sys.exit(1)
 
-    if dict(dataset.sizes)['band'] == timedom.size:
-        dt = dataset.assign_coords(band=timedom)
+    if dict(dataset.sizes)['band'] == time_dom.size:
+        dt = dataset.assign_coords(band=time_dom)
     else:
         logger.debug('Ups! we have a problem with the time size. Doesn\'t mathc the datalenght')
         raise sys.exit(1)
@@ -53,7 +53,7 @@ def _get_img(prmts, dim):
     return _slice_cube(dt, dim)
 
 
-def _get_rasterio(prmts, dim):
+def _get_rasterio(prmts):
     import rasterio as rs
 
     with rs.Env(CPL_DEBUG=True):
@@ -511,8 +511,8 @@ def ingest(prmts):
 
     try:
         cube = None
-
-        if os.path.isfile(prmts.inFilePth):
+        # TODO adapt to GCFS file
+        if os.path.isfile(prmts.inFilePth) or 'gs://' in prmts.inFilePth:
             if fnmatch.fnmatch(prmts.inFilePth, '*.nc'):
                 cube = _get_netcdf(prmts, dim)
             elif fnmatch.fnmatch(prmts.inFilePth, '*.hdf'):
@@ -530,6 +530,7 @@ def ingest(prmts):
                 cube = _get_multi_hdf(glob.glob(os.path.join(prmts.inFilePth, '*.hdf')), dim)
             else:
                 cube = _get_rasterio(prmts.inFilePth, dim)
+
 
         if prmts.ext is None:
             deltatime = time.time() - start
