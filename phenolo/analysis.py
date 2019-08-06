@@ -8,6 +8,23 @@ from seasonal import fit_seasons
 logger = logging.getLogger(__name__)
 
 
+def _cleaner(pxldrl):
+    pxldrl.ts = None
+    pxldrl.ts_resc = None
+    pxldrl.ts_cleaned = None
+    pxldrl.ts_filtered = None
+    pxldrl.seasons = None
+    pxldrl.trend = None
+    pxldrl.ts_d = None
+    pxldrl.trend_d = None
+    pxldrl.ps = None
+    pxldrl.pks = None
+    pxldrl.sincys = None
+    pxldrl.phen = None
+
+    return pxldrl
+
+
 def phenolo(pxldrl, **kwargs):
     param = kwargs.pop('settings', '')
 
@@ -131,6 +148,7 @@ def phenolo(pxldrl, **kwargs):
         pxldrl.errtyp = 'Savinsky Golet'
         return pxldrl
 
+    # TODO create the option to pre process or not data
     # Valley detection
     try:
         pxldrl.pks = metrics.valley_detection(pxldrl, param)
@@ -183,5 +201,8 @@ def phenolo(pxldrl, **kwargs):
         return pxldrl
 
     logger.debug(f'Pixel {pxldrl.position[0]}-{pxldrl.position[1]} processed')
+
+    if ~param.ovr_scratch:
+        pxldrl = _cleaner(pxldrl)
 
     return pxldrl
