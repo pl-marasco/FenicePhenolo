@@ -57,17 +57,20 @@ def main(param):
         else:
             client = Client()
 
-        out = output.OutputCointainer(cube, param, name='test_cube')
+        out = output.OutputCointainer(cube, param, name=param.outName)
 
         result_cube = executor.analyse(cube, client, param, aa.phenolo, out)
 
         result_cube.close()
 
-        # client.close()
+        client.close()
     else:
         raise ValueError
 
     end = time.process_time() - start_time
+
+    print(f'\rProcess ended @{datetime.now()} after a total time of '
+          f'{end} processing {len(param.col_val)*len(param.row_val)}')
 
     logger.info('Process ended @{} after a total time of {}'.format(datetime.now(), end))
 
@@ -89,7 +92,7 @@ if __name__ == '__main__':
     for module in modules:
         assert importlib.util.find_spec(module), "You need {0} module".format(module)
 
-    print('~~~ Phenolo 2.0 ~~~')
+    print('~~~ Phenolo 2.0 ~~~\r\n')
 
     # Options
     try:
