@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from dask.distributed import as_completed
 
+
 from phenolo import atoms
 import time
 
@@ -15,6 +16,27 @@ logger = logging.getLogger(__name__)
 class Processor(object):
     def __init__(self):
         pass
+
+
+def printProgressBar (iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█'):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print(f'\r{prefix} |{bar}| {percent}{suffix}', end='')
+    # Print New Line on Complete
+    if iteration == total:
+        print()
 
 
 def process(px, **kwargs):
@@ -146,7 +168,7 @@ def analyse(cube, client, param, action, out):
                         cache['err'].iloc[col] = 1
                         cache['season'].iloc[col] = 0
                         logger.debug(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
-                        print(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
+
                     else:
                         try:
                             for key in cache:
@@ -179,6 +201,8 @@ def analyse(cube, client, param, action, out):
             #     out.root.sync()
             # except (RuntimeError, Exception, ValueError):
             #     logger.debug(f'Error in the sync')
+
+            printProgressBar(rowi, len(param.row_val))
 
             logger.debug(f'Row {rowi} processed')
 
