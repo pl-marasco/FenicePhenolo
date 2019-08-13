@@ -185,7 +185,7 @@ def phenolo(pxldrl, **kwargs):
         pxldrl.errtyp = 'Season metrics'
         return pxldrl
 
-    # General statistic agregation
+    # General statistic aggregation
     try:
         pxldrl.sb = metrics.attribute_extractor_se(pxldrl, 'sb')
         pxldrl.se = metrics.attribute_extractor_se(pxldrl, 'se')
