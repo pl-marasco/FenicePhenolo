@@ -92,10 +92,10 @@ class ProjectParameters(object):
 
                 # [GENERAL_SETTINGS]
                 section = 'GENERAL_SETTINGS'
-                self.inFilePth = self.__read(config, section, 'InFile')
+                self.inFilePth = self.__read(config, section, 'in_file')
 
-                if self.__read(config, section, 'OutFile') != '':
-                    read_out_pth = self.__read(config, section, 'OutFile')
+                if self.__read(config, section, 'out_file') != '':
+                    read_out_pth = self.__read(config, section, 'out_file')
 
                     root, file = os.path.split(read_out_pth)
                     if file == '':
@@ -111,13 +111,15 @@ class ProjectParameters(object):
                     self.outFilePth = root
                     self.outName = file_nm
 
-                if self.__read(config, section, 'Retain_scratch').lower() == 'true':
+                if self.__read(config, section, 'retain_scratch').lower() == 'true':
                     self.ovr_scratch = True
                 else:
                     self.ovr_scratch = False
-                self.scratch_pth = self.__read(config, section, 'ScratchPath')
+                self.scratch_pth = self.__read(config, section, 'scratch_path')
 
-                self.sensor_typ = self.__read(config, section, 'Sensor_type').lower()
+                self.sensor_typ = self.__read(config, section, 'sensor_type').lower()
+
+                self.decode = self.__read(config, section, 'data_decode').lower()
 
                 # [INFRASTRUCTURE_PARAMETERS]
                 section = 'INFRASTRUCTURE_PARAMETERS'
