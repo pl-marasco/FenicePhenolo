@@ -70,13 +70,13 @@ def _get_netcdf(prmts, dim):
     return _slice_cube(dataset, dim)
 
 
-def _get_multi_netcdf(path, dim):
+def _get_multi_netcdf(path, dim, prmts):
     path = os.path.join(path, '*.nc')
 
     dataset = xr.open_mfdataset(path,
-                                chunks={'lat': 250, 'lon': 250},
+                                chunks={'lat': 1000, 'lon': 1000},
                                 mask_and_scale=False,
-                                decode_times=True)
+                                decode_times=prmts.decode)
 
     return _slice_cube(dataset, dim)
 
@@ -259,7 +259,7 @@ def _get_hls(path):
 def _get_multi_hdf(f_list, dim):
     hls_lst = [_get_hls(file) for file in f_list]
 
-    data_array = xr.concat(hls_lst, dim='Time')
+    data_array = xr.concat(hls_lst, dim='Time', **{'decode_cfbool': False})
 
     cube = _slice_cube(data_array, dim)
 
@@ -341,7 +341,10 @@ def _slice_cube(dataset, dim):
             elif isinstance(dim['x'].start, float) or isinstance(dim['x'].stop, float) and \
                     isinstance(dim['y'].start, float) or isinstance(dim['y'].stop, float):
                 _coord_range_check(dim, data, crd_x, crd_y, crd_t)
-                return data.sel(dict([(crd_t, dim['time']), (crd_x, dim['x']), (crd_y, dim['y'])]))
+                if dim['time'] == slice(pd.NaT, pd.NaT, None):
+                    return data.sel(dict([(crd_x, dim['x']), (crd_y, dim['y'])]))
+                else:
+                    return data.sel(dict([(crd_t, dim['time']), (crd_x, dim['x']), (crd_y, dim['y'])]))
                 # TODO split time slice
         except ValueError:
             logger.debug('Coordinates slice has created an error')
@@ -525,23 +528,22 @@ def ingest(prmts):
                 cube = _get_rasterio(prmts.inFilePth, dim)
         elif os.path.isdir(prmts.inFilePth):
             if glob.glob(os.path.join(prmts.inFilePth, '*.nc')):
-                cube = _get_multi_netcdf(prmts.inFilePth, dim)
+                cube = _get_multi_netcdf(prmts.inFilePth, dim, prmts)
             elif glob.glob(os.path.join(prmts.inFilePth, '*.hdf')):
                 cube = _get_multi_hdf(glob.glob(os.path.join(prmts.inFilePth, '*.hdf')), dim)
             else:
                 cube = _get_rasterio(prmts.inFilePth, dim)
-
 
         if prmts.ext is None:
             deltatime = time.time() - start
             logger.info('Loading data required:{}'.format(deltatime))
             prmts.add_dims(cube)
 
-            col_bloks = prmts.col_val.size
-            row_bloks = prmts.row_val.size
-            dim_bloks = prmts.dim_val.size
+            col_blocks = prmts.col_val.size
+            row_blocks = prmts.row_val.size
+            dim_blocks = prmts.dim_val.size
 
-            return _dasker(cube, dim_bloks, col_bloks, row_bloks)
+            return _dasker(cube, dim_blocks, col_blocks, row_blocks)
         else:
             prmts.add_dims(cube)
             deltatime = time.time() - start
