@@ -18,7 +18,7 @@ class Processor(object):
         pass
 
 
-def printProgressBar (iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█'):
+def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█'):
     """
     Call in a loop to create terminal progress bar
     @params:
@@ -31,8 +31,8 @@ def printProgressBar (iteration, total, prefix='', suffix='', decimals=1, length
         fill        - Optional  : bar fill character (Str)
     """
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
-    filledLength = int(length * iteration // total)
-    bar = fill * filledLength + '-' * (length - filledLength)
+    filled_length = int(length * iteration // total)
+    bar = fill * filled_length + '-' * (length - filled_length)
     print(f'\r{prefix} |{bar}| {percent}{suffix}', end='')
     # Print New Line on Complete
     if iteration == total:
@@ -202,7 +202,7 @@ def analyse(cube, client, param, action, out):
             # except (RuntimeError, Exception, ValueError):
             #     logger.debug(f'Error in the sync')
 
-            printProgressBar(rowi, len(param.row_val))
+            print_progress_bar(rowi, len(param.row_val))
 
             logger.debug(f'Row {rowi} processed')
 
