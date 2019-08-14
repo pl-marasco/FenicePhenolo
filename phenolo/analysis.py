@@ -35,7 +35,7 @@ def phenolo(pxldrl, **kwargs):
     except(RuntimeError, ValueError, Exception):
         logger.info(f'Nodata removal error in position:{pxldrl.position}')
         pxldrl.error = True
-        pxldrl.errtyp = 'No data'
+        pxldrl.errtyp = 1  # 'No data'
         return pxldrl
 
     # scaling
@@ -45,7 +45,7 @@ def phenolo(pxldrl, **kwargs):
     except(RuntimeError, ValueError, Exception):
         logger.info(f'Scaling error in position:{pxldrl.position}')
         pxldrl.error = True
-        pxldrl.errtyp = 'Scaling'
+        pxldrl.errtyp = 2  # 'Scaling'
         return pxldrl
 
     # off set
@@ -55,7 +55,7 @@ def phenolo(pxldrl, **kwargs):
     except(RuntimeError, ValueError, Exception):
         logger.info(f'Off set error in position:{pxldrl.position}')
         pxldrl.error = True
-        pxldrl.errtyp = 'Off set'
+        pxldrl.errtyp = 3  # 'Off set'
         return pxldrl
 
     # scaling to 0-100
@@ -65,7 +65,7 @@ def phenolo(pxldrl, **kwargs):
     except(RuntimeError, ValueError, Exception):
         logger.info(f'Scaling error in position:{pxldrl.position}')
         pxldrl.error = True
-        pxldrl.errtyp = '0-100 Scaling'
+        pxldrl.errtyp = 4  # '0-100 Scaling'
         return pxldrl
 
     # Filter outlier
@@ -78,7 +78,7 @@ def phenolo(pxldrl, **kwargs):
     except (RuntimeError, ValueError, Exception):
         logger.info(f'Error in filtering outlier in position:{pxldrl.position}')
         pxldrl.error = True
-        pxldrl.errtyp = 'outlier filtering'
+        pxldrl.errtyp = 5  # 'outlier filtering'
         return pxldrl
 
     try:
@@ -91,7 +91,7 @@ def phenolo(pxldrl, **kwargs):
     except (RuntimeError, ValueError, Exception):
         logger.info(f'Error in interpolating outlier in position:{pxldrl.position}')
         pxldrl.error = True
-        pxldrl.errtyp = 'gap filling'
+        pxldrl.errtyp = 6  # 'gap filling'
         return pxldrl
 
     # Estimate Season length
@@ -106,7 +106,7 @@ def phenolo(pxldrl, **kwargs):
     except (RuntimeError, Exception, ValueError):
         logger.info(f'Error in estimate season and trend in position:{pxldrl.position}')
         pxldrl.error = True
-        pxldrl.errtyp = 'Season and trend estimation'
+        pxldrl.errtyp = 7  # 'Season and trend estimation'
         pxldrl.season_lng = 0
         return pxldrl
 
@@ -117,7 +117,7 @@ def phenolo(pxldrl, **kwargs):
     except(RuntimeError, Exception, ValueError):
         logger.info(f'Error! Season conversion to days failed, in position:{pxldrl.position}')
         pxldrl.error = True
-        pxldrl.errtyp = 'To daily conversion'
+        pxldrl.errtyp = 8  # 'To daily conversion'
         return pxldrl
 
     # medspan loading
@@ -126,7 +126,7 @@ def phenolo(pxldrl, **kwargs):
     except(RuntimeError, Exception, ValueError):
         logger.info(f'Error! Medspan calculation:{pxldrl.position}')
         pxldrl.error = True
-        pxldrl.errtyp = 'madspan error'
+        pxldrl.errtyp = 9  # 'madspan error'
         return pxldrl
 
     # Interpolate data to daily pxldrl
@@ -136,7 +136,7 @@ def phenolo(pxldrl, **kwargs):
     except(RuntimeError, Exception, ValueError):
         logger.info(f'Error! Conversion to days failed, in position:{pxldrl.position}')
         pxldrl.error = True
-        pxldrl.errtyp = 'Trend conversion to daily'
+        pxldrl.errtyp = 10  # 'Trend conversion to daily'
         return pxldrl
 
     # Svainsky Golet
@@ -145,7 +145,7 @@ def phenolo(pxldrl, **kwargs):
     except (RuntimeError, Exception, ValueError):
         logger.info(f'Error! Savinsky Golet filter problem, in position:{pxldrl.position}')
         pxldrl.error = True
-        pxldrl.errtyp = 'Savinsky Golet'
+        pxldrl.errtyp = 11  # 'Savinsky Golet'
         return pxldrl
 
     # TODO create the option to pre process or not data
@@ -155,7 +155,7 @@ def phenolo(pxldrl, **kwargs):
     except(RuntimeError, Exception, ValueError):
         logger.info(f'Error in valley detection in position:{pxldrl.position}')
         pxldrl.error = True
-        pxldrl.errtyp = 'Valley detection'
+        pxldrl.errtyp = 12  # 'Valley detection'
         return pxldrl
 
     # Cycle with matrics
@@ -164,7 +164,7 @@ def phenolo(pxldrl, **kwargs):
     except(RuntimeError, Exception, ValueError):
         logger.info(f'Error in season detection in position:{pxldrl.position}')
         pxldrl.error = True
-        pxldrl.errtyp = 'Season detection'
+        pxldrl.errtyp = 13  # 'Season detection'
         return pxldrl
 
     try:
@@ -173,7 +173,7 @@ def phenolo(pxldrl, **kwargs):
     except(RuntimeError, Exception, ValueError):
         logger.info(f'Error in season mean calculation in position:{pxldrl.position}')
         pxldrl.error = True
-        pxldrl.errtyp = 'Season mean'
+        pxldrl.errtyp = 14  # 'Season mean'
         return pxldrl
 
     # Season metrics
@@ -182,7 +182,7 @@ def phenolo(pxldrl, **kwargs):
     except(RuntimeError, Exception, ValueError):
         logger.info(f'Error in intercept detection in position:{pxldrl.position}')
         pxldrl.error = True
-        pxldrl.errtyp = 'Season metrics'
+        pxldrl.errtyp = 15  # 'Season metrics'
         return pxldrl
 
     # General statistic aggregation
@@ -194,10 +194,11 @@ def phenolo(pxldrl, **kwargs):
         pxldrl.si = metrics.attribute_extractor(pxldrl, 'si')
         pxldrl.cf = metrics.attribute_extractor(pxldrl, 'cf')
         pxldrl.afi = metrics.attribute_extractor(pxldrl, 'afi')
+        pxldrl.warn = metrics.attribute_extractor(pxldrl, 'warn')
     except(RuntimeError, Exception, ValueError):
         logger.info(f'Statistical aggregation:{pxldrl.position}')
         pxldrl.error = True
-        pxldrl.errtyp = 'Statistical aggregation'
+        pxldrl.errtyp = 17  # 'Statistical aggregation'
         return pxldrl
 
     logger.debug(f'Pixel {pxldrl.position[0]}-{pxldrl.position[1]} processed')
