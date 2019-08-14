@@ -100,8 +100,7 @@ def cycle_metrics(pxldrl):
         # avoid unusual results
         if sincy.ref_yr not in range(pxldrl.pks.index[i].year - 1,  pxldrl.pks.index[i + 1].year + 1):
             logger.info(f'Warning! sbc not in a valid range,  in position:{pxldrl.position}')
-            pxldrl.error = True
-            pxldrl.errtyp = 'sbc not in a valid range'
+            sincy.warn = 1  # 'sbc not in a valid range'
             continue
 
         sincys.append(sincy)
@@ -206,8 +205,7 @@ def phen_metrics(pxldrl,  param):
             sincy.buffered = __buffer_ext(sincy)
         except (RuntimeError,  Exception,  ValueError):
             logger.debug(f'Warning! Buffered curve not properly created,  in position:{pxldrl.position}')
-            pxldrl.error = True
-            pxldrl.errtyp = 'Bff crv'
+            sincy.warn = 2  # 'Buffered curve'
             continue
 
         try:
@@ -215,8 +213,7 @@ def phen_metrics(pxldrl,  param):
                 .mean(numeric_only=True)
         except (RuntimeError,  Exception,  ValueError):
             logger.debug(f'Warning! Smoothed curve calculation went wrong,  in position:{pxldrl.position}')
-            pxldrl.error = True
-            pxldrl.errtyp = 'Smth crv'
+            sincy.warn = 3  # 'Smoothed curve'
             continue
 
         sincy.smoothed = sincy.smth_crv.loc[sincy.sd - sincy.td:sincy.ed + sincy.td]
@@ -243,7 +240,7 @@ def phen_metrics(pxldrl,  param):
             logger.debug(f'Warning! Start date not found in position {pxldrl.position} '
                          f'for the cycle starting in{sincy.sd}')
             sincy.sbd = None
-            pxldrl.errtyp = 'Start date'
+            sincy.warn = 4  # 'Start date'
 
         # research the end point of the season (SED)
         try:
@@ -256,7 +253,7 @@ def phen_metrics(pxldrl,  param):
             logger.debug(f'Warning! End date not found in position {pxldrl.position} '
                          f'for the cycle starting in{sincy.sd}')
             sincy.sed = None
-            pxldrl.errtyp = 'End date'
+            sincy.warn = 5  # 'End date'
 
         if sincy.sed is None or sincy.sbd is None:
             sincy.sl,  sincy.sp,  sincy.spi,  sincy.si,  sincy.cf,  sincy.af,  sincy.afi,  sincy.ref_yr = [np.NaN]*8
@@ -268,7 +265,7 @@ def phen_metrics(pxldrl,  param):
             except ValueError:
                 logger.debug(f'Warning! Error in slope calculation in pixel:{pxldrl.position} '
                              f'for the cycle starting in {sincy.sd}')
-                pxldrl.errtyp = 'Slope'
+                pxldrl.warn = 6  # 'Slope'
                 continue
 
         try:
@@ -302,6 +299,7 @@ def phen_metrics(pxldrl,  param):
         except ValueError:
             sincy.sb, sincy.se, sincy.sl, sincy.sp, sincy.spi, \
             sincy.si, sincy.cf, sincy.af, sincy.afi, sincy.ref_yr = [np.NaN] * 10
+            sincy.warn = 100
             continue
 
         phen.append(sincy)
