@@ -142,7 +142,7 @@ class OutputCointainer(object):
         self.dim_v = self.root.createVariable(param.dim_nm, 'f8', (param.dim_nm,))
 
         self.sb = self.root.createVariable('StartWeek', 'f8', (param.dim_nm, param.row_nm, param.col_nm))
-        self.se = self.root.createVariable('Endweek', 'f8', (param.dim_nm, param.row_nm, param.col_nm))
+        self.se = self.root.createVariable('EndWeek', 'f8', (param.dim_nm, param.row_nm, param.col_nm))
 
         self.sl = self.root.createVariable('SeasonLenght', 'i8', (param.dim_nm, param.row_nm, param.col_nm))
         self.spi = self.root.createVariable('SeasonPermanentIntegral', 'f8', (param.dim_nm, param.row_nm, param.col_nm))
@@ -150,8 +150,10 @@ class OutputCointainer(object):
         self.cf = self.root.createVariable('CycleFraction', 'f8', (param.dim_nm, param.row_nm, param.col_nm))
         self.afi = self.root.createVariable('ActiveFractionIntegral', 'f8', (param.dim_nm, param.row_nm, param.col_nm))
 
-        self.n_seasons = self.root.createVariable('NSeasons', 'i8', (param.row_nm, param.col_nm))
-        self.err = self.root.createVariable('PixelError', 'i8', (param.row_nm, param.col_nm))
+        self.warn = self.root.createVariable('CycleWarning', 'f8', (param.dim_nm, param.row_nm, param.col_nm))
+
+        self.n_seasons = self.root.createVariable('NumberOfSeasons', 'i8', (param.row_nm, param.col_nm))
+        self.err = self.root.createVariable('PixelCriticalError', 'i8', (param.row_nm, param.col_nm))
 
         self.row_v[:] = param.row_val
         self.col_v[:] = param.col_val
