@@ -203,7 +203,7 @@ def phenolo(pxldrl, **kwargs):
 
     logger.debug(f'Pixel {pxldrl.position[0]}-{pxldrl.position[1]} processed')
 
-    if ~param.ovr_scratch:
+    if not param.ovr_scratch:
         pxldrl = _cleaner(pxldrl)
 
     return pxldrl
