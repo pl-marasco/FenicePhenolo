@@ -98,23 +98,23 @@ if __name__ == '__main__':
     try:
         parser = argparse.ArgumentParser()
         parser.add_argument('-c', '--conf', help='Configuration file position', required=True)
-        parser.add_argument('-p', '--plot', action='store_true', help='Activate the plotting mode', required=False)
         parser.add_argument('-l', '--log', nargs='?', const=2, type=int, help='Activate the log', required=False)
         args = parser.parse_args()
 
         if (not args.conf) or (not os.path.isfile(os.path.normpath(args.conf))):
-            parser.error("the -c argument for the config file is missing or the given path doesn't exist!!!")
+            parser.error("Error ! the -c argument for the config file is missing or the given path doesn't exist!")
+            raise Exception
+
+        param = settings.ProjectParameters(path=args.conf, type='ini')
 
         if args.log:
-            logpth = os.path.join(os.path.dirname(args.conf), 'log.txt')
+            logpth = os.path.join(param.outFilePth, param.outName+'.log')
             log = logging.basicConfig(filename=logpth,
                                       level=args.log * 10,
                                       filemode='w')
         logger = logging.getLogger(__name__)
         logger.info('*** Phenolo 2.0 ***')
         logger.info('Process started @ {}'.format(datetime.now()))
-
-        param = settings.ProjectParameters(path=args.conf, type='ini')  # TODO  type 'ini' must be flexible
 
         main(param)
 
