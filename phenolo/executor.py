@@ -85,7 +85,7 @@ def _cache_def(dim_val, col_val):
     :param col_val:
     :return:
     """
-    attr = ['sb', 'se', 'sl', 'spi', 'si', 'cf', 'afi']
+    attr = ['sb', 'se', 'sl', 'spi', 'si', 'cf', 'afi', 'warn']
     cache = {name: pd.DataFrame(index=dim_val, columns=col_val) for name in attr}
     cache['sl'] = pd.DataFrame(pd.Timedelta(0, unit='D'), index=dim_val, columns=col_val)
     cache['season'] = pd.Series(0, index=col_val)
@@ -155,8 +155,7 @@ def analyse(cube, client, param, action, out):
                                                         'param': s_param})
                 seq.add(preload)
                 cleaner = client.submit(_cache_def, **{'dim_val': dim_val,
-                                                       'col_val': col_val},
-                                        priority=10)
+                                                       'col_val': col_val})  # ,priority=10)
                 seq.add(cleaner)
 
             for future in seq:
@@ -168,18 +167,17 @@ def analyse(cube, client, param, action, out):
                         cache['err'].iloc[col] = 1
                         cache['season'].iloc[col] = 0
                         logger.debug(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
-
                     else:
                         try:
                             for key in cache:
                                 if key is not 'season' and key is not 'err':
                                     _filler(cache[key], pxldrl, key, col)
 
-                            if pxldrl.season_len:
-                                if pxldrl.season_len <= 365.0:
-                                    cache['season'].iloc[col] = int(365 / pxldrl.season_len)
+                            if pxldrl.season_lng:
+                                if pxldrl.season_lng <= 365.0:
+                                    cache['season'].iloc[col] = int(365 / pxldrl.season_lng)
                                 else:
-                                    cache['season'].iloc[col] = int(pxldrl.season_len)
+                                    cache['season'].iloc[col] = int(pxldrl.season_lng)
 
                         except (RuntimeError, Exception, ValueError):
                             continue
@@ -194,6 +192,9 @@ def analyse(cube, client, param, action, out):
             out.spi[:, rowi, :] = cache['spi'].values
             out.si[:, rowi, :] = cache['si'].values
             out.cf[:, rowi, :] = cache['cf'].values
+
+            out.warn[:, rowi, :] = cache['warn'].values
+
             out.n_seasons[rowi] = cache['season'].values
             out.err[rowi] = cache['err'].values
 
