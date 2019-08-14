@@ -166,3 +166,43 @@ class OutputCointainer(object):
 
     def close(self):
         self.root.close()
+
+
+def scratch_dump(pxldrl, param):
+    import os
+    import pickle
+    """
+    Create a feather file for this parameters:
+        - ts 
+        - ts_resc 
+        - ts_cleaned
+        - ts_filtered 
+        - ts_d
+        - trend_d
+        - ps
+        - pks 
+    and a pickle file for:
+        - sincy 
+        - phen
+
+    :param pxldrl: a pixel drill as by phenolo 
+    :return: N/A
+    """
+    lst = ['ts', 'ts_resc', 'ts_cleaned', 'ts_filtered', 'ts_d', 'trend_d', 'ps', 'pks']
+    #
+    # for nm in lst:
+    #     file_name = nm + '.' + str(pxldrl.position[0]) + '_' + str(pxldrl.position[1]) + '.pickle'
+    #
+    #     getattr(pxldrl, nm).to_pickle(file_path)
+    #
+    # lst1 = ['sincy', 'phen']
+    #
+    # for nm in lst:
+    #     file_name = nm + '.' + str(pxldrl.position[0]) + '_' + str(pxldrl.position[1]) + '.pickle'
+    #     with open(file_name, 'wb') as handle:
+    #         pickle.dump(getattr(pxldrl, nm), handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    file_name = 'pxldrl_' + '.' + str(pxldrl.position[0]) + '_' + str(pxldrl.position[1]) + '.pickle'
+    file_path = os.path.join(param.scratch_pth, file_name)
+    with open(file_path, 'wb') as handle:
+        pickle.dump(pxldrl, handle, protocol=pickle.HIGHEST_PROTOCOL)
