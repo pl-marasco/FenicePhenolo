@@ -163,6 +163,14 @@ def analyse(cube, client, param, action, out):
                 if isinstance(result, atoms.PixelDrill):
                     pxldrl = result
                     col = pxldrl.position[1]
+
+                    if param.ovr_scratch:
+                        try:
+                            import phenolo.output as output
+                            output.scratch_dump(pxldrl, param)
+                        except Exception:
+                            raise Exception
+
                     if pxldrl.error:
                         cache['err'].iloc[col] = 1
                         cache['season'].iloc[col] = 0
@@ -181,6 +189,7 @@ def analyse(cube, client, param, action, out):
 
                         except (RuntimeError, Exception, ValueError):
                             continue
+
                 elif isinstance(result, dict):
                     nxt_cache = result
                 else:
