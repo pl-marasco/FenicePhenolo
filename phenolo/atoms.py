@@ -22,7 +22,7 @@ class PixelDrill(object):
         self.ts_filtered = None
         self.ts_interpolated = None
         self.season_ts = None
-        self.season_len = None
+        self.season_lng = None
         self.expSeason = None
         self.trend_ts = None
         self.medspan = None
@@ -35,7 +35,7 @@ class PixelDrill(object):
         self.error = None
         self.phen = []
         self.error = False
-        self.errtyp = ''
+        self.errtyp = None
 
     def __del__(self):
         for ith in self.__dict__.keys():
@@ -68,6 +68,7 @@ class SingularCycle(object):
         :param : Time series as pandas.Series object
         """
         self.err = False
+        self.warn = None
 
         self.sd = sd  # Start date - MBD
         self.ed = ed  # End date - MED
