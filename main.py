@@ -26,7 +26,7 @@ def main(param):
     if param.col_nm is None and param.row_nm is None and param.dim_nm is not None:
         # single pixel analysis
 
-        param.add_px_list(cube)
+        param.add_px_list(cube.compute())
 
         if param.col_nm is not None and param.row_nm is not None:
             ts = cube.isel(dict([(param.col_nm, 0), (param.row_nm, 0)])).to_series().astype(float)
@@ -108,8 +108,8 @@ if __name__ == '__main__':
         param = settings.ProjectParameters(path=args.conf, type='ini')
 
         if args.log:
-            logpth = os.path.join(param.outFilePth, param.outName+'.log')
-            log = logging.basicConfig(filename=logpth,
+            logpath = os.path.join(param.outFilePth, param.outName + '.log')
+            log = logging.basicConfig(filename=logpath,
                                       level=args.log * 10,
                                       filemode='w')
         logger = logging.getLogger(__name__)
