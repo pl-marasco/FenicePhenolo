@@ -100,7 +100,10 @@ class ProjectParameters(object):
                     root, file = os.path.split(read_out_pth)
                     if file == '':
                         file = os.path.split(self.inFilePth)[1]
-                        file_nm = os.path.splitext(file)[0]
+                        if os.path.splitext(file)[0] != '':
+                            file_nm = os.path.splitext(file)[0]
+                        else:
+                            file_nm = 'netcdf_dir'
                     else:
                         file_nm = os.path.splitext(file)[0]
 
