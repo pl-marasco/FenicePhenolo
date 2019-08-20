@@ -93,6 +93,16 @@ def _cache_def(dim_val, col_val):
     return cache
 
 
+def _cache_cleaner(cache, dim_val, col_val):
+    attr = ['sb', 'se', 'sl', 'spi', 'si', 'cf', 'afi', 'warn']
+    for name in attr:
+        cache[name] = cache[name][0:0].reindex(dim_val)
+    cache['sl'] = pd.DataFrame(pd.Timedelta(0, unit='D'), index=dim_val, columns=col_val)
+    cache['season'] = cache['season'][0:0].reindex(col_val)
+    cache['err'] = cache['err'][0:0].reindex(col_val)
+    return cache
+
+
 def _filler(key, pxldrl, att, col):
     """
     Fill the dictionary with the passes key and values
@@ -147,7 +157,7 @@ def analyse(cube, client, param, action, out):
                 nxt = False
             else:
                 row = nxt_row
-                cache = nxt_cache
+                cache = _cache_cleaner(cache, dim_val, col_val)
                 y_lst = nxt_y_lst
 
             if y_lst.any():
@@ -157,9 +167,6 @@ def analyse(cube, client, param, action, out):
                 preload = client.submit(_pre_feeder, **{'nxt_row': nxt_row,
                                                         'param': s_param})
                 nxt_y_lst = preload.result()
-                cleaner = client.submit(_cache_def, **{'dim_val': dim_val,
-                                                       'col_val': col_val})  # ,priority=10)
-                nxt_cache = cleaner.result()
                 continue
 
             futures = client.map(process, y_lst, **{'data': s_row, 'row': rowi, 'param': s_param, 'action': action})
@@ -170,9 +177,6 @@ def analyse(cube, client, param, action, out):
                 preload = client.submit(_pre_feeder, **{'nxt_row': nxt_row,
                                                         'param': s_param})
                 seq.add(preload)
-                cleaner = client.submit(_cache_def, **{'dim_val': dim_val,
-                                                       'col_val': col_val})  # ,priority=10)
-                seq.add(cleaner)
 
             for future in seq:
                 result = future[1]
@@ -222,11 +226,6 @@ def analyse(cube, client, param, action, out):
 
             out.n_seasons[rowi] = cache['season'].values
             out.err[rowi] = cache['err'].values
-
-            # try:
-            #     out.root.sync()
-            # except (RuntimeError, Exception, ValueError):
-            #     logger.debug(f'Error in the sync')
 
             print_progress_bar(rowi, len(param.row_val))
 
