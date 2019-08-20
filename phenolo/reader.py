@@ -503,7 +503,7 @@ def _get_slicers(prmts):
 
 
 def _dasker(dataset, dim_bloks, col_bloks, row_bloks):
-    crd_x, crd_y, crd_t = _coord_names(dataset)
+    crd_y, crd_x, crd_t = _coord_names(dataset)
     return dataset.chunk({crd_t: dim_bloks, crd_x: row_bloks, crd_y: col_bloks})
 
 
@@ -540,10 +540,13 @@ def ingest(prmts):
             prmts.add_dims(cube)
 
             col_blocks = prmts.col_val.size
-            row_blocks = prmts.row_val.size
+            row_blocks = 1 #prmts.row_val.size
             dim_blocks = prmts.dim_val.size
 
-            return _dasker(cube, dim_blocks, col_blocks, row_blocks)
+            cube = _dasker(cube, dim_blocks, col_blocks, row_blocks)
+
+            return cube
+
         else:
             prmts.add_dims(cube)
             deltatime = time.time() - start
