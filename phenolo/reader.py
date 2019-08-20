@@ -533,6 +533,9 @@ def ingest(prmts):
                 cube = _get_multi_hdf(glob.glob(os.path.join(prmts.inFilePth, '*.hdf')), dim)
             else:
                 cube = _get_rasterio(prmts.inFilePth, dim)
+        else:
+            logger.info('File or directory not found')
+            raise FileNotFoundError
 
         if prmts.ext is None:
             deltatime = time.time() - start
@@ -553,5 +556,5 @@ def ingest(prmts):
             logger.info('Loading data required:{}'.format(deltatime))
             return cube
 
-    except IOError:
-        raise IOError
+    except Exception as ex:
+        raise ex
