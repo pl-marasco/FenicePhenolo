@@ -106,6 +106,15 @@ def _filler(key, pxldrl, att, col):
     return
 
 
+def _error_decoder(err):
+    err_cod = {'1': 'No data', '2': 'Scaling', '3': 'Off set', '4': '0-100 Scaling', '5': 'outlier filtering',
+               '6': 'gap filling', '7': 'Season and trend estimation', '8': 'To daily conversion', '9': 'madspan error',
+               '10': 'Trend conversion to daily', '11': 'Savinsky Golet', '12': 'Valley detection',
+               '13': 'Season detection', '14': 'Season mean', '15': 'Season metrics'}
+
+    return err_cod[err]
+
+
 def analyse(cube, client, param, action, out):
     """
 
@@ -144,6 +153,13 @@ def analyse(cube, client, param, action, out):
             if y_lst.any():
                 s_row = client.scatter(row, broadcast=True)
             else:
+                nxt_row = cube.isel(dict([(param.row_nm, rowi + 1)])).compute()
+                preload = client.submit(_pre_feeder, **{'nxt_row': nxt_row,
+                                                        'param': s_param})
+                nxt_y_lst = preload.result()
+                cleaner = client.submit(_cache_def, **{'dim_val': dim_val,
+                                                       'col_val': col_val})  # ,priority=10)
+                nxt_cache = cleaner.result()
                 continue
 
             futures = client.map(process, y_lst, **{'data': s_row, 'row': rowi, 'param': s_param, 'action': action})
@@ -174,7 +190,7 @@ def analyse(cube, client, param, action, out):
                     if pxldrl.error:
                         cache['err'].iloc[col] = 1
                         cache['season'].iloc[col] = 0
-                        logger.debug(f'Error: {pxldrl.errtyp} in position:{pxldrl.position}')
+                        logger.debug(f'Error: {_error_decoder(pxldrl.errtyp)} in position:{pxldrl.position}')
                     else:
                         try:
                             for key in cache:
