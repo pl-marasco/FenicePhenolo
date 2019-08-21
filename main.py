@@ -39,6 +39,9 @@ def main(param):
             print('No acceptable value in the position requested')
             sys.exit(1)
         param.single_pnt = True
+        param.col_val = [1]
+        param.row_val = [1]
+
         sng_pnt = aa.phenolo(pxldrl, settings=param)
 
         viz.plot(sng_pnt)
