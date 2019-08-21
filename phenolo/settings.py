@@ -232,6 +232,7 @@ class ProjectParameters(object):
                 self.row_nm, self.col_nm, self.dim_nm, = [None] * 3
                 self.row_val, self.col_val, self.dim_val = [None] * 3
                 self.pixel_list = None
+                self.single_pnt = False
 
                 return
             elif kwargs['type'] == 'CopernicusNetCDF':
@@ -243,6 +244,8 @@ class ProjectParameters(object):
                 pass
                 # path_config = kwargs['path']
                 # TODO create the attribute reading to populate min max ...
+
+
 
         else:
             logger.debug('Default parameters loaded')
