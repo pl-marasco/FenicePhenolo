@@ -38,9 +38,10 @@ def main(param):
         if len(param.pixel_list) == 0:
             print('No acceptable value in the position requested')
             sys.exit(1)
-        sngpx_pheno = aa.phenolo(pxldrl, settings=param)
+        param.single_pnt = True
+        sng_pnt = aa.phenolo(pxldrl, settings=param)
 
-        viz.plot(sngpx_pheno)
+        viz.plot(sng_pnt)
 
     elif len(cube.coords.get(param.col_nm)) is not 1 and len(cube.coords.get(param.row_nm)) is not 1:
 
