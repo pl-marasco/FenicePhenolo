@@ -72,10 +72,8 @@ def _get_netcdf(prmts, dim):
 
 def _get_multi_netcdf(path, dim, prmts):
     dataset = xr.open_mfdataset(path,
-                                chunks={'lat': 1000, 'lon': 1000},
                                 mask_and_scale=False,
                                 decode_times=prmts.decode)
-
     return _slice_cube(dataset, dim)
 
 
