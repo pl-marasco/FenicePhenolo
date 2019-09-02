@@ -227,6 +227,12 @@ def analyse(cube, client, param, action, out):
             out.n_seasons[rowi] = cache['season'].values
             out.err[rowi] = cache['err'].values
 
+            try:
+                if rowi in range(0, len(param.row_val), 250):
+                    out.root.sync()
+            except (RuntimeError, Exception, ValueError):
+                logger.debug(f'Error in the sync')
+
             print_progress_bar(rowi, len(param.row_val))
 
             logger.debug(f'Row {rowi} processed')
