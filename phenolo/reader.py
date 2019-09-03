@@ -405,12 +405,12 @@ def _coord_range_check(dim, data, crd_x, crd_y, crd_t):
     # time check
     tm_rng = pd.date_range(data.coords[crd_t].min().values, data.coords[crd_t].max().values).floor('D')
 
-    if dim['time'].start is not pd.NaT:
+    if dim['time'].start is not None:
         if dim['time'].start.floor('D') not in tm_rng:
             logger.info('Time slice Start out of range')
             raise ValueError
 
-    if dim['time'].stop is not pd.NaT:
+    if dim['time'].stop is not None:
         if dim['time'].stop.floor('D') not in tm_rng:
             logger.info('Time slice Start out of range')
             raise ValueError
@@ -455,10 +455,10 @@ def _get_slicers(prmts):
 
         tm_sl = [None] * 2
 
-        if type(prmts.exm_start) is not pd.NaT:
+        if type(prmts.exm_start) is not type(pd.NaT):
             tm_sl[0] = prmts.exm_start
 
-        if type(prmts.exm_end) is not pd.NaT:
+        if type(prmts.exm_end) is not type(pd.NaT):
             tm_sl[1] = prmts.exm_end
             # pd._libs.tslibs.nattype.NaTType
 
