@@ -167,6 +167,7 @@ def analyse(cube, client, param, action, out):
                 preload = client.submit(_pre_feeder, **{'nxt_row': nxt_row,
                                                         'param': s_param})
                 nxt_y_lst = preload.result()
+                logger.debug(f'Row {rowi} processed')
                 continue
 
             futures = client.map(process, y_lst, **{'data': s_row, 'row': rowi, 'param': s_param, 'action': action})
