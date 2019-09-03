@@ -522,10 +522,10 @@ def ingest(prmts):
                 cube = _get_img(prmts, dim)
             else:
                 cube = _get_rasterio(prmts.inFilePth, dim)
-        elif os.path.isdir(prmts.inFilePth):
-            if glob.glob(os.path.join(prmts.inFilePth, '*.nc')):
+        elif os.path.isdir(os.path.dirname(prmts.inFilePth)):
+            if '*.nc' in prmts.inFilePth:
                 cube = _get_multi_netcdf(prmts.inFilePth, dim, prmts)
-            elif glob.glob(os.path.join(prmts.inFilePth, '*.hdf')):
+            elif '*.hdf' in prmts.inFilePth:
                 cube = _get_multi_hdf(glob.glob(os.path.join(prmts.inFilePth, '*.hdf')), dim)
             else:
                 cube = _get_rasterio(prmts.inFilePth, dim)
@@ -538,11 +538,11 @@ def ingest(prmts):
             logger.info('Loading data required:{}'.format(deltatime))
             prmts.add_dims(cube)
 
-            col_blocks = prmts.col_val.size
-            row_blocks = 1 #prmts.row_val.size
-            dim_blocks = prmts.dim_val.size
-
-            cube = _dasker(cube, dim_blocks, col_blocks, row_blocks)
+            if cube.chunks is None:
+                col_blocks = prmts.col_val.size
+                row_blocks = 1  # prmts.row_val.size
+                dim_blocks = prmts.dim_val.size
+                cube = _dasker(cube, dim_blocks, col_blocks, row_blocks)
 
             return cube
 
