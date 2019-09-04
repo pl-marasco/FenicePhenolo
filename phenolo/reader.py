@@ -295,7 +295,7 @@ def _slice_cube(dataset, dim):
     logger.debug(f'Coordinates names are: {crd_x},{crd_y},{crd_t}')
 
     # no slice
-    if dim['time'] == slice(pd.NaT, pd.NaT) and dim['x'] == slice(None) and dim['y'] == slice(None):
+    if dim['time'] == slice(None) and dim['x'] == slice(None) and dim['y'] == slice(None):
         return data
     # single pixel
     elif dim['x'].start == dim['x'].stop and dim['y'].start == dim['y'].stop:
