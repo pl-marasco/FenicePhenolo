@@ -167,6 +167,7 @@ def analyse(cube, client, param, action, out):
                 preload = client.submit(_pre_feeder, **{'nxt_row': nxt_row,
                                                         'param': s_param})
                 nxt_y_lst = preload.result()
+                print_progress_bar(rowi, len(param.row_val))
                 logger.debug(f'Row {rowi} processed')
                 continue
 
