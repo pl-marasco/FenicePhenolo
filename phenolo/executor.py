@@ -120,7 +120,7 @@ def _error_decoder(err):
     err_cod = {1: 'No data', 2: 'Scaling', 3: 'Off set', 4: '0-100 Scaling', 5: 'outlier filtering',
                6: 'gap filling', 7: 'Season and trend estimation', 8: 'To daily conversion', 9: 'madspan error',
                10: 'Trend conversion to daily', 11: 'Savinsky Golet', 12: 'Valley detection',
-               13: 'Season detection', 14: 'Season mean', 15: 'Season metrics'}
+               13: 'Season detection', 14: 'Season mean', 15: 'Season metrics', 17: 'Statistical aggregation'}
 
     return err_cod[err]
 
