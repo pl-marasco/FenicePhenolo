@@ -141,19 +141,19 @@ class OutputCointainer(object):
         self.col_v = self.root.createVariable(param.col_nm, 'f8', (param.col_nm,))
         self.dim_v = self.root.createVariable(param.dim_nm, 'f8', (param.dim_nm,))
 
-        self.sb = self.root.createVariable('StartWeek', 'f8', (param.dim_nm, param.row_nm, param.col_nm))
-        self.se = self.root.createVariable('EndWeek', 'f8', (param.dim_nm, param.row_nm, param.col_nm))
+        self.sb = self.root.createVariable('StartWeek', 'f8', (param.dim_nm, param.row_nm, param.col_nm), zlib=True, complevel=5, shuffle=True)
+        self.se = self.root.createVariable('EndWeek', 'f8', (param.dim_nm, param.row_nm, param.col_nm), zlib=True, complevel=5, shuffle=True)
 
-        self.sl = self.root.createVariable('SeasonLenght', 'i8', (param.dim_nm, param.row_nm, param.col_nm))
-        self.spi = self.root.createVariable('SeasonPermanentIntegral', 'f8', (param.dim_nm, param.row_nm, param.col_nm))
-        self.si = self.root.createVariable('SeasonIntegral', 'f8', (param.dim_nm, param.row_nm, param.col_nm))
-        self.cf = self.root.createVariable('CycleFraction', 'f8', (param.dim_nm, param.row_nm, param.col_nm))
-        self.afi = self.root.createVariable('ActiveFractionIntegral', 'f8', (param.dim_nm, param.row_nm, param.col_nm))
+        self.sl = self.root.createVariable('SeasonLenght', 'i8', (param.dim_nm, param.row_nm, param.col_nm), zlib=True, complevel=5, shuffle=True)
+        self.spi = self.root.createVariable('SeasonPermanentIntegral', 'f8', (param.dim_nm, param.row_nm, param.col_nm), zlib=True, complevel=5, shuffle=True, least_significant_digit=2)
+        self.si = self.root.createVariable('SeasonIntegral', 'f8', (param.dim_nm, param.row_nm, param.col_nm), zlib=True, complevel=5, shuffle=True, least_significant_digit=2)
+        self.cf = self.root.createVariable('CycleFraction', 'f8', (param.dim_nm, param.row_nm, param.col_nm), zlib=True, complevel=5, shuffle=True, least_significant_digit=2)
+        self.afi = self.root.createVariable('ActiveFractionIntegral', 'f8', (param.dim_nm, param.row_nm, param.col_nm), zlib=True, complevel=5, shuffle=True, least_significant_digit=2)
 
-        self.warn = self.root.createVariable('CycleWarning', 'f8', (param.dim_nm, param.row_nm, param.col_nm))
+        self.warn = self.root.createVariable('CycleWarning', 'f8', (param.dim_nm, param.row_nm, param.col_nm), zlib=True, complevel=5, shuffle=True)
 
-        self.n_seasons = self.root.createVariable('NumberOfSeasons', 'i8', (param.row_nm, param.col_nm))
-        self.err = self.root.createVariable('PixelCriticalError', 'i8', (param.row_nm, param.col_nm))
+        self.n_seasons = self.root.createVariable('NumberOfSeasons', 'i8', (param.row_nm, param.col_nm), zlib=True, complevel=5, shuffle=True)
+        self.err = self.root.createVariable('PixelCriticalError', 'i8', (param.row_nm, param.col_nm), zlib=True, complevel=5, shuffle=True)
 
         self.row_v[:] = param.row_val
         self.col_v[:] = param.col_val
