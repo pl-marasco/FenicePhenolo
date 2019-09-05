@@ -67,7 +67,6 @@ def main(param):
 
         result_cube.close()
 
-        client.close()
     else:
         raise ValueError
 
@@ -89,12 +88,6 @@ def _log_info(logger, param):
 if __name__ == '__main__':
 
     assert sys.version_info[:2] >= (3, 6), "You need at minimum python 3.6 to execute this script"
-
-    modules = ['numpy', 'pandas', 'xarray', 'rasterio', 'netCDF4', 'scipy', 'pyhdf', 'seasonal', 'dask', 'distributed',
-               'matplotlib', ]
-
-    for module in modules:
-        assert importlib.util.find_spec(module), "You need {0} module".format(module)
 
     print('~~~ Phenolo 2.0 ~~~\r\n')
 
