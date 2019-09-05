@@ -143,79 +143,56 @@ def analyse(cube, client, param, action, out):
         dim_val = pd.to_datetime(param.dim_val).year.unique()
         col_val = range(0, len(param.col_val))
 
-        nxt = True
+        cache = None
 
         for rowi in range(len(param.row_val)):
             if rowi == 0:
                 row = cube.isel(dict([(param.row_nm, rowi)])).compute()
                 y_lst = _pxl_lst(row, param)
                 cache = _cache_def(dim_val, col_val)
-            elif rowi == len(param.row_val)-1:
+            else:
                 row = cube.isel(dict([(param.row_nm, rowi)])).compute()
                 y_lst = _pxl_lst(row, param)
-                cache = _cache_def(dim_val, col_val)
-                nxt = False
-            else:
-                row = nxt_row
                 cache = _cache_cleaner(cache, dim_val, col_val)
-                y_lst = nxt_y_lst
 
             if y_lst.any():
                 s_row = client.scatter(row, broadcast=True)
             else:
-                nxt_row = cube.isel(dict([(param.row_nm, rowi + 1)])).compute()
-                preload = client.submit(_pre_feeder, **{'nxt_row': nxt_row,
-                                                        'param': s_param})
-                nxt_y_lst = preload.result()
                 print_progress_bar(rowi, len(param.row_val))
                 logger.debug(f'Row {rowi} processed')
                 continue
 
             futures = client.map(process, y_lst, **{'data': s_row, 'row': rowi, 'param': s_param, 'action': action})
-            seq = as_completed(futures, with_results=True)
 
-            if nxt:
-                nxt_row = cube.isel(dict([(param.row_nm, rowi + 1)])).compute()
-                preload = client.submit(_pre_feeder, **{'nxt_row': nxt_row,
-                                                        'param': s_param})
-                seq.add(preload)
+            for future, result in as_completed(futures, with_results=True):
+                pxldrl = result
+                col = pxldrl.position[1]
 
-            for future in seq:
-                result = future[1]
-                if isinstance(result, atoms.PixelDrill):
-                    pxldrl = result
-                    col = pxldrl.position[1]
+                if param.ovr_scratch:
+                    try:
+                        import phenolo.output as output
+                        output.scratch_dump(pxldrl, param)
+                    except Exception:
+                        raise Exception
 
-                    if param.ovr_scratch:
-                        try:
-                            import phenolo.output as output
-                            output.scratch_dump(pxldrl, param)
-                        except Exception:
-                            raise Exception
-
-                    if pxldrl.error:
-                        cache['err'].iloc[col] = 1
-                        cache['season'].iloc[col] = 0
-                        logger.debug(f'Error: {_error_decoder(pxldrl.errtyp)} in position:{pxldrl.position}')
-                    else:
-                        try:
-                            for key in cache:
-                                if key is not 'season' and key is not 'err':
-                                    _filler(cache[key], pxldrl, key, col)
-
-                            if pxldrl.season_lng:
-                                if pxldrl.season_lng <= 365.0:
-                                    cache['season'].iloc[col] = int(365 / pxldrl.season_lng)
-                                else:
-                                    cache['season'].iloc[col] = int(pxldrl.season_lng)
-
-                        except (RuntimeError, Exception, ValueError):
-                            continue
-
-                elif isinstance(result, dict):
-                    nxt_cache = result
+                if pxldrl.error:
+                    cache['err'].iloc[col] = 1
+                    cache['season'].iloc[col] = 0
+                    logger.debug(f'Error: {_error_decoder(pxldrl.errtyp)} in position:{pxldrl.position}')
                 else:
-                    nxt_y_lst = result
+                    try:
+                        for key in cache:
+                            if key is not 'season' and key is not 'err':
+                                _filler(cache[key], pxldrl, key, col)
+
+                        if pxldrl.season_lng:
+                            if pxldrl.season_lng <= 365.0:
+                                cache['season'].iloc[col] = int(365 / pxldrl.season_lng)
+                            else:
+                                cache['season'].iloc[col] = int(pxldrl.season_lng)
+
+                    except (RuntimeError, Exception, ValueError):
+                        continue
 
             out.sb[:, rowi, :] = cache['sb'].values
             out.se[:, rowi, :] = cache['se'].values
