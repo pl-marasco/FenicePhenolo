@@ -67,7 +67,6 @@ def main(param):
 
         result_cube.close()
 
-        client.close()
     else:
         raise ValueError
 
