@@ -194,6 +194,9 @@ def analyse(cube, client, param, action, out):
                     except (RuntimeError, Exception, ValueError):
                         continue
 
+            client.cancel(s_row)
+            client.cancel(futures)
+
             out.sb[:, rowi, :] = cache['sb'].values
             out.se[:, rowi, :] = cache['se'].values
             out.sl[:, rowi, :] = cache['sl'].values
