@@ -137,7 +137,7 @@ class OutputCointainer(object):
         col = self.root.createDimension(param.col_nm, len(param.col_val))
         dim = self.root.createDimension(param.dim_nm, len(self._yrs_reducer(param.dim_val)))
 
-        self.row_v = self.root.createVariable(param.row_nm, 'f8', (param.row_nm,))
+        self.row_v = self.root.createVariable(param.row_nm, 'f8', None)  #(param.row_nm,)
         self.col_v = self.root.createVariable(param.col_nm, 'f8', (param.col_nm,))
         self.dim_v = self.root.createVariable(param.dim_nm, 'f8', (param.dim_nm,))
 
