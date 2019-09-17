@@ -198,7 +198,7 @@ def analyse(cube, client, param, action, out):
                             else:
                                 cache['season'].iloc[col] = int(pxldrl.season_lng)
 
-                        future.cancel()
+                        del future
 
                     except (RuntimeError, Exception, ValueError):
                         continue
