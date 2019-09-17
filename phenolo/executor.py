@@ -5,6 +5,7 @@ import logging
 import numpy as np
 import pandas as pd
 from dask.distributed import as_completed
+import threading
 
 
 from phenolo import atoms
@@ -181,9 +182,15 @@ def analyse(cube, client, param, action, out):
                     logger.debug(f'Error: {_error_decoder(pxldrl.errtyp)} in position:{pxldrl.position}')
                 else:
                     try:
+                        threads = list()
                         for key in cache:
                             if key is not 'season' and key is not 'err':
-                                _filler(cache[key], pxldrl, key, col)
+                                x = threading.Thread(target=_filler, args=(cache[key], pxldrl, key, col))
+                                threads.append(x)
+                                x.start()
+
+                        for index, thread in enumerate(threads):
+                            thread.join()
 
                         if pxldrl.season_lng:
                             if pxldrl.season_lng <= 365.0:
