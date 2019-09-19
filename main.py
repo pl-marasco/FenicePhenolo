@@ -105,10 +105,14 @@ if __name__ == '__main__':
         param = settings.ProjectParameters(path=args.conf, type='ini')
 
         if args.log:
-            logpath = os.path.join(param.outFilePth, param.outName + '.log')
-            log = logging.basicConfig(filename=logpath,
-                                      level=args.log * 10,
-                                      filemode='w')
+            try:
+                logpath = os.path.join(param.outFilePth, param.outName + '.log')
+                log = logging.basicConfig(filename=logpath,
+                                          level=args.log * 10,
+                                          filemode='w')
+            except:
+                print('Error logging file creation')
+                raise IOError
         logger = logging.getLogger(__name__)
         logger.info('*** Phenolo 2.0 ***')
         logger.info('Process started @ {}'.format(datetime.now()))
