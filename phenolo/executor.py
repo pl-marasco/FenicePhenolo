@@ -113,7 +113,10 @@ def _filler(key, pxldrl, att, col):
     :param col:
     :return:
     """
-    key.iloc[:, col] = getattr(pxldrl, att)[:]
+    try:
+        key.iloc[:, col] = getattr(pxldrl, att)[:]
+    except:
+        print(f'{att} | {pxldrl.position}')
     return
 
 
@@ -198,7 +201,7 @@ def analyse(cube, client, param, action, out):
                             else:
                                 cache['season'].iloc[col] = int(pxldrl.season_lng)
 
-                        del future
+                        # del future
 
                     except (RuntimeError, Exception, ValueError):
                         continue
