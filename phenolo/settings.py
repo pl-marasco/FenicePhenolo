@@ -295,7 +295,7 @@ class ProjectParameters(object):
             elif kwargs['type'] == 'coord':
                 if config.get(section, parameter) is not '':
                     values = config.get(section, parameter)
-                    charachter = {' ': '', ';': ',', '-': ',', ':': ','}
+                    charachter = {' ': '', ';': ',', ':': ','}
                     for i, j in charachter.items():
                         values = values.replace(i, j)
                     values = values.split(',')
