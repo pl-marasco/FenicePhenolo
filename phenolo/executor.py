@@ -9,8 +9,6 @@ import threading
 
 
 from phenolo import atoms
-import time
-
 logger = logging.getLogger(__name__)
 
 
@@ -128,7 +126,7 @@ def _error_decoder(err):
 
     return err_cod[err]
 
-
+@profile
 def analyse(cube, client, param, action, out):
     """
 
