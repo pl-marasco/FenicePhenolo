@@ -79,9 +79,12 @@ def main(param):
 
 
 def _log_info(logger, param):
-    logger.debug('-------------------- start values --------------------')
-    for key, value in param.__dict__.items():
-        logger.debug('{} = {}'.format(key, value))
+    logger.debug('-------------------- start values --------------------')  # TODO must be according to the level
+    if hasattr(param, '__dict__'):
+        for key, value in param.__dict__.items():
+            logger.debug('{} = {}'.format(key, value))
+    else:
+        logger.debug(param)
     logger.debug('--------------------  end values  --------------------')
 
 
