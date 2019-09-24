@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import threading
 
 import numpy as np
 import pandas as pd
 from dask.distributed import as_completed
-import threading
 
 from phenolo import atoms
-import time
 
 logger = logging.getLogger(__name__)
 
@@ -199,9 +198,6 @@ def analyse(cube, client, param, action, out):
                                 cache['season'].iloc[col] = int(365 / pxldrl.season_lng)
                             else:
                                 cache['season'].iloc[col] = int(pxldrl.season_lng)
-
-                        # del future
-
                     except (RuntimeError, Exception, ValueError):
                         continue
 
