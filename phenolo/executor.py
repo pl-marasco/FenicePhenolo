@@ -7,8 +7,9 @@ import pandas as pd
 from dask.distributed import as_completed
 import threading
 
-
 from phenolo import atoms
+import time
+
 logger = logging.getLogger(__name__)
 
 
@@ -112,7 +113,7 @@ def _filler(key, pxldrl, att, col):
     :return:
     """
     try:
-        key.iloc[:, col] = getattr(pxldrl, att)[:]
+        key[col] = getattr(pxldrl, att)[:]
     except:
         print(f'{att} | {pxldrl.position}')
     return
@@ -126,7 +127,7 @@ def _error_decoder(err):
 
     return err_cod[err]
 
-@profile
+
 def analyse(cube, client, param, action, out):
     """
 
