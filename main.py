@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import argparse
-import importlib
 import logging
 import os
 import sys
 import time
 from datetime import datetime
+import webbrowser
 
 from dask.distributed import Client
 
@@ -17,9 +17,10 @@ logger = logging.getLogger(__name__)
 
 def main(param):
     start_time = time.process_time()
-
+    print('\rReading Cube', end='')
     cube = reader.ingest(param)
 
+    print('\rInfo -- Cube read', end='')
     _log_info(logging.getLogger('paramters'), param)
     _log_info(logging.getLogger('cube'), cube)
 
@@ -52,6 +53,9 @@ def main(param):
         n_workers = param.n_workers
         threads_per_worker = param.threads_per_worker
 
+        out = output.OutputCointainer(cube, param, name=param.outName)
+        print('\rInfo -- Output ready', end='')
+
         if ~localproc and n_workers and threads_per_worker:
             client = Client(processes=localproc, n_workers=n_workers, threads_per_worker=threads_per_worker)
         elif ~localproc and n_workers:
@@ -61,7 +65,11 @@ def main(param):
         else:
             client = Client()
 
-        out = output.OutputCointainer(cube, param, name=param.outName)
+        if client:
+            print('\rInfo -- Client up and running', end='')
+            http = 'http://localhost:8787/status'
+            print('\rInfo -- Analysis is up and running')
+            webbrowser.open(http, new=2, autoraise=True)
 
         result_cube = executor.analyse(cube, client, param, aa.phenolo, out)
 
