@@ -208,14 +208,14 @@ def analyse(cube, client, param, action, out):
             client.cancel(s_row)
             client.cancel(futures)
 
-            out.sb[:, rowi, :] = cache['sb'].values
-            out.se[:, rowi, :] = cache['se'].values
-            out.sl[:, rowi, :] = cache['sl'].values
-            out.spi[:, rowi, :] = cache['spi'].values
-            out.si[:, rowi, :] = cache['si'].values
-            out.cf[:, rowi, :] = cache['cf'].values
+            out.sb[rowi, :, :] = cache['sb'].values
+            out.se[rowi, :, :] = cache['se'].values
+            out.sl[rowi, :, :] = cache['sl'].values
+            out.spi[rowi, :, :] = cache['spi'].values
+            out.si[rowi, :, :] = cache['si'].values
+            out.cf[rowi, :, :] = cache['cf'].values
 
-            out.warn[:, rowi, :] = cache['warn'].values
+            out.warn[rowi, :, :] = cache['warn'].values
 
             out.n_seasons[rowi] = cache['season'].values
             out.err[rowi] = cache['err'].values
