@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import threading
 
 import numpy as np
 import pandas as pd
@@ -183,15 +182,9 @@ def analyse(cube, client, param, action, out):
                     logger.debug(f'Error: {_error_decoder(pxldrl.errtyp)} in position:{pxldrl.position}')
                 else:
                     try:
-                        threads = list()
                         for key in cache:
                             if key is not 'season' and key is not 'err':
-                                x = threading.Thread(target=_filler, args=(cache[key], pxldrl, key, col))
-                                threads.append(x)
-                                x.start()
-
-                        for index, thread in enumerate(threads):
-                            thread.join()
+                                _filler(cache[key], pxldrl, key, col)
 
                         if pxldrl.season_lng:
                             if pxldrl.season_lng <= 365.0:
