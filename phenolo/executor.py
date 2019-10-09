@@ -10,6 +10,10 @@ from phenolo import atoms
 
 logger = logging.getLogger(__name__)
 
+import line_profiler
+import atexit
+profile = line_profiler.LineProfiler()
+atexit.register(profile.print_stats)
 
 class Processor(object):
     def __init__(self):
@@ -125,6 +129,9 @@ def _error_decoder(err):
 
     return err_cod[err]
 
+def _chunks(cube):
+    pass
+
 
 def analyse(cube, client, param, action, out):
     """
@@ -144,81 +151,87 @@ def analyse(cube, client, param, action, out):
         dim_val = pd.to_datetime(param.dim_val).year.unique()
         col_val = range(0, len(param.col_val))
 
+        chunks = cube.compute()
+
         cache = None
+        for chunk in np.array_split(len(param.row_val)):
+            chunked = cube.isel(dict([(param.row_nm, slice(chunk[0],chunk[-1]))]))
 
-        for rowi in range(len(param.row_val)):
-            if rowi == 0:
-                row = cube.isel(dict([(param.row_nm, rowi)])).compute()
-                y_lst = _pxl_lst(row, param)
-                cache = _cache_def(dim_val, col_val)
-            else:
-                row = cube.isel(dict([(param.row_nm, rowi)])).compute()
-                y_lst = _pxl_lst(row, param)
-                cache = _cache_cleaner(cache, dim_val, col_val)
-
-            if y_lst.any():
-                s_row = client.scatter(row, broadcast=True)
-            else:
-                print_progress_bar(rowi, len(param.row_val))
-                logger.debug(f'Row {rowi} processed')
-                continue
-
-            futures = client.map(process, y_lst, **{'data': s_row, 'row': rowi, 'param': s_param, 'action': action})
-
-            for future, result in as_completed(futures, with_results=True):
-                pxldrl = result
-                col = pxldrl.position[1]
-
-                if param.ovr_scratch:
-                    try:
-                        import phenolo.output as output
-                        output.scratch_dump(pxldrl, param)
-                    except Exception:
-                        raise Exception
-
-                if pxldrl.error:
-                    cache['err'].iloc[col] = 1
-                    cache['season'].iloc[col] = 0
-                    logger.debug(f'Error: {_error_decoder(pxldrl.errtyp)} in position:{pxldrl.position}')
+            for rowi in range(len(param.row_val)):
+                if rowi == 0:
+                    #row = cube.isel(dict([(param.row_nm, rowi)])).compute()
+                    row = client.compute(cube.isel(dict([(param.row_nm, rowi)]))).result()
+                    y_lst = _pxl_lst(row, param)
+                    cache = _cache_def(dim_val, col_val)
                 else:
-                    try:
-                        for key in cache:
-                            if key is not 'season' and key is not 'err':
-                                _filler(cache[key], pxldrl, key, col)
+                    #row = cube.isel(dict([(param.row_nm, rowi)])).compute()
+                    row = client.compute(cube.isel(dict([(param.row_nm, rowi)]))).result()
+                    y_lst = _pxl_lst(row, param)
+                    cache = _cache_cleaner(cache, dim_val, col_val)
 
-                        if pxldrl.season_lng:
-                            if pxldrl.season_lng <= 365.0:
-                                cache['season'].iloc[col] = int(365 / pxldrl.season_lng)
-                            else:
-                                cache['season'].iloc[col] = int(pxldrl.season_lng)
-                    except (RuntimeError, Exception, ValueError):
-                        continue
+                if y_lst.any():
+                    s_row = client.scatter(row, broadcast=True)
+                    del row
+                else:
+                    print_progress_bar(rowi, len(param.row_val))
+                    logger.debug(f'Row {rowi} processed')
+                    continue
 
-            client.cancel(s_row)
-            client.cancel(futures)
+                futures = client.map(process, y_lst, **{'data': s_row, 'row': rowi, 'param': s_param, 'action': action})
 
-            out.sb[rowi, :, :] = cache['sb'].transpose().values
-            out.se[rowi, :, :] = cache['se'].transpose().values
-            out.sl[rowi, :, :] = cache['sl'].transpose().values
-            out.spi[rowi, :, :] = cache['spi'].transpose().values
-            out.si[rowi, :, :] = cache['si'].transpose().values
-            out.cf[rowi, :, :] = cache['cf'].transpose().values
+                for future, result in as_completed(futures, with_results=True):
+                    pxldrl = result
+                    col = pxldrl.position[1]
 
-            out.warn[rowi, :, :] = cache['warn'].transpose().values
+                    if param.ovr_scratch:
+                        try:
+                            import phenolo.output as output
+                            output.scratch_dump(pxldrl, param)
+                        except Exception:
+                            raise Exception
 
-            out.n_seasons[rowi] = cache['season'].values
-            out.err[rowi] = cache['err'].values
+                    if pxldrl.error:
+                        cache['err'].iloc[col] = 1
+                        cache['season'].iloc[col] = 0
+                        logger.debug(f'Error: {_error_decoder(pxldrl.errtyp)} in position:{pxldrl.position}')
+                    else:
+                        try:
+                            for key in cache:
+                                if key is not 'season' and key is not 'err':
+                                    _filler(cache[key], pxldrl, key, col)
 
-            try:
-                if rowi in range(0, len(param.row_val), 250):
-                    out.root.sync()
-            except (RuntimeError, Exception, ValueError):
-                logger.debug(f'Error in the sync')
+                            if pxldrl.season_lng:
+                                if pxldrl.season_lng <= 365.0:
+                                    cache['season'].iloc[col] = int(365 / pxldrl.season_lng)
+                                else:
+                                    cache['season'].iloc[col] = int(pxldrl.season_lng)
+                        except (RuntimeError, Exception, ValueError):
+                            continue
 
-            print_progress_bar(rowi, len(param.row_val))
+                client.cancel(s_row)
+                client.cancel(futures)
 
-            logger.debug(f'Row {rowi} processed')
+                out.sb[rowi, :, :] = cache['sb'].transpose().values
+                out.se[rowi, :, :] = cache['se'].transpose().values
+                out.sl[rowi, :, :] = cache['sl'].transpose().values
+                out.spi[rowi, :, :] = cache['spi'].transpose().values
+                out.si[rowi, :, :] = cache['si'].transpose().values
+                out.cf[rowi, :, :] = cache['cf'].transpose().values
 
+                out.warn[rowi, :, :] = cache['warn'].transpose().values
+
+                out.n_seasons[rowi] = cache['season'].values
+                out.err[rowi] = cache['err'].values
+
+                try:
+                    if rowi in range(0, len(param.row_val), 250):
+                        out.root.sync()
+                except (RuntimeError, Exception, ValueError):
+                    logger.debug(f'Error in the sync')
+
+                print_progress_bar(rowi, len(param.row_val))
+
+                logger.debug(f'Row {rowi} processed')
         return out
 
     except Exception as ex:
