@@ -151,23 +151,20 @@ def analyse(cube, client, param, action, out):
         dim_val = pd.to_datetime(param.dim_val).year.unique()
         col_val = range(0, len(param.col_val))
 
-        chunks = cube.compute()
-
         cache = None
-        for chunk in np.array_split(len(param.row_val)):
-            chunked = cube.isel(dict([(param.row_nm, slice(chunk[0],chunk[-1]))]))
+        for chunk in np.array_split(range(0, len(param.row_val)), 10):
 
-            for rowi in range(len(param.row_val)):
-                if rowi == 0:
-                    #row = cube.isel(dict([(param.row_nm, rowi)])).compute()
-                    row = client.compute(cube.isel(dict([(param.row_nm, rowi)]))).result()
-                    y_lst = _pxl_lst(row, param)
-                    cache = _cache_def(dim_val, col_val)
-                else:
-                    #row = cube.isel(dict([(param.row_nm, rowi)])).compute()
-                    row = client.compute(cube.isel(dict([(param.row_nm, rowi)]))).result()
-                    y_lst = _pxl_lst(row, param)
+            chunked = cube.isel(dict([(param.row_nm, slice(chunk[0], chunk[-1]))])).compute()
+
+            for rowi in chunk:
+
+                row = chunked.isel(dict([(param.row_nm, rowi)]))
+                y_lst = _pxl_lst(row, param)
+
+                if rowi != 0:
                     cache = _cache_cleaner(cache, dim_val, col_val)
+                else:
+                    cache = _cache_def(dim_val, col_val)
 
                 if y_lst.any():
                     s_row = client.scatter(row, broadcast=True)
@@ -179,7 +176,7 @@ def analyse(cube, client, param, action, out):
 
                 futures = client.map(process, y_lst, **{'data': s_row, 'row': rowi, 'param': s_param, 'action': action})
 
-                for future, result in as_completed(futures, with_results=True):
+                for future, result in as_completed(futures):
                     pxldrl = result
                     col = pxldrl.position[1]
 
