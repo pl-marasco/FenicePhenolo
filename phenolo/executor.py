@@ -15,6 +15,7 @@ import atexit
 profile = line_profiler.LineProfiler()
 atexit.register(profile.print_stats)
 
+
 class Processor(object):
     def __init__(self):
         pass
@@ -117,7 +118,8 @@ def _filler(key, pxldrl, att, col):
     try:
         key[col] = getattr(pxldrl, att)[:]
     except:
-        print(f'{att} | {pxldrl.position}')
+        pass
+        # print(f'{att} | {pxldrl.position}')
     return
 
 
@@ -128,6 +130,7 @@ def _error_decoder(err):
                13: 'Season detection', 14: 'Season mean', 15: 'Season metrics', 17: 'Statistical aggregation'}
 
     return err_cod[err]
+
 
 def _chunks(cube):
     pass
@@ -152,12 +155,12 @@ def analyse(cube, client, param, action, out):
         col_val = range(0, len(param.col_val))
 
         cache = None
+        prg_bar = 0
         for chunk in np.array_split(range(0, len(param.row_val)), 10):
 
-            chunked = cube.isel(dict([(param.row_nm, slice(chunk[0], chunk[-1]))])).compute()
+            chunked = cube.isel(dict([(param.row_nm, slice(chunk[0], chunk[-1]+1))])).compute()
 
-            for rowi in chunk:
-
+            for rowi in range(0, chunked.sizes[param.row_nm]):
                 row = chunked.isel(dict([(param.row_nm, rowi)]))
                 y_lst = _pxl_lst(row, param)
 
@@ -176,7 +179,7 @@ def analyse(cube, client, param, action, out):
 
                 futures = client.map(process, y_lst, **{'data': s_row, 'row': rowi, 'param': s_param, 'action': action})
 
-                for future, result in as_completed(futures):
+                for future, result in as_completed(futures, with_results=True):
                     pxldrl = result
                     col = pxldrl.position[1]
 
@@ -220,13 +223,8 @@ def analyse(cube, client, param, action, out):
                 out.n_seasons[rowi] = cache['season'].values
                 out.err[rowi] = cache['err'].values
 
-                try:
-                    if rowi in range(0, len(param.row_val), 250):
-                        out.root.sync()
-                except (RuntimeError, Exception, ValueError):
-                    logger.debug(f'Error in the sync')
-
-                print_progress_bar(rowi, len(param.row_val))
+                prg_bar += 1
+                print_progress_bar(prg_bar, len(param.row_val))
 
                 logger.debug(f'Row {rowi} processed')
         return out
