@@ -227,78 +227,73 @@ def phen_metrics(pxldrl,  param):
         # calculate the forward curve
         sincy.forward = __forward(sincy,  delta_shift)
 
-        sincy.sbd,  sincy.sed,  sincy.sbd_ts,  sincy.sbd_ts = 4 * [None]
-
-        # research the starting point of the season (SBD)
+        # research the starting point of the season (SB)
         try:
             sincy.intcpt_bk = __intercept((sincy.mms - sincy.back).values)
-            sincy.sbd = (sincy.mms.iloc[sincy.intcpt_bk[0]])
-            if sincy.sbd.index > sincy.max_idx:
+            sincy.sb = sincy.mms.iloc[sincy.intcpt_bk[0]]
+            if sincy.sb.index > sincy.max_idx:
                 raise Exception
-
         except (RuntimeError,  Exception,  ValueError):
             logger.debug(f'Warning! Start date not found in position {pxldrl.position} '
                          f'for the cycle starting in{sincy.sd}')
-            sincy.sbd = None
             sincy.warn = 4  # 'Start date'
+            continue
 
-        # research the end point of the season (SED)
+        # research the end point of the season (SE)
         try:
             sincy.intcpt_fw = __intercept((sincy.mms - sincy.forward).values)
-            sincy.sed = (sincy.mms.iloc[sincy.intcpt_fw[-1]])
-            if sincy.sed.index < sincy.max_idx:
+            sincy.se = sincy.mms.iloc[sincy.intcpt_fw[-1]]
+            if sincy.se.index < sincy.max_idx:
                 raise Exception
-
         except (RuntimeError,  Exception,  ValueError):
             logger.debug(f'Warning! End date not found in position {pxldrl.position} '
                          f'for the cycle starting in{sincy.sd}')
-            sincy.sed = None
             sincy.warn = 5  # 'End date'
-
-        if sincy.sed is None or sincy.sbd is None:
-            sincy.sl,  sincy.sp,  sincy.spi,  sincy.si,  sincy.cf,  sincy.af,  sincy.afi,  sincy.ref_yr = [np.NaN]*8
             continue
-        else:
-            # Season slope (SLOPE)
-            try:
-                sincy.sslp = ((sincy.sed.values - sincy.sbd.values) / (sincy.sed.index - sincy.sbd.index).days) * 1e2
-            except ValueError:
-                logger.debug(f'Warning! Error in slope calculation in pixel:{pxldrl.position} '
-                             f'for the cycle starting in {sincy.sd}')
-                pxldrl.warn = 6  # 'Slope'
-                continue
+
+        # Season slope (SLOPE)
+        try:
+            sincy.sslp = ((sincy.se.values - sincy.sb.values) / (sincy.se.index - sincy.sb.index).days) * 1e2
+        except ValueError:
+            logger.debug(f'Warning! Error in slope calculation in pixel:{pxldrl.position} '
+                         f'for the cycle starting in {sincy.sd}')
+            pxldrl.warn = 6  # 'Slope'
+            continue
 
         try:
-            # week of start
-            sincy.sb = sincy.sbd.index.dayofyear
+            # Day of start in posix
+            sincy.sbd = sincy.sb.index
 
-            # Week of ends
-            sincy.se = sincy.sed.index.dayofyear
+            # Day of ends in posix
+            sincy.sed = sincy.se.index
 
-            # Season Lenght
-            sincy.sl = (sincy.sed.index - sincy.sbd.index).to_pytimedelta()[0]
+            # Season Length in days as ns
+            sincy.sl = (sincy.se.index - sincy.sb.index).to_pytimedelta()[0]
 
-            # Season permanet
-            sincy.sp = sincy.sbd.append(sincy.sed).resample('D').asfreq().interpolate(method='linear')
-            # da pulire
+            # Season permanent
+            sincy.sp = sincy.sb.append(sincy.se).resample('D').asfreq().interpolate(method='linear')
+            # Season permanent Integral [OX]
             sincy.spi = sincy.sp.sum()
 
-            # Season Integral
-            sincy.si = sincy.mms.loc[sincy.sbd.index[0]:sincy.sed.index[0]].sum()
+            # Season Integral [VX]
+            sincy.si = sincy.mms.loc[sincy.sb.index[0]:sincy.se.index[0]].sum()
 
-            # Cyclic fraction
+            # Cyclic fraction [VOX]
             sincy.cf = sincy.si - sincy.spi
 
+            # Seasonal exceeding integral
+            sincy.sei = sincy.stb - sincy.si
+
             # Active fraction
-            sincy.af = sincy.mms.loc[sincy.sbd.index[0]:sincy.max_idx] - sincy.sp[:sincy.max_idx]
+            sincy.af = sincy.mms.loc[sincy.sb.index[0]:sincy.max_idx] - sincy.sp[:sincy.max_idx]
             sincy.afi = sincy.af.sum()
 
-            # reference yr
-            sincy.ref_yr = (sincy.sbd.index + sincy.sl * 2 / 3).year
+            # Reference yr
+            sincy.ref_yr = (sincy.sb.index + sincy.sl * 2 / 3).year
 
         except ValueError:
-            sincy.sb, sincy.se, sincy.sl, sincy.sp, sincy.spi, \
-            sincy.si, sincy.cf, sincy.af, sincy.afi, sincy.ref_yr = [np.NaN] * 10
+            sincy.sbd, sincy.sed, sincy.sl, sincy.sp, sincy.spi, \
+                sincy.si, sincy.cf, sincy.af, sincy.afi, sincy.ref_yr, sincy.sei = [np.NaN] * 11
             sincy.warn = 100
             continue
 
