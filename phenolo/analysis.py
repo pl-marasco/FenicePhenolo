@@ -187,13 +187,17 @@ def phenolo(pxldrl, **kwargs):
 
     # General statistic aggregation
     try:
-        pxldrl.sb = metrics.attribute_extractor_se(pxldrl, 'sb')
-        pxldrl.se = metrics.attribute_extractor_se(pxldrl, 'se')
+        pxldrl.stb = metrics.attribute_extractor_se(pxldrl, 'stb')
+        pxldrl.mpi = metrics.attribute_extractor_se(pxldrl, 'mpi')
+        pxldrl.sbd = metrics.attribute_extractor_se(pxldrl, 'sbd')
+        pxldrl.sed = metrics.attribute_extractor_se(pxldrl, 'sed')
         pxldrl.sl = metrics.attribute_extractor(pxldrl, 'sl')
         pxldrl.spi = metrics.attribute_extractor(pxldrl, 'spi')
         pxldrl.si = metrics.attribute_extractor(pxldrl, 'si')
         pxldrl.cf = metrics.attribute_extractor(pxldrl, 'cf')
         pxldrl.afi = metrics.attribute_extractor(pxldrl, 'afi')
+        pxldrl.sei = metrics.attribute_extractor(pxldrl, 'sei')
+
         pxldrl.warn = metrics.attribute_extractor(pxldrl, 'warn')
     except(RuntimeError, Exception, ValueError):
         logger.info(f'Statistical aggregation:{pxldrl.position}')
