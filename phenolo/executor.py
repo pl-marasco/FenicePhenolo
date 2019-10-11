@@ -81,24 +81,24 @@ def _pxl_lst(row, param):
     return y_lst
 
 
-def _cache_def(dim_val, col_val):
+def _cache_def(indices, dim_val, col_val):
+    """
+    :param indices: indices that needed to be in cache {list}
+    :param dim_val: list of years {pd.series}
+    :param col_val: list of couliumns {int}
+    :return: cache {pd.dataframe}
     """
 
-    :param dim_val:
-    :param col_val:
-    :return:
-    """
-    attr = ['sb', 'se', 'sl', 'spi', 'si', 'cf', 'afi', 'warn']
-    cache = {name: pd.DataFrame(index=dim_val, columns=col_val) for name in attr}
+    cache = {name: pd.DataFrame(index=dim_val, columns=col_val) for name in indices}
     cache['sl'] = pd.DataFrame(pd.Timedelta(0, unit='D'), index=dim_val, columns=col_val)
     cache['season'] = pd.Series(0, index=col_val)
     cache['err'] = pd.Series(0, index=col_val)
     return cache
 
 
-def _cache_cleaner(cache, dim_val, col_val):
-    attr = ['sb', 'se', 'sl', 'spi', 'si', 'cf', 'afi', 'warn']
-    for name in attr:
+def _cache_cleaner(cache, indices, dim_val, col_val):
+
+    for name in indices:
         cache[name] = cache[name][0:0].reindex(dim_val)
     cache['sl'] = pd.DataFrame(pd.Timedelta(0, unit='D'), index=dim_val, columns=col_val)
     cache['season'] = cache['season'][0:0].reindex(col_val)
@@ -132,10 +132,6 @@ def _error_decoder(err):
     return err_cod[err]
 
 
-def _chunks(cube):
-    pass
-
-
 def analyse(cube, client, param, action, out):
     """
 
@@ -154,7 +150,9 @@ def analyse(cube, client, param, action, out):
         dim_val = pd.to_datetime(param.dim_val).year.unique()
         col_val = range(0, len(param.col_val))
 
-        cache = None
+        indices = ['stb', 'mpi', 'sbd', 'sed', 'sl', 'spi', 'si', 'cf', 'afi', 'warn']
+
+        cache = _cache_def(indices, dim_val, col_val)
         prg_bar = 0
         for chunk in np.array_split(range(0, len(param.row_val)), 10):
 
@@ -165,9 +163,7 @@ def analyse(cube, client, param, action, out):
                 y_lst = _pxl_lst(row, param)
 
                 if rowi != 0:
-                    cache = _cache_cleaner(cache, dim_val, col_val)
-                else:
-                    cache = _cache_def(dim_val, col_val)
+                    cache = _cache_cleaner(cache, indices, dim_val, col_val)
 
                 if y_lst.any():
                     s_row = client.scatter(row, broadcast=True)
@@ -192,7 +188,7 @@ def analyse(cube, client, param, action, out):
 
                     if pxldrl.error:
                         cache['err'].iloc[col] = 1
-                        cache['season'].iloc[col] = 0
+                        cache['season'].iloc[col] = np.NaN
                         logger.debug(f'Error: {_error_decoder(pxldrl.errtyp)} in position:{pxldrl.position}')
                     else:
                         try:
@@ -211,12 +207,16 @@ def analyse(cube, client, param, action, out):
                 client.cancel(s_row)
                 client.cancel(futures)
 
-                out.sb[rowi, :, :] = cache['sb'].transpose().values
-                out.se[rowi, :, :] = cache['se'].transpose().values
+                out.stb[rowi, :, :] = cache['stb'].transpose().values
+                out.mpi[rowi, :, :] = cache['mpi'].transpose().values
+
+                out.sbd[rowi, :, :] = cache['sbd'].transpose().values
+                out.sed[rowi, :, :] = cache['sed'].transpose().values
                 out.sl[rowi, :, :] = cache['sl'].transpose().values
                 out.spi[rowi, :, :] = cache['spi'].transpose().values
                 out.si[rowi, :, :] = cache['si'].transpose().values
                 out.cf[rowi, :, :] = cache['cf'].transpose().values
+                out.afi[rowi, :, :] = cache['afi'].transpose().values
 
                 out.warn[rowi, :, :] = cache['warn'].transpose().values
 
