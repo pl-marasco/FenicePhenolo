@@ -37,6 +37,18 @@ class PixelDrill(object):
         self.error = False
         self.errtyp = None
 
+        # pd.dataframes with years indexes
+        self.stb = None  # Standing biomass
+        self.mpi = None  # Minimum minimum permanent Integrals
+        self.sbd = None  # Seasons beginning dates
+        self.sed = None  # Seasons end dates
+        self.sl = None  # Seasons lengths dates
+        self.spi = None  # Seasons Permanent Integrals
+        self.si = None  # Seasons integrals
+        self.cf = None  # Seasons cyclic fractions
+        self.afi = None  # Season Active Fraction
+        self.warn = None  # Warning flags
+        
     def __del__(self):
         for ith in self.__dict__.keys():
             setattr(self, ith, None)
@@ -65,6 +77,17 @@ class SingularCycle(object):
             max_idx: date of maximum
             ref_yr: reference yr
 
+            sb: Seasons beginning dates [Posix ns]
+            se:Seasons end dates [Posix ns]
+            sl:Seasons lengths dates [ns]
+            spi: Seasons Permanent Integrals
+            si: Seasons integrals
+            cf: Seasons cyclic fractions
+            afi: Season Active Fraction
+            warn: Warning flags
+
+
+
         :param : Time series as pandas.Series object
         """
         self.err = False
@@ -74,13 +97,14 @@ class SingularCycle(object):
         self.ed = ed  # End date - MED
         self.mml = self.__time_delta(self.sd, self.ed)  # Cycle length in days
         self.td = self.mml * 2 / 3  # time delta
-        self.mms_b = ts.loc[sd - self.td:ed + self.td]  # buffered time series
-        self.mms = self.mms_b.loc[sd:ed]  # minimum minimum time series                   <- possible self referencing
-        self.sb = self.__integral(self.mms)  # Standing biomass
-        self.mpf = self.__min_min_line(self.mms)  # permanent fraction
-        self.mpi = self.__integral(self.mpf)  # permanent fraction integral
-        self.vox = self.__difference(self.mms, self.mpf)  # Values between two min subtracted the permanent fraction
-        self.voxi = self.__integral(self.vox)  # integral of vox
+        self.mms_b = ts.loc[sd - self.td:ed + self.td]  # buffered time series #TODO verify possible referencing
+        self.mms = self.mms_b.loc[sd:ed]  # minimum minimum time series
+        self.stb = self.__integral(self.mms)  # Standing biomass (minimum minimum integral) [mi] [VOX x cycle]
+        self.mp = self.__min_min_line(self.mms)  # minimum minimum permanent (MPI minimum permanent Integral)
+        self.mpi = self.__integral(self.mp)  # minimum minimum permanent integral
+
+        self.vox = self.__difference(self.mms, self.mp)  # Values between two min subtracted the permanent integral
+
         self.cbc = self.__barycenter()  # cycle barycenter / ex season barycenter
         self.cbcd = self.__to_gregorian_date(self.cbc)
         self.csd = self.__cycle_deviation_standard()  # cycle deviation standard / Season deviation standard
@@ -92,10 +116,27 @@ class SingularCycle(object):
         self.mas = None
         self.unx_sbc = None
 
-    def __time_delta(self, sd, ed):
-        """Minimum minimum length"""
+        self.sb = None  # Season beginning
+        self.se = None  # Season end
+        self.sbd = None  # Season beginning dates expressed as a date
+        self.sed = None  # Season end dates expressed as date
+
+        self.sl = None  # Season lengths in days
+        self.spi = None  # Season Permanent Integrals
+        self.si = None  # Season integrals
+        self.cf = None  # Season cyclic fractions
+
+        self.afi = None  # Season Active Fraction
+
+        self.warn = None  # Warning flags
+
+    def __time_delta(self, dt1, dt2):
+        """Minimum minimum length expressed in delta time
+           dt1: first date
+           dt2: second date
+        """
         try:
-            return ed - sd
+            return dt2 - dt1
         except (RuntimeError, Exception, ValueError):
             self.err = True
             logger.debug('Warning! Minimum minimum length error')
