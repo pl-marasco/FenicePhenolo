@@ -164,6 +164,18 @@ class OutputCointainer(object):
         self.dim_v[:] = pd.to_datetime(param.dim_val).year.unique().tolist()
         # ^^^ pd.to_datetime(pd.to_datetime(param.dim_val).year.unique(), format='%Y') ^^^
 
+        # General attributes.
+        self.spatial_ref = '''GEOGCS["WGS 84",
+    DATUM["WGS_1984",
+        SPHEROID["WGS 84",6378137,298.257223563,
+            AUTHORITY["EPSG","7030"]],
+        AUTHORITY["EPSG","6326"]],
+    PRIMEM["Greenwich",0,
+        AUTHORITY["EPSG","8901"]],
+    UNIT["degree",0.01745329251994328,
+        AUTHORITY["EPSG","9122"]],
+    AUTHORITY["EPSG","4326"]]'''
+
     @staticmethod
     def _yrs_reducer(dim_val):
         return pd.DatetimeIndex(dim_val).year.unique()
