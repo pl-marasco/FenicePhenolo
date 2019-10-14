@@ -154,7 +154,8 @@ def analyse(cube, client, param, action, out):
 
         cache = _cache_def(indices, dim_val, col_val)
         prg_bar = 0
-        for chunk in np.array_split(range(0, len(param.row_val)), 10):
+
+        for chunk in np.array_split(range(0, len(param.row_val)), 3):
 
             chunked = cube.isel(dict([(param.row_nm, slice(chunk[0], chunk[-1]+1))])).compute()
 
@@ -206,27 +207,27 @@ def analyse(cube, client, param, action, out):
 
                 client.cancel(s_row)
                 client.cancel(futures)
+                abs_row = chunk[rowi]
+                out.stb[abs_row, :, :] = cache['stb'].transpose().values
+                out.mpi[abs_row, :, :] = cache['mpi'].transpose().values
 
-                out.stb[rowi, :, :] = cache['stb'].transpose().values
-                out.mpi[rowi, :, :] = cache['mpi'].transpose().values
+                out.sbd[abs_row, :, :] = cache['sbd'].transpose().values
+                out.sed[abs_row, :, :] = cache['sed'].transpose().values
+                out.sl[abs_row, :, :] = cache['sl'].transpose().values
+                out.spi[abs_row, :, :] = cache['spi'].transpose().values
+                out.si[abs_row, :, :] = cache['si'].transpose().values
+                out.cf[abs_row, :, :] = cache['cf'].transpose().values
+                out.afi[abs_row, :, :] = cache['afi'].transpose().values
 
-                out.sbd[rowi, :, :] = cache['sbd'].transpose().values
-                out.sed[rowi, :, :] = cache['sed'].transpose().values
-                out.sl[rowi, :, :] = cache['sl'].transpose().values
-                out.spi[rowi, :, :] = cache['spi'].transpose().values
-                out.si[rowi, :, :] = cache['si'].transpose().values
-                out.cf[rowi, :, :] = cache['cf'].transpose().values
-                out.afi[rowi, :, :] = cache['afi'].transpose().values
+                out.warn[abs_row, :, :] = cache['warn'].transpose().values
 
-                out.warn[rowi, :, :] = cache['warn'].transpose().values
-
-                out.n_seasons[rowi] = cache['season'].values
-                out.err[rowi] = cache['err'].values
+                out.n_seasons[abs_row] = cache['season'].values
+                out.err[abs_row] = cache['err'].values
 
                 prg_bar += 1
                 print_progress_bar(prg_bar, len(param.row_val))
 
-                logger.debug(f'Row {rowi} processed')
+                logger.debug(f'Row {abs_row} has been processed')
         return out
 
     except Exception as ex:
@@ -235,4 +236,4 @@ def analyse(cube, client, param, action, out):
         message = template.format(type(ex).__name__, ex.args)
         print(message)
 
-        logger.debug(f'Critical error in the main loop, latest position row {rowi}, col {col}, error type {message}')
+        logger.debug(f'Critical error in the main loop, latest position, row {abs_row}, col {col}, error type {message}')
