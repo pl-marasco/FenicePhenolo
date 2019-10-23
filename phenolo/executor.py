@@ -81,7 +81,15 @@ def _pxl_lst(row, param):
     return y_lst
 
 
-def _cache_def(indices, dim_val, col_val):
+def _cache_concat(cache, indices, pxldrl):
+    for name in indices:
+        cache[name] = pd.concat([cache[name], getattr(pxldrl, name)])
+    cache['sl'] = pd.concat([cache['sl'], getattr(pxldrl, 'sl')])
+    cache['season'] = pd.concat([cache['season'], getattr(pxldrl, 'season')])
+    cache['err'] = pd.concat([cache['err'], getattr(pxldrl, 'err')])
+
+
+def _cache_def(indices, dim_val):
     """
     :param indices: indices that needed to be in cache {list}
     :param dim_val: list of years {pd.series}
@@ -89,21 +97,17 @@ def _cache_def(indices, dim_val, col_val):
     :return: cache {pd.dataframe}
     """
 
-    cache = {name: pd.DataFrame(index=dim_val, columns=col_val) for name in indices}
-    cache['sl'] = pd.DataFrame(pd.Timedelta(0, unit='D'), index=dim_val, columns=col_val)
-    cache['season'] = pd.Series(0, index=col_val)
-    cache['err'] = pd.Series(0, index=col_val)
+    cache = {name: pd.DataFrame(index=dim_val) for name in indices}
+    cache['season'] = pd.Series()
+    cache['err'] = pd.Series()
     return cache
 
 
-def _cache_cleaner(cache, indices, dim_val, col_val):
-
+def _cache_reindex(cache, indices, index):
     for name in indices:
-        cache[name] = cache[name][0:0].reindex(dim_val)
-    cache['sl'] = pd.DataFrame(pd.Timedelta(0, unit='D'), index=dim_val, columns=col_val)
-    cache['season'] = cache['season'][0:0].reindex(col_val)
-    cache['err'] = cache['err'][0:0].reindex(col_val)
-    return cache
+        cache[name].reindex(index, axis=1)
+    cache['season'] = cache['season'].reindex(index).to_frame().traspose()
+    cache['err'] = cache['error'].reindex(index).to_frame().traspose()
 
 
 def _filler(key, pxldrl, att, col):
@@ -132,6 +136,22 @@ def _error_decoder(err):
     return err_cod[err]
 
 
+def _nodata_filler(out, abs_row):
+
+    out.stb[abs_row, :, :] = np.nan
+    out.mpi[abs_row, :, :] = np.nan
+    out.sbd[abs_row, :, :] = np.nan
+    out.sed[abs_row, :, :] = np.nan
+    out.sl[abs_row, :, :] = np.nan
+    out.spi[abs_row, :, :] = np.nan
+    out.si[abs_row, :, :] = np.nan
+    out.cf[abs_row, :, :] = np.nan
+    out.afi[abs_row, :, :] = np.nan
+    out.warn[abs_row, :, :] = np.nan
+    out.n_seasons[abs_row, :] = np.nan
+    out.err[abs_row, :] = np.nan
+
+
 def analyse(cube, client, param, action, out):
     """
 
@@ -142,17 +162,14 @@ def analyse(cube, client, param, action, out):
     :param out:
     :return:
     """
-    s_param = client.scatter(param, broadcast=True)
 
     try:
-        nxt_row, nxt_y_lst, nxt_cache = [None] * 3
+        param.dim_val_yrs = pd.to_datetime(param.dim_val).year.unique()
+        col_int = [*range(0, len(param.col_val))]
 
-        dim_val = pd.to_datetime(param.dim_val).year.unique()
-        col_val = range(0, len(param.col_val))
+        s_param = client.scatter(param, broadcast=True)
 
-        indices = ['stb', 'mpi', 'sbd', 'sed', 'spi', 'si', 'cf', 'afi', 'warn']
-
-        cache = _cache_def(indices, dim_val, col_val)
+        indices = ['stb', 'mpi', 'sbd', 'sed', 'sl', 'spi', 'si', 'cf', 'afi', 'warn']
         prg_bar = 0
 
         for chunk in np.array_split(range(0, len(param.row_val)), 3):
@@ -161,15 +178,15 @@ def analyse(cube, client, param, action, out):
 
             for rowi in range(0, chunked.sizes[param.row_nm]):
                 row = chunked.isel(dict([(param.row_nm, rowi)]))
+                abs_row = chunk[rowi]
                 y_lst = _pxl_lst(row, param)
-
-                if rowi != 0:
-                    cache = _cache_cleaner(cache, indices, dim_val, col_val)
 
                 if y_lst.any():
                     s_row = client.scatter(row, broadcast=True)
                     del row
+                    cache = _cache_def(indices, param.dim_val_yrs)
                 else:
+                    _nodata_filler(out, abs_row)
                     print_progress_bar(rowi, len(param.row_val))
                     logger.debug(f'Row {rowi} processed')
                     continue
@@ -188,26 +205,25 @@ def analyse(cube, client, param, action, out):
                             raise Exception
 
                     if pxldrl.error:
-                        cache['err'].iloc[col] = 1
-                        cache['season'].iloc[col] = np.NaN
+                        cache['err'].append(pd.Series([1], index=[col]))
+                        cache['season'].append(pd.Series([np.NaN], index=[col]))
                         logger.debug(f'Error: {_error_decoder(pxldrl.errtyp)} in position:{pxldrl.position}')
                     else:
                         try:
-                            for key in cache:
-                                if key is not 'season' and key is not 'err':
-                                    _filler(cache[key], pxldrl, key, col)
-
+                            _cache_concat(cache, indices, pxldrl)
                             if pxldrl.season_lng:
                                 if pxldrl.season_lng <= 365.0:
-                                    cache['season'].iloc[col] = int(365 / pxldrl.season_lng)
+                                    cache['season'].append(pd.Series([int(365 / pxldrl.season_lng)], index=[col]))
                                 else:
                                     cache['season'].iloc[col] = int(pxldrl.season_lng)
                         except (RuntimeError, Exception, ValueError):
                             continue
 
+                _cache_reindex(cache, indices, col_int)
+
                 client.cancel(s_row)
                 client.cancel(futures)
-                abs_row = chunk[rowi]
+
                 out.stb[abs_row, :, :] = cache['stb'].transpose().values
                 out.mpi[abs_row, :, :] = cache['mpi'].transpose().values
 
@@ -221,8 +237,8 @@ def analyse(cube, client, param, action, out):
 
                 out.warn[abs_row, :, :] = cache['warn'].transpose().values
 
-                out.n_seasons[abs_row] = cache['season'].values
-                out.err[abs_row] = cache['err'].values
+                out.n_seasons[abs_row, :] = cache['season'].values
+                out.err[abs_row, :] = cache['err'].values
 
                 prg_bar += 1
                 print_progress_bar(prg_bar, len(param.row_val))

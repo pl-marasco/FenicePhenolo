@@ -233,6 +233,7 @@ class ProjectParameters(object):
                 self.row_val, self.col_val, self.dim_val = [None] * 3
                 self.pixel_list = None
                 self.single_pnt = False
+                self.yrs = None
 
                 return
             elif kwargs['type'] == 'CopernicusNetCDF':
