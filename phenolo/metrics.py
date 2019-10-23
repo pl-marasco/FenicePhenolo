@@ -315,22 +315,7 @@ def __mas(tsl,  mavmet,  sdd):
     # TODO to be reviewed
 
 
-def attribute_extractor(pxldrl, dim_val_yrs, attribute):
-    try:
-        values = list(
-            map(lambda phency:
-                {'index': phency.ref_yr.values[0], 
-                 'value': getattr(phency,  attribute)},  pxldrl.phen))
-        if len(values) == 0:
-            raise Exception
-
-        return pd.DataFrame(values, index=dim_val_yrs).groupby('index').sum(numeric_only=True)
-
-    except (RuntimeError,  Exception):
-        raise RuntimeError('Impossible to extract the attribute requested')
-
-
-def attribute_extractor_se(pxldrl,  attribute, param):
+def attribute_extractor(pxldrl, yrs, attribute):
     try:
         values = list(
             map(lambda phency:
@@ -340,9 +325,10 @@ def attribute_extractor_se(pxldrl,  attribute, param):
             raise Exception
 
         if attribute in ['stb', 'mpi',  'spi', 'si', 'cf', 'afi']:
-            out = pd.DataFrame(values).groupby('index').sum(numeric_only=True).reindex(param.dim_val_yrs)
+            out = pd.DataFrame(values).groupby('index').sum(numeric_only=True).reindex(yrs)
         else:  #['sbd', 'sed', 'warn']:
-            out = pd.DataFrame(values).groupby('index').min(numeric_only=True).reindex(param.dim_val_yrs)
+            # TODO sl trovare il modo di selezionarlo meglio
+            out = pd.DataFrame(values).groupby('index').min(numeric_only=True).reindex(yrs)
         return out
 
     except (RuntimeError,  Exception):

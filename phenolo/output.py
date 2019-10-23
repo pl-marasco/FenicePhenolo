@@ -147,7 +147,7 @@ class OutputCointainer(object):
         self.sbd = self.root.createVariable('Startdate', 'f8', (param.row_nm, param.col_nm, param.dim_nm), zlib=True, complevel=4)
         self.sed = self.root.createVariable('Enddate', 'f8', (param.row_nm, param.col_nm, param.dim_nm), zlib=True, complevel=4)
 
-        self.sl = self.root.createVariable('SeasonLenght', 'i8', (param.row_nm, param.col_nm, param.dim_nm), zlib=True, complevel=4)
+        self.sl = self.root.createVariable('SeasonLenght', 'f8', (param.row_nm, param.col_nm, param.dim_nm), zlib=True, complevel=4)
         self.spi = self.root.createVariable('SeasonalPermanentIntegral', 'f8', (param.row_nm, param.col_nm, param.dim_nm), zlib=True, complevel=4)
         self.si = self.root.createVariable('SeasonIntegral', 'f8', (param.row_nm, param.col_nm, param.dim_nm), zlib=True, complevel=4)
         self.cf = self.root.createVariable('CyclicFraction', 'f8', (param.row_nm, param.col_nm, param.dim_nm), zlib=True, complevel=4)

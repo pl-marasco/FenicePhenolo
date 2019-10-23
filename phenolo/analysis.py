@@ -198,7 +198,7 @@ def phenolo(pxldrl, **kwargs):
         pxldrl.afi = metrics.attribute_extractor(pxldrl, param.yrs_index, 'afi')
         pxldrl.sei = metrics.attribute_extractor(pxldrl, param.yrs_index, 'sei')
 
-        pxldrl.warn = metrics.attribute_extractor(pxldrl, param.dim_val, 'warn')
+        pxldrl.warn = metrics.attribute_extractor(pxldrl, param.yrs_index, 'warn')
     except(RuntimeError, Exception, ValueError):
         logger.info(f'Statistical aggregation:{pxldrl.position}')
         pxldrl.error = True

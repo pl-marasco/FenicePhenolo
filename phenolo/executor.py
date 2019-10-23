@@ -83,10 +83,7 @@ def _pxl_lst(row, param):
 
 def _cache_concat(cache, indices, pxldrl):
     for name in indices:
-        cache[name] = pd.concat([cache[name], getattr(pxldrl, name)])
-    cache['sl'] = pd.concat([cache['sl'], getattr(pxldrl, 'sl')])
-    cache['season'] = pd.concat([cache['season'], getattr(pxldrl, 'season')])
-    cache['err'] = pd.concat([cache['err'], getattr(pxldrl, 'err')])
+        cache[name] = pd.concat([cache[name], getattr(pxldrl, name)[:]], axis=1, copy=False)
 
 
 def _cache_def(indices, dim_val):
@@ -105,9 +102,10 @@ def _cache_def(indices, dim_val):
 
 def _cache_reindex(cache, indices, index):
     for name in indices:
-        cache[name].reindex(index, axis=1)
-    cache['season'] = cache['season'].reindex(index).to_frame().traspose()
-    cache['err'] = cache['error'].reindex(index).to_frame().traspose()
+        cache[name] = cache[name].reindex(index, axis=1)
+    cache['season'] = cache['season'].reindex(index).to_frame().transpose()
+    if not cache['err'].empty:
+        cache['err'] = cache['error'].reindex(index).to_frame().transpose()
 
 
 def _filler(key, pxldrl, att, col):
@@ -142,14 +140,14 @@ def _nodata_filler(out, abs_row):
     out.mpi[abs_row, :, :] = np.nan
     out.sbd[abs_row, :, :] = np.nan
     out.sed[abs_row, :, :] = np.nan
-    out.sl[abs_row, :, :] = np.nan
+    out.sl[abs_row, :, :] = np.nan  # todo verify if is correct in float instead of int
     out.spi[abs_row, :, :] = np.nan
     out.si[abs_row, :, :] = np.nan
     out.cf[abs_row, :, :] = np.nan
     out.afi[abs_row, :, :] = np.nan
     out.warn[abs_row, :, :] = np.nan
-    out.n_seasons[abs_row, :] = np.nan
-    out.err[abs_row, :] = np.nan
+    out.n_seasons[abs_row, :] = 0
+    out.err[abs_row, :] = 0
 
 
 def analyse(cube, client, param, action, out):
@@ -164,7 +162,7 @@ def analyse(cube, client, param, action, out):
     """
 
     try:
-        param.dim_val_yrs = pd.to_datetime(param.dim_val).year.unique()
+        param.yrs_index = pd.to_datetime(param.dim_val).year.unique()
         col_int = [*range(0, len(param.col_val))]
 
         s_param = client.scatter(param, broadcast=True)
@@ -184,7 +182,7 @@ def analyse(cube, client, param, action, out):
                 if y_lst.any():
                     s_row = client.scatter(row, broadcast=True)
                     del row
-                    cache = _cache_def(indices, param.dim_val_yrs)
+                    cache = _cache_def(indices, param.yrs_index)
                 else:
                     _nodata_filler(out, abs_row)
                     print_progress_bar(rowi, len(param.row_val))
@@ -213,37 +211,41 @@ def analyse(cube, client, param, action, out):
                             _cache_concat(cache, indices, pxldrl)
                             if pxldrl.season_lng:
                                 if pxldrl.season_lng <= 365.0:
-                                    cache['season'].append(pd.Series([int(365 / pxldrl.season_lng)], index=[col]))
+                                    cache['season'].append(pd.Series([int(365 / pxldrl.season_lng)], index=[col]))  #TODO can be faster to append values to a list and then concatenate
                                 else:
-                                    cache['season'].iloc[col] = int(pxldrl.season_lng)
+                                    cache['season'].append(pd.Series([int(pxldrl.season_lng)], index=[col]))
                         except (RuntimeError, Exception, ValueError):
                             continue
 
                 _cache_reindex(cache, indices, col_int)
-
-                client.cancel(s_row)
-                client.cancel(futures)
 
                 out.stb[abs_row, :, :] = cache['stb'].transpose().values
                 out.mpi[abs_row, :, :] = cache['mpi'].transpose().values
 
                 out.sbd[abs_row, :, :] = cache['sbd'].transpose().values
                 out.sed[abs_row, :, :] = cache['sed'].transpose().values
-                out.sl[abs_row, :, :] = cache['sl'].transpose().values
+                out.sl[abs_row, :, :] = (cache['sl'] / np.timedelta64(1, 'D')).transpose().values
                 out.spi[abs_row, :, :] = cache['spi'].transpose().values
                 out.si[abs_row, :, :] = cache['si'].transpose().values
                 out.cf[abs_row, :, :] = cache['cf'].transpose().values
                 out.afi[abs_row, :, :] = cache['afi'].transpose().values
 
                 out.warn[abs_row, :, :] = cache['warn'].transpose().values
-
                 out.n_seasons[abs_row, :] = cache['season'].values
-                out.err[abs_row, :] = cache['err'].values
+
+                if not cache['err'].empty:
+                    out.err[abs_row, :] = cache['err'].values
+                else:
+                    out.err[abs_row, :] = 0
+
+                client.cancel(s_row)
+                client.cancel(futures)
+                del cache, abs_row, y_lst
 
                 prg_bar += 1
                 print_progress_bar(prg_bar, len(param.row_val))
-
                 logger.debug(f'Row {abs_row} has been processed')
+
         return out
 
     except Exception as ex:
