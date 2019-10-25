@@ -5,20 +5,11 @@ import logging
 import numpy as np
 import pandas as pd
 from dask.distributed import as_completed
+import copy
 
 from phenolo import atoms
 
 logger = logging.getLogger(__name__)
-
-import line_profiler
-import atexit
-profile = line_profiler.LineProfiler()
-atexit.register(profile.print_stats)
-
-
-class Processor(object):
-    def __init__(self):
-        pass
 
 
 def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█'):
@@ -63,10 +54,6 @@ def process(px, **kwargs):
     return action(pxldrl, settings=param)
 
 
-def _pre_feeder(nxt_row, param):
-    return _pxl_lst(nxt_row, param)
-
-
 def _pxl_lst(row, param):
     """
     Map pixels that must analyzed
@@ -82,15 +69,16 @@ def _pxl_lst(row, param):
 
 
 def _cache_concat(cache, indices, pxldrl):
-    for name in indices:
-        cache[name] = pd.concat([cache[name], getattr(pxldrl, name)[:]], axis=1, copy=False)
+    for key, name in cache.items():
+        if name not in ['season', 'err']:
+            cache[name] = pd.concat([cache[name], getattr(pxldrl, name)], axis=1, copy=False)
+        #cache[name] = pd.concat([cache[name], getattr(pxldrl, name)], axis=1, copy=False)
 
 
 def _cache_def(indices, dim_val):
     """
     :param indices: indices that needed to be in cache {list}
     :param dim_val: list of years {pd.series}
-    :param col_val: list of couliumns {int}
     :return: cache {pd.dataframe}
     """
 
@@ -102,27 +90,10 @@ def _cache_def(indices, dim_val):
 
 def _cache_reindex(cache, indices, index):
     for name in indices:
-        cache[name] = cache[name].reindex(index, axis=1)
-    cache['season'] = cache['season'].reindex(index).to_frame().transpose()
+        cache[name] = cache[name].reindex(index, axis=1, copy=False)
+    cache['season'] = cache['season'].reindex(index, copy=False).to_frame().transpose()
     if not cache['err'].empty:
-        cache['err'] = cache['error'].reindex(index).to_frame().transpose()
-
-
-def _filler(key, pxldrl, att, col):
-    """
-    Fill the dictionary with the passes key and values
-    :param key: specific key to be filled
-    :param pxldrl:
-    :param att:
-    :param col:
-    :return:
-    """
-    try:
-        key[col] = getattr(pxldrl, att)[:]
-    except:
-        pass
-        # print(f'{att} | {pxldrl.position}')
-    return
+        cache['err'] = cache['error'].reindex(index, copy=False).to_frame().transpose()
 
 
 def _error_decoder(err):
@@ -135,7 +106,6 @@ def _error_decoder(err):
 
 
 def _nodata_filler(out, abs_row):
-
     out.stb[abs_row, :, :] = np.nan
     out.mpi[abs_row, :, :] = np.nan
     out.sbd[abs_row, :, :] = np.nan
@@ -172,7 +142,7 @@ def analyse(cube, client, param, action, out):
 
         for chunk in np.array_split(range(0, len(param.row_val)), 3):
 
-            chunked = cube.isel(dict([(param.row_nm, slice(chunk[0], chunk[-1]+1))])).compute()
+            chunked = cube.isel(dict([(param.row_nm, slice(chunk[0], chunk[-1] + 1))])).compute()
 
             for rowi in range(0, chunked.sizes[param.row_nm]):
                 row = chunked.isel(dict([(param.row_nm, rowi)]))
@@ -191,8 +161,8 @@ def analyse(cube, client, param, action, out):
 
                 futures = client.map(process, y_lst, **{'data': s_row, 'row': rowi, 'param': s_param, 'action': action})
 
-                for future, result in as_completed(futures, with_results=True):
-                    pxldrl = result
+                for future, pxldrl in as_completed(futures, with_results=True):
+
                     col = pxldrl.position[1]
 
                     if param.ovr_scratch:
@@ -211,7 +181,8 @@ def analyse(cube, client, param, action, out):
                             _cache_concat(cache, indices, pxldrl)
                             if pxldrl.season_lng:
                                 if pxldrl.season_lng <= 365.0:
-                                    cache['season'].append(pd.Series([int(365 / pxldrl.season_lng)], index=[col]))  #TODO can be faster to append values to a list and then concatenate
+                                    cache['season'].append(pd.Series([int(365 / pxldrl.season_lng)], index=[col]))
+                                    # TODO can be faster to append values to a list and then concatenate
                                 else:
                                     cache['season'].append(pd.Series([int(pxldrl.season_lng)], index=[col]))
                         except (RuntimeError, Exception, ValueError):
@@ -219,32 +190,33 @@ def analyse(cube, client, param, action, out):
 
                 _cache_reindex(cache, indices, col_int)
 
-                out.stb[abs_row, :, :] = cache['stb'].transpose().values
-                out.mpi[abs_row, :, :] = cache['mpi'].transpose().values
+                out.stb[abs_row, :, :] = cache['stb'].transpose().to_numpy(copy=True)
+                out.mpi[abs_row, :, :] = cache['mpi'].transpose().to_numpy(copy=True)
 
-                out.sbd[abs_row, :, :] = cache['sbd'].transpose().values
-                out.sed[abs_row, :, :] = cache['sed'].transpose().values
-                out.sl[abs_row, :, :] = (cache['sl'] / np.timedelta64(1, 'D')).transpose().values
-                out.spi[abs_row, :, :] = cache['spi'].transpose().values
-                out.si[abs_row, :, :] = cache['si'].transpose().values
-                out.cf[abs_row, :, :] = cache['cf'].transpose().values
-                out.afi[abs_row, :, :] = cache['afi'].transpose().values
+                out.sbd[abs_row, :, :] = cache['sbd'].transpose().to_numpy(copy=True)
+                out.sed[abs_row, :, :] = cache['sed'].transpose().to_numpy(copy=True)
+                out.sl[abs_row, :, :] = (cache['sl'] / np.timedelta64(1, 'D')).transpose().to_numpy(copy=True)
+                out.spi[abs_row, :, :] = cache['spi'].transpose().to_numpy(copy=True)
+                out.si[abs_row, :, :] = cache['si'].transpose().to_numpy(copy=True)
+                out.cf[abs_row, :, :] = cache['cf'].transpose().to_numpy(copy=True)
+                out.afi[abs_row, :, :] = cache['afi'].transpose().to_numpy(copy=True)
 
-                out.warn[abs_row, :, :] = cache['warn'].transpose().values
-                out.n_seasons[abs_row, :] = cache['season'].values
+                out.warn[abs_row, :, :] = cache['warn'].transpose().to_numpy(copy=True)
+                out.n_seasons[abs_row, :] = cache['season'].to_numpy(copy=True)
 
                 if not cache['err'].empty:
-                    out.err[abs_row, :] = cache['err'].values
+                    out.err[abs_row, :] = cache['err'].to_numpy(copy=True)
                 else:
                     out.err[abs_row, :] = 0
 
-                client.cancel(s_row)
-                client.cancel(futures)
-                del cache, abs_row, y_lst
+                # client.cancel(s_row)
+                # client.cancel(futures)
 
                 prg_bar += 1
                 print_progress_bar(prg_bar, len(param.row_val))
                 logger.debug(f'Row {abs_row} has been processed')
+
+                del cache
 
         return out
 
@@ -254,4 +226,5 @@ def analyse(cube, client, param, action, out):
         message = template.format(type(ex).__name__, ex.args)
         print(message)
 
-        logger.debug(f'Critical error in the main loop, latest position, row {abs_row}, col {col}, error type {message}')
+        logger.debug(
+            f'Critical error in the main loop, latest position, row {abs_row}, col {col}, error type {message}')
