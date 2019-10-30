@@ -116,7 +116,7 @@ def _filler(key, pxldrl, att, col):
     :return:
     """
     try:
-        key[col] = getattr(pxldrl, att)[:]
+        key[col] = getattr(pxldrl, att) #[:]
     except:
         pass
         # print(f'{att} | {pxldrl.position}')
@@ -205,24 +205,24 @@ def analyse(cube, client, param, action, out):
                         except (RuntimeError, Exception, ValueError):
                             continue
 
-                client.cancel(s_row)
-                client.cancel(futures)
+                # client.cancel(s_row)
+                # client.cancel(futures)
                 abs_row = chunk[rowi]
-                out.stb[abs_row, :, :] = cache['stb'].transpose().values
-                out.mpi[abs_row, :, :] = cache['mpi'].transpose().values
+                out.stb[abs_row, :, :] = cache['stb'].transpose().to_numpy(copy=True)
+                out.mpi[abs_row, :, :] = cache['mpi'].transpose().to_numpy(copy=True)
 
-                out.sbd[abs_row, :, :] = cache['sbd'].transpose().values
-                out.sed[abs_row, :, :] = cache['sed'].transpose().values
-                out.sl[abs_row, :, :] = cache['sl'].transpose().values
-                out.spi[abs_row, :, :] = cache['spi'].transpose().values
-                out.si[abs_row, :, :] = cache['si'].transpose().values
-                out.cf[abs_row, :, :] = cache['cf'].transpose().values
-                out.afi[abs_row, :, :] = cache['afi'].transpose().values
+                out.sbd[abs_row, :, :] = cache['sbd'].transpose().to_numpy(copy=True)
+                out.sed[abs_row, :, :] = cache['sed'].transpose().to_numpy(copy=True)
+                out.sl[abs_row, :, :] = cache['sl'].transpose().to_numpy(copy=True)
+                out.spi[abs_row, :, :] = cache['spi'].transpose().to_numpy(copy=True)
+                out.si[abs_row, :, :] = cache['si'].transpose().to_numpy(copy=True)
+                out.cf[abs_row, :, :] = cache['cf'].transpose().to_numpy(copy=True)
+                out.afi[abs_row, :, :] = cache['afi'].transpose().to_numpy(copy=True)
 
-                out.warn[abs_row, :, :] = cache['warn'].transpose().values
+                out.warn[abs_row, :, :] = cache['warn'].transpose().to_numpy(copy=True)
 
-                out.n_seasons[abs_row] = cache['season'].values
-                out.err[abs_row] = cache['err'].values
+                out.n_seasons[abs_row] = cache['season'].to_numpy(copy=True)
+                out.err[abs_row] = cache['err'].to_numpy(copy=True)
 
                 prg_bar += 1
                 print_progress_bar(prg_bar, len(param.row_val))
