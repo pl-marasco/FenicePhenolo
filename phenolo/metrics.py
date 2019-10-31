@@ -279,7 +279,7 @@ def phen_metrics(pxldrl,  param):
             sincy.sl = (sincy.sed.index - sincy.sbd.index).to_pytimedelta()[0]
 
             # Season permanet
-            sincy.sp = sincy.sbd.append(sincy.sed).resample('D').asfreq().interpolate(method='linear')
+            sincy.sp = sincy.sbd.append(sincy.sed).asfreq('D').interpolate(method='linear')
             # da pulire
             sincy.spi = sincy.sp.sum()
 
