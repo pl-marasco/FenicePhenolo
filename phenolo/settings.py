@@ -126,6 +126,12 @@ class ProjectParameters(object):
 
                 # [INFRASTRUCTURE_PARAMETERS]
                 section = 'INFRASTRUCTURE_PARAMETERS'
+
+                if self.__read(config, section, 'cluster').lower() == 'true':
+                    self.cluster = True
+                else:
+                    self.cluster = False
+
                 if self.__read(config, section, 'processes').lower() == 'true':
                     self.processes = True
                 else:
