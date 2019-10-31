@@ -54,4 +54,4 @@ def medspan(season_lng, param):
 
 
 def time_resample(ts):
-    return ts.resample('D').asfreq().interpolate(method='linear').fillna(0)
+    return ts.asfreq('D').interpolate(method='linear').fillna(0)
