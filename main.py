@@ -8,7 +8,7 @@ import time
 from datetime import datetime
 import webbrowser
 
-from dask.distributed import Client
+from dask.distributed import Client, LocalCluster
 
 from phenolo import atoms, settings, reader, viz, output, analysis as aa, executor
 
@@ -49,6 +49,7 @@ def main(param):
 
     elif len(cube.coords.get(param.col_nm)) is not 1 and len(cube.coords.get(param.row_nm)) is not 1:
 
+        cluster = param.cluster
         localproc = param.processes
         n_workers = param.n_workers
         threads_per_worker = param.threads_per_worker
@@ -56,14 +57,25 @@ def main(param):
         out = output.OutputCointainer(cube, param, name=param.outName)
         print('\rInfo -- Output ready', end='')
 
-        if ~localproc and n_workers and threads_per_worker:
-            client = Client(processes=localproc, n_workers=n_workers, threads_per_worker=threads_per_worker)
-        elif ~localproc and n_workers:
-            client = Client(processes=localproc, n_workers=n_workers)
-        elif localproc and n_workers:
-            client = Client(n_workers=n_workers, threads_per_worker=threads_per_worker)
+        if not cluster and localproc and n_workers and threads_per_worker:
+            cluster = LocalCluster(processes=localproc,
+                                   n_workers=n_workers,
+                                   threads_per_worker=threads_per_worker,
+                                   host='localhost')
         else:
-            client = Client()
+            from dask_jobqueue import PBSCluster
+
+            cluster = PBSCluster(cores=threads_per_worker,
+                                 memory="4 GB",
+                                 project='DASK_Parabellum',
+                                 queue='long_fast',
+                                 local_directory='/local0/maraspi/',
+                                 walltime='120:00:00')
+
+            workers = n_workers
+            cluster.scale(workers)
+
+        client = Client(cluster)
 
         if client:
             print('\rInfo -- Client up and running', end='')
