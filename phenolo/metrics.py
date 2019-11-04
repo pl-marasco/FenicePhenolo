@@ -5,6 +5,7 @@ import sys
 
 import numpy as np
 import pandas as pd
+import scipy
 
 from phenolo import peaks
 
@@ -51,6 +52,33 @@ def to_timeseries(values,  index):
         return ValueError
 
     return pd.Series(values,  index=index)
+
+
+def scipy_valley_detection(pxldrl,  param):
+    # Valley detection
+    # Detrending to catch better points
+
+    vtrend = pd.Series(pxldrl.trend_d,  index=pxldrl.ps.index)
+    vdetr = pxldrl.ps - vtrend
+
+    if 200.0 < pxldrl.season_lng < 400.0:
+        mpd_val = int(pxldrl.season_lng * 2 / 3)
+    elif pxldrl.season_lng < 200:
+        mpd_val = int(pxldrl.season_lng * 1 / 3)
+    else:
+        mpd_val = int(pxldrl.season_lng * (param.tr - param.tr * 1 / 3) / 100)
+
+    n_vdetr = np.negative(vdetr)
+
+    ind, property = scipy.signal.find_peaks(n_vdetr, height=vdetr.mean(), distance=mpd_val)
+
+    if not ind.any():
+        ind, property = scipy.signal.find_peaks(n_vdetr, height=-20, distance=60)
+
+    # Valley point time series conversion
+    pks = pxldrl.ps.iloc[ind]
+
+    return pks
 
 
 def valley_detection(pxldrl,  param):
@@ -179,6 +207,7 @@ def __forward(sincy,  delta_shift):
     return truncated
 
 
+# @profile
 def phen_metrics(pxldrl,  param):
     """
     Calculate the Phenology parameter
@@ -270,13 +299,17 @@ def phen_metrics(pxldrl,  param):
             # Season Length in days as ns
             sincy.sl = (sincy.se.index - sincy.sb.index).to_pytimedelta()[0]
 
+            # Season Integral [VX]
+            sincy.season = sincy.mms.loc[sincy.sb.index[0]:sincy.se.index[0]]
+            sincy.si = sincy.season.sum()
+
             # Season permanent
-            sincy.sp = sincy.sb.append(sincy.se).asfreq('D').interpolate(method='linear')
+            sincy.sp = sincy.season.copy()
+            sincy.sp[1:-1] = np.NaN
+            sincy.sp.interpolate()
+
             # Season permanent Integral [OX]
             sincy.spi = sincy.sp.sum()
-
-            # Season Integral [VX]
-            sincy.si = sincy.mms.loc[sincy.sb.index[0]:sincy.se.index[0]].sum()
 
             # Cyclic fraction [VOX]
             sincy.cf = sincy.si - sincy.spi
