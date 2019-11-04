@@ -62,7 +62,11 @@ def main(param):
                                    n_workers=n_workers,
                                    threads_per_worker=threads_per_worker,
                                    host='localhost')
-        else:
+        elif not localproc:
+            cluster = LocalCluster(processes=localproc,
+                                   n_workers=n_workers,
+                                   threads_per_worker=threads_per_worker)
+        elif cluster:
             from dask_jobqueue import PBSCluster
 
             cluster = PBSCluster(cores=threads_per_worker,
