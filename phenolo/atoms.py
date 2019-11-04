@@ -4,7 +4,7 @@ import logging
 
 import numpy as np
 import pandas as pd
-
+import copy
 logger = logging.getLogger(__name__)
 
 
@@ -16,8 +16,8 @@ class PixelDrill(object):
     """
 
     def __init__(self, ts, px):
-        self.ts_raw = ts
-        self.position = px
+        self.ts_raw = copy.deepcopy(ts)
+        self.position = copy.deepcopy(px)
         self.tst = None
         self.ts_filtered = None
         self.ts_interpolated = None
