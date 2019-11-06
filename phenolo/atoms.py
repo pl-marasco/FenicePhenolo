@@ -16,8 +16,8 @@ class PixelDrill(object):
     """
 
     def __init__(self, ts, px):
-        self.ts_raw = copy.deepcopy(ts)
-        self.position = copy.deepcopy(px)
+        self.ts_raw = ts
+        self.position = px
         self.tst = None
         self.ts_filtered = None
         self.ts_interpolated = None
@@ -96,7 +96,7 @@ class SingularCycle(object):
         self.sd = sd  # Start date - MBD
         self.ed = ed  # End date - MED
         self.mml = self.__time_delta(self.sd, self.ed)  # Cycle length in days
-        self.td = self.mml * 2 / 3  # time delta
+        self.td = self.mml * 1 / 10  # time delta
         self.mms_b = ts.loc[sd - self.td:ed + self.td]  # buffered time series #TODO verify possible referencing
         self.mms = self.mms_b.loc[sd:ed]  # minimum minimum time series
         self.stb = self.__integral(self.mms)  # Standing biomass (minimum minimum integral) [mi] [VOX x cycle]
@@ -207,7 +207,7 @@ class SingularCycle(object):
         """Barycenter"""
         cbc = 0
         try:
-            self.posix_time = self.vox.index.astype(np.int64) / 10 ** 9
+            self.posix_time = self.vox.index.astype(np.int64) // 10 ** 9
             cbc = (self.posix_time * self.vox).sum() / self.vox.sum()
         except(RuntimeError, Exception, ValueError):
             self.err = True
