@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import matplotlib.pyplot as plt
+import pandas as pd
 
 
 def plot(pxldrl):
@@ -31,6 +32,9 @@ def plot(pxldrl):
     fig, axes = plt.subplots(rows, col, figsize=(22, 10))
     plt.tight_layout()
 
+    sb_list = pd.Series()
+    se_list = pd.Series()
+
     for i in range(0, len(pxldrl.phen)):
         phency = pxldrl.phen[i]
         plt.subplot(rows, col, i + 1)
@@ -41,10 +45,14 @@ def plot(pxldrl):
             phency.back.plot(style='-', color='gold')
         if phency.forward is not None:
             phency.forward.plot(style='-', color='olive')
-        if phency.sb is not None:
-            phency.sbd.plot(style='r>', )
-        if phency.se is not None:
-            phency.sed.plot(style='r<', )
+        if phency.sbd is not None:
+            sb = phency.mms.loc[phency.sbd]
+            sb.plot(style='r>', )
+            sb_list = sb_list.append(sb)
+        if phency.sed is not None:
+            se = phency.mms.loc[phency.sed]
+            se.plot(style='r<', )
+            se_list = se_list.append(se)
         if phency.max_idx is not None:
             phency.mms.loc[[phency.max_idx]].plot(style='rD')
 
@@ -53,13 +61,13 @@ def plot(pxldrl):
 
     plt.subplot(7, 1, 1)
     plt.tight_layout()
-    if pxldrl.sb is not None:
-        pxldrl.sb.plot(style='r', title='Season beginning')
+    if len(sb_list) is not None:
+        sb_list.plot(style='r', title='Season beginning')
 
     plt.subplot(7, 1, 2)
     plt.tight_layout()
-    if pxldrl.se is not None:
-        pxldrl.se.plot(style='r', title='Season end')
+    if len(se_list) is not None:
+        se_list.plot(style='r', title='Season end')
 
     plt.subplot(7, 1, 3)
     plt.tight_layout()
