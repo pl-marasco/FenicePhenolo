@@ -119,7 +119,7 @@ def _filler(key, pxldrl, att, col):
     :return:
     """
     try:
-        key[col] = copy.deepcopy(getattr(pxldrl, att))
+        key[col] = getattr(pxldrl, att)
     except:
         pass
         # print(f'{att} | {pxldrl.position}')
@@ -165,9 +165,7 @@ def analyse(cube, client, param, action, out):
             for rowi in range(0, chunked.sizes[param.row_nm]):
                 row = chunked.isel(dict([(param.row_nm, rowi)]))
                 y_lst = _pxl_lst(row, param)
-
-                if rowi != 0:
-                    cache = _cache_cleaner(cache, indices, dim_val, col_val)
+                cache = _cache_def(indices, dim_val, col_val)
 
                 if y_lst.any():
                     s_row = client.scatter(row, broadcast=True)
@@ -202,16 +200,12 @@ def analyse(cube, client, param, action, out):
 
                             if pxldrl.season_lng:
                                 if pxldrl.season_lng <= 365.0:
-                                    cache['season'].iloc[col] = int(365 / copy.deepcopy(pxldrl.season_lng))
+                                    cache['season'].iloc[col] = int(365 / pxldrl.season_lng)
                                 else:
-                                    cache['season'].iloc[col] = int(copy.deepcopy(pxldrl.season_lng))
+                                    cache['season'].iloc[col] = int(pxldrl.season_lng)
                         except (RuntimeError, Exception, ValueError):
                             continue
                     del pxldrl
-
-                client.cancel(s_row)
-                client.cancel(futures)
-                gc.collect()
 
                 abs_row = chunk[rowi]
                 out.stb[abs_row, :, :] = cache['stb'].transpose().values
@@ -229,6 +223,13 @@ def analyse(cube, client, param, action, out):
 
                 out.n_seasons[abs_row] = cache['season'].values
                 out.err[abs_row] = cache['err'].values
+
+                # if rowi != 0:
+                #     cache = _cache_cleaner(cache, indices, dim_val, col_val)
+
+                del cache
+                client.cancel(s_row)
+                client.cancel(futures)
 
                 prg_bar += 1
                 print_progress_bar(prg_bar, len(param.row_val))
