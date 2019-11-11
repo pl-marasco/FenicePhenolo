@@ -322,7 +322,7 @@ def phen_metrics(pxldrl,  param):
             sincy.afi = sincy.af.sum()
 
             # Reference yr
-            sincy.ref_yr = (sincy.sb.index + sincy.sl * 2 / 3).year
+            sincy.ref_yr = (sincy.sb.index + sincy.sl * 0.66).year
 
         except ValueError:
             sincy.sbd, sincy.sed, sincy.sl, sincy.sp, sincy.spi, \

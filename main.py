@@ -75,9 +75,7 @@ def main(param):
                                  queue='long_fast',
                                  local_directory='/local0/maraspi/',
                                  walltime='120:00:00')
-
-            workers = n_workers
-            cluster.scale(workers)
+            cluster.scale(n_workers)
 
         client = Client(cluster)
 
