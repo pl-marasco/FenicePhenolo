@@ -79,6 +79,12 @@ def main(param):
 
         client = Client(cluster)
 
+        x = 0
+        while len(client.nthreads()) < n_workers / 2 or x == 1000:
+            time.sleep(0.25)
+            x += 1
+            print(f'\rStill waiting the for the cluster boot... up to now {len(client.nthreads())} are up', end='')
+
         if client:
             print('\rInfo -- Client up and running', end='')
             http = 'http://localhost:8787/status'
