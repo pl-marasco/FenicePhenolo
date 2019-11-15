@@ -96,7 +96,7 @@ class SingularCycle(object):
         self.sd = sd  # Start date - MBD
         self.ed = ed  # End date - MED
         self.mml = self.__time_delta(self.sd, self.ed)  # Cycle length in days
-        self.td = self.mml * 2 / 3  # time delta
+        self.td = self.mml * 0.66  # time delta
         self.mms_b = ts.loc[sd - self.td:ed + self.td]  # buffered time series #TODO verify possible referencing
         self.mms = self.mms_b.loc[sd:ed]  # minimum minimum time series
         self.stb = self.__integral(self.mms)  # Standing biomass (minimum minimum integral) [mi] [VOX x cycle]
@@ -104,7 +104,7 @@ class SingularCycle(object):
         self.mpi = self.__integral(self.mp)  # minimum minimum permanent integral
 
         self.vox = self.__difference(self.mms, self.mp)  # Values between two min subtracted the permanent integral
-
+        self.vox_i = self.__integral(self.vox)
         self.cbc = self.__barycenter()  # cycle barycenter / ex season barycenter
         self.cbcd = self.__to_gregorian_date(self.cbc)
         self.csd = self.__cycle_deviation_standard()  # cycle deviation standard / Season deviation standard
@@ -208,7 +208,7 @@ class SingularCycle(object):
         cbc = 0
         try:
             self.posix_time = self.vox.index.astype(np.int64) / 10 ** 9
-            cbc = (self.posix_time * self.vox).sum() / self.vox.sum()
+            cbc = (self.posix_time * self.vox).sum() / self.vox_i
         except(RuntimeError, Exception, ValueError):
             self.err = True
             logger.debug('Warning! Barycenter calculation went wrong in reference')
@@ -225,7 +225,7 @@ class SingularCycle(object):
         """Season deviation standard"""
         try:
             if self.cbc is not None:
-                sup = (np.square(self.posix_time) * self.vox).sum() / self.vox.sum()
+                sup = (np.square(self.posix_time) * self.vox).sum() / self.vox_i
                 inf = np.square(self.cbc)
                 if sup >= inf:
                     return np.sqrt(sup - inf)
