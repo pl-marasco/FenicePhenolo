@@ -61,11 +61,11 @@ def valley_detection(pxldrl,  param):
     vdetr = pxldrl.ps - vtrend
 
     if 200.0 < pxldrl.season_lng < 400.0:
-        mpd_val = int(pxldrl.season_lng * 2 / 3)
+        mpd_val = int(pxldrl.season_lng * 0.66)
     elif pxldrl.season_lng < 200:
-        mpd_val = int(pxldrl.season_lng * 1 / 3)
+        mpd_val = int(pxldrl.season_lng * 0.33)
     else:
-        mpd_val = int(pxldrl.season_lng * (param.tr - param.tr * 1 / 3) / 100)
+        mpd_val = int(pxldrl.season_lng * (param.tr - param.tr * 0.33) / 100)
 
     ind = peaks.detect_peaks(vdetr,  mph=vdetr.mean(), 
                              mpd=mpd_val, 
@@ -289,7 +289,7 @@ def phen_metrics(pxldrl,  param):
             sincy.afi = sincy.af.sum()
 
             # Reference yr
-            sincy.ref_yr = (sincy.sb.index + sincy.sl * 2 / 3).year
+            sincy.ref_yr = (sincy.sb.index + sincy.sl * 0.66).year
 
         except ValueError:
             sincy.sbd, sincy.sed, sincy.sl, sincy.sp, sincy.spi, \
