@@ -140,7 +140,7 @@ def analyse(cube, client, param, action, out):
         indices = ['stb', 'mpi', 'sbd', 'sed', 'sl', 'spi', 'si', 'cf', 'afi', 'warn']
         prg_bar = 0
 
-        for chunk in np.array_split(range(0, len(param.row_val)), 3):
+        for chunk in np.array_split(range(0, len(param.row_val)), 10):
 
             chunked = cube.isel(dict([(param.row_nm, slice(chunk[0], chunk[-1] + 1))])).compute()
 
@@ -209,14 +209,13 @@ def analyse(cube, client, param, action, out):
                 else:
                     out.err[abs_row, :] = 0
 
-                # client.cancel(s_row)
-                # client.cancel(futures)
-
                 prg_bar += 1
                 print_progress_bar(prg_bar, len(param.row_val))
                 logger.debug(f'Row {abs_row} has been processed')
 
                 del cache
+                client.cancel(s_row)
+                client.cancel(futures)
 
         return out
 
