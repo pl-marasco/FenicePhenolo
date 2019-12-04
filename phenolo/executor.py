@@ -208,18 +208,18 @@ def analyse(cube, client, param, action, out):
                     del pxldrl
 
                 abs_row = chunk[rowi]
-                out.stb[abs_row, :, :] = cache['stb'].transpose().values
-                out.mpi[abs_row, :, :] = cache['mpi'].transpose().values
+                out.stb[:, abs_row, :] = cache['stb'].transpose().values
+                out.mpi[:, abs_row, :] = cache['mpi'].transpose().values
 
-                out.sbd[abs_row, :, :] = cache['sbd'].transpose().values
-                out.sed[abs_row, :, :] = cache['sed'].transpose().values
-                out.sl[abs_row, :, :] = cache['sl'].transpose().values
-                out.spi[abs_row, :, :] = cache['spi'].transpose().values
-                out.si[abs_row, :, :] = cache['si'].transpose().values
-                out.cf[abs_row, :, :] = cache['cf'].transpose().values
-                out.afi[abs_row, :, :] = cache['afi'].transpose().values
+                out.sbd[:, abs_row, :] = cache['sbd'].transpose().values
+                out.sed[:, abs_row, :] = cache['sed'].transpose().values
+                out.sl[:, abs_row, :] = cache['sl'].transpose().values
+                out.spi[:, abs_row, :] = cache['spi'].transpose().values
+                out.si[:, abs_row, :] = cache['si'].transpose().values
+                out.cf[:, abs_row, :] = cache['cf'].transpose().values
+                out.afi[:, abs_row, :] = cache['afi'].transpose().values
 
-                out.warn[abs_row, :, :] = cache['warn'].transpose().values
+                out.warn[:, abs_row, :] = cache['warn'].transpose().values
 
                 out.n_seasons[abs_row] = cache['season'].values
                 out.err[abs_row] = cache['err'].values

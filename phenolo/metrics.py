@@ -297,7 +297,7 @@ def phen_metrics(pxldrl,  param):
             sincy.sed = sincy.se.index
 
             # Season Length in days as ns
-            sincy.sl = (sincy.se.index - sincy.sb.index).to_pytimedelta()[0]
+            sincy.sl = (sincy.se.index - sincy.sb.index).days.values
 
             # Season Integral [VX]
             sincy.season = sincy.mms.loc[sincy.sb.index[0]:sincy.se.index[0]]
