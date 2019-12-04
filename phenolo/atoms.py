@@ -96,7 +96,7 @@ class SingularCycle(object):
         self.sd = sd  # Start date - MBD
         self.ed = ed  # End date - MED
         self.mml = self.__time_delta(self.sd, self.ed)  # Cycle length in days
-        self.td = self.mml * 0.25  # time delta
+        self.td = self.mml * 0.33  # time delta
         self.mms_b = ts.loc[sd - self.td:ed + self.td]  # buffered time series #TODO verify possible referencing
         self.mms = self.mms_b.loc[sd:ed]  # minimum minimum time series
         self.stb = self.__integral(self.mms)  # Standing biomass (minimum minimum integral) [mi] [VOX x cycle]

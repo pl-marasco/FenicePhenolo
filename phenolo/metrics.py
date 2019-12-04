@@ -291,13 +291,13 @@ def phen_metrics(pxldrl,  param):
 
         try:
             # Day of start in posix
-            sincy.sbd = sincy.sb.index
+            sincy.sbd = sincy.sb.index.asi8
 
             # Day of ends in posix
-            sincy.sed = sincy.se.index
+            sincy.sed = sincy.se.index.asi8
 
             # Season Length in days as ns
-            sincy.sl = (sincy.se.index - sincy.sb.index).to_pytimedelta()[0]
+            sincy.sl = (sincy.se.index - sincy.sb.index).days.values
 
             # Season Integral [VX]
             sincy.season = sincy.mms.loc[sincy.sb.index[0]:sincy.se.index[0]]
@@ -322,7 +322,7 @@ def phen_metrics(pxldrl,  param):
             sincy.afi = sincy.af.sum()
 
             # Reference yr
-            sincy.ref_yr = (sincy.sb.index + sincy.sl * 0.66).year
+            sincy.ref_yr = (sincy.sb.index + pd.Timedelta(days= sincy.sl[0] * 0.66)).year
 
         except ValueError:
             sincy.sbd, sincy.sed, sincy.sl, sincy.sp, sincy.spi, \

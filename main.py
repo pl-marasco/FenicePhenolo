@@ -70,7 +70,7 @@ def main(param):
             from dask_jobqueue import PBSCluster
 
             cluster = PBSCluster(cores=threads_per_worker,
-                                 memory="4 GB",
+                                 memory="4GB",
                                  project='DASK_Parabellum',
                                  queue='long_fast',
                                  local_directory='/local0/maraspi/',
@@ -80,7 +80,7 @@ def main(param):
         client = Client(cluster)
 
         x = 0
-        while len(client.nthreads()) < n_workers / 2 or x == 1000:
+        while len(client.nthreads()) < 1 or x == 1000:
             time.sleep(0.25)
             x += 1
             print(f'\rStill waiting the for the cluster boot... up to now {len(client.nthreads())} are up', end='')

@@ -141,20 +141,20 @@ class OutputCointainer(object):
         self.col_v = self.root.createVariable(param.col_nm, 'f8', (param.col_nm,))
         self.dim_v = self.root.createVariable(param.dim_nm, 'f8', (param.dim_nm,))
 
-        self.stb = self.root.createVariable('StandingBiomass', 'f8', (param.row_nm, param.col_nm, param.dim_nm), zlib=True, complevel=4)
-        self.mpi = self.root.createVariable('MinimumminimumPermanentIntegral', 'f8', (param.row_nm, param.col_nm, param.dim_nm), zlib=True, complevel=4)
+        self.stb = self.root.createVariable('StandingBiomass', 'f8', (param.dim_nm, param.row_nm, param.col_nm), zlib=True, complevel=4)
+        self.mpi = self.root.createVariable('MinimumminimumPermanentIntegral', 'f8', (param.dim_nm, param.row_nm, param.col_nm), zlib=True, complevel=4)
 
-        self.sbd = self.root.createVariable('Startdate', 'f8', (param.row_nm, param.col_nm, param.dim_nm), zlib=True, complevel=4)
-        self.sed = self.root.createVariable('Enddate', 'f8', (param.row_nm, param.col_nm, param.dim_nm), zlib=True, complevel=4)
+        self.sbd = self.root.createVariable('Startdate', 'f8', (param.dim_nm, param.row_nm, param.col_nm), zlib=True, complevel=4)
+        self.sed = self.root.createVariable('Enddate', 'f8', (param.dim_nm, param.row_nm, param.col_nm), zlib=True, complevel=4)
 
-        self.sl = self.root.createVariable('SeasonLenght', 'i8', (param.row_nm, param.col_nm, param.dim_nm), zlib=True, complevel=4)
-        self.spi = self.root.createVariable('SeasonalPermanentIntegral', 'f8', (param.row_nm, param.col_nm, param.dim_nm), zlib=True, complevel=4)
-        self.si = self.root.createVariable('SeasonIntegral', 'f8', (param.row_nm, param.col_nm, param.dim_nm), zlib=True, complevel=4)
-        self.cf = self.root.createVariable('CyclicFraction', 'f8', (param.row_nm, param.col_nm, param.dim_nm), zlib=True, complevel=4)
+        self.sl = self.root.createVariable('SeasonLenght', 'f8', (param.dim_nm, param.row_nm, param.col_nm), zlib=True, complevel=4)
+        self.spi = self.root.createVariable('SeasonalPermanentIntegral', 'f8', (param.dim_nm, param.row_nm, param.col_nm), zlib=True, complevel=4)
+        self.si = self.root.createVariable('SeasonIntegral', 'f8', (param.dim_nm, param.row_nm, param.col_nm), zlib=True, complevel=4)
+        self.cf = self.root.createVariable('CyclicFraction', 'f8', (param.dim_nm, param.row_nm, param.col_nm), zlib=True, complevel=4)
 
-        self.afi = self.root.createVariable('ActiveFractionIntegral', 'f8', (param.row_nm, param.col_nm, param.dim_nm), zlib=True, complevel=4)
+        self.afi = self.root.createVariable('ActiveFractionIntegral', 'f8', (param.dim_nm, param.row_nm, param.col_nm), zlib=True, complevel=4)
 
-        self.warn = self.root.createVariable('CycleWarning', 'f8', (param.row_nm, param.col_nm, param.dim_nm), zlib=True, complevel=4)
+        self.warn = self.root.createVariable('CycleWarning', 'f8', (param.dim_nm, param.row_nm, param.col_nm), zlib=True, complevel=4)
 
         self.n_seasons = self.root.createVariable('NumberOfSeasons', 'i8', (param.row_nm, param.col_nm), zlib=True, complevel=4)
         self.err = self.root.createVariable('PixelCriticalError', 'i8', (param.row_nm, param.col_nm), zlib=True, complevel=4)
