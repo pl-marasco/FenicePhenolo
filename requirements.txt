@@ -4,6 +4,8 @@ xarray
 rasterio
 netCDF4
 dask[complete]
+dask-jobqueue
 scipy
 pyhdf
 matplotlib
+bokeh

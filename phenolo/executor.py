@@ -225,9 +225,6 @@ def analyse(cube, client, param, action, out):
                 out.n_seasons[abs_row] = cache['season'].values
                 out.err[abs_row] = cache['err'].values
 
-                # if rowi != 0:
-                #     cache = _cache_cleaner(cache, indices, dim_val, col_val)
-
                 del cache
                 client.cancel(s_row)
                 client.cancel(futures)
