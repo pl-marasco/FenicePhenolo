@@ -131,6 +131,10 @@ class OutputCointainer(object):
 
     def __init__(self, cube, param, **kwargs):
         pth = os.path.join(param.outFilePth, '.'.join((kwargs.pop('name', ''), 'nc')))
+
+        if os.path.isfile(pth):
+            os.remove(pth)
+
         self.root = Dataset(pth, 'w', format='NETCDF4')
 
         row = self.root.createDimension(param.row_nm, len(param.row_val))
