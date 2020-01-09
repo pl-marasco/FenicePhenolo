@@ -220,21 +220,21 @@ def analyse(cube, client, param, action, out):
                     del pxldrl
 
                 abs_row = chunk[rowi]
-                out.stb[:, abs_row, :] = cache['stb'].values
-                out.mpi[:, abs_row, :] = cache['mpi'].values
+                out.stb[:, abs_row, :] = cache['stb'].to_numpy(copy=True)
+                out.mpi[:, abs_row, :] = cache['mpi'].to_numpy(copy=True)
 
-                out.sbd[:, abs_row, :] = cache['sbd'].values
-                out.sed[:, abs_row, :] = cache['sed'].values
-                out.sl[:, abs_row, :] = cache['sl'].values
-                out.spi[:, abs_row, :] = cache['spi'].values
-                out.si[:, abs_row, :] = cache['si'].values
-                out.cf[:, abs_row, :] = cache['cf'].values
-                out.afi[:, abs_row, :] = cache['afi'].values
+                out.sbd[:, abs_row, :] = cache['sbd'].to_numpy(copy=True)
+                out.sed[:, abs_row, :] = cache['sed'].to_numpy(copy=True)
+                out.sl[:, abs_row, :] = cache['sl'].to_numpy(copy=True)
+                out.spi[:, abs_row, :] = cache['spi'].to_numpy(copy=True)
+                out.si[:, abs_row, :] = cache['si'].to_numpy(copy=True)
+                out.cf[:, abs_row, :] = cache['cf'].to_numpy(copy=True)
+                out.afi[:, abs_row, :] = cache['afi'].to_numpy(copy=True)
 
-                out.warn[:, abs_row, :] = cache['warn'].values
+                out.warn[:, abs_row, :] = cache['warn'].to_numpy(copy=True)
 
-                out.n_seasons[abs_row] = cache['season'].values
-                out.err[abs_row] = cache['err'].values
+                out.n_seasons[abs_row] = cache['season'].to_numpy(copy=True)
+                out.err[abs_row] = cache['err'].to_numpy(copy=True)
 
                 del cache
 
