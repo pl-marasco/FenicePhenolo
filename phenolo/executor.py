@@ -8,6 +8,7 @@ from dask.distributed import as_completed
 
 from phenolo import atoms
 
+
 logger = logging.getLogger(__name__)
 
 import copy
@@ -61,7 +62,7 @@ def process(px, **kwargs):
     param = kwargs.pop('param', '')
     row = kwargs.pop('row', '')
 
-    pxldrl = atoms.PixelDrill(cube.isel(dict([(param.col_nm, px)])).to_series().astype(float), [row, px])
+    pxldrl = atoms.PixelDrill(cube.isel(dict([(param.col_nm, px), (param.row_nm, row)])).to_series().astype(float), [row, px])
 
     return action(pxldrl, settings=param)
 
@@ -146,11 +147,11 @@ def analyse(cube, client, param, action, out):
     :param out:
     :return:
     """
+    from distributed.protocol import register_generic
+    register_generic(atoms.PixelDrill)
     s_param = client.scatter(param, broadcast=True)
 
     try:
-        nxt_row, nxt_y_lst, nxt_cache = [None] * 3
-
         dim_val = pd.to_datetime(param.dim_val).year.unique()
         col_val = range(0, len(param.col_val))
 
@@ -159,24 +160,34 @@ def analyse(cube, client, param, action, out):
         cache = _cache_def(indices, dim_val, col_val)
         prg_bar = 0
 
-        for chunk in np.array_split(range(0, len(param.row_val)), 3):
+        for chunk in np.array_split(range(0, len(param.row_val)), 10): # TODO change authomatically the size of split
 
             chunked = cube.isel(dict([(param.row_nm, slice(chunk[0], chunk[-1]+1))])).compute()
 
+            chnk_scat = client.scatter(chunked, broadcast=True)
+
+            quantile = chunked.quantile(0.2, param.dim_nm)
+            where = quantile.where(((quantile > param.min_th) & (quantile < param.max_th)))
+            isfinite = where.reduce(np.isfinite)
+            pxl_lst = np.argwhere(isfinite.values)
+
             for rowi in range(0, chunked.sizes[param.row_nm]):
-                row = chunked.isel(dict([(param.row_nm, rowi)]))
-                y_lst = _pxl_lst(row, param)
+                # row = chunked.isel(dict([(param.row_nm, rowi)]))
+                # y_lst = _pxl_lst(row, param)
+
+                y_lst = pxl_lst[pxl_lst[:, 0] == rowi, :][:, 1]
+
                 cache = _cache_def(indices, dim_val, col_val)
 
-                if y_lst.any():
-                    s_row = client.scatter(row, broadcast=True)
-                    del row
-                else:
-                    print_progress_bar(rowi, len(param.row_val))
-                    logger.debug(f'Row {rowi} processed')
-                    continue
+                # if y_lst.any():
+                #     s_row = client.scatter(row, broadcast=True)
+                #     del row
+                # else:
+                #     print_progress_bar(rowi, len(param.row_val))
+                #     logger.debug(f'Row {rowi} processed')
+                #     continue
 
-                futures = client.map(process, y_lst, **{'data': s_row, 'row': rowi, 'param': s_param, 'action': action})
+                futures = client.map(process, y_lst, **{'data': chnk_scat, 'row': rowi, 'param': s_param, 'action': action})
 
                 for future, pxldrl in as_completed(futures, with_results=True):
 
@@ -226,13 +237,14 @@ def analyse(cube, client, param, action, out):
                 out.err[abs_row] = cache['err'].values
 
                 del cache
-                client.cancel(s_row)
+
                 client.cancel(futures)
 
                 prg_bar += 1
                 print_progress_bar(prg_bar, len(param.row_val))
 
                 logger.debug(f'Row {abs_row} has been processed')
+            client.cancel(chnk_scat)
         return out
 
     except Exception as ex:

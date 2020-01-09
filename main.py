@@ -68,6 +68,7 @@ def main(param):
                                    threads_per_worker=threads_per_worker)
         elif cluster:
             from dask_jobqueue import PBSCluster
+            from distributed.protocol import register_generic
 
             cluster = PBSCluster(cores=threads_per_worker,
                                  memory="4GB",
@@ -76,6 +77,7 @@ def main(param):
                                  local_directory='/local0/maraspi/',
                                  walltime='120:00:00')
             cluster.scale(n_workers)
+            register_generic(atoms.PixelDrill)
 
         client = Client(cluster)
 
