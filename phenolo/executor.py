@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import time
 
 import numpy as np
 import pandas as pd
 from dask.distributed import as_completed
 
-from phenolo import atoms
+from phenolo import atoms, analysis
 
 logger = logging.getLogger(__name__)
 
@@ -57,13 +58,12 @@ def process(px, **kwargs):
     :return: Obj{pxdrl}
     """
     cube = kwargs.pop('data', '')
-    action = kwargs.pop('action', '')
     param = kwargs.pop('param', '')
     row = kwargs.pop('row', '')
 
     pxldrl = atoms.PixelDrill(cube.isel(dict([(param.col_nm, px)])).to_series().astype(float), [row, px])
 
-    return action(pxldrl, settings=param)
+    return analysis.phenolo(pxldrl, settings=param)
 
 
 def _pre_feeder(nxt_row, param):
@@ -120,7 +120,7 @@ def _filler(key, pxldrl, att, col):
     :return:
     """
     try:
-        key[col] = getattr(pxldrl, att)
+        key[col] = copy.deepcopy(getattr(pxldrl, att))
     except:
         pass
         # print(f'{att} | {pxldrl.position}')
@@ -136,7 +136,7 @@ def _error_decoder(err):
     return err_cod[err]
 
 
-def analyse(cube, client, param, action, out):
+def analyse(cube, client, param, out):
     """
 
     :param cube:
@@ -159,7 +159,7 @@ def analyse(cube, client, param, action, out):
         cache = _cache_def(indices, dim_val, col_val)
         prg_bar = 0
 
-        for chunk in np.array_split(range(0, len(param.row_val)), 3):
+        for chunk in np.array_split(range(0, len(param.row_val)),2):
 
             chunked = cube.isel(dict([(param.row_nm, slice(chunk[0], chunk[-1]+1))])).compute()
 
@@ -176,10 +176,9 @@ def analyse(cube, client, param, action, out):
                     logger.debug(f'Row {rowi} processed')
                     continue
 
-                futures = client.map(process, y_lst, **{'data': s_row, 'row': rowi, 'param': s_param, 'action': action})
+                futures = client.map(process, y_lst, **{'data': s_row, 'row': rowi, 'param': s_param})
 
                 for future, pxldrl in as_completed(futures, with_results=True):
-
                     col = pxldrl.position[1]
 
                     if param.ovr_scratch:
@@ -206,7 +205,7 @@ def analyse(cube, client, param, action, out):
                                     cache['season'].iloc[col] = int(pxldrl.season_lng)
                         except (RuntimeError, Exception, ValueError):
                             continue
-                    del pxldrl
+                    del pxldrl, future
 
                 abs_row = chunk[rowi]
                 out.stb[:, abs_row, :] = cache['stb'].values
@@ -233,6 +232,7 @@ def analyse(cube, client, param, action, out):
                 print_progress_bar(prg_bar, len(param.row_val))
 
                 logger.debug(f'Row {abs_row} has been processed')
+
         return out
 
     except Exception as ex:
