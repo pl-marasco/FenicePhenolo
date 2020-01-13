@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 def main(param):
     start_time = time.process_time()
+
     print('\rReading Cube', end='')
     cube = reader.ingest(param)
 
@@ -91,7 +92,7 @@ def main(param):
             print('\rInfo -- Analysis is up and running')
             webbrowser.open(http, new=2, autoraise=True)
 
-        result_cube = executor.analyse(cube, client, param, aa.phenolo, out)
+        result_cube = executor.analyse(cube, client, param, out)
 
         result_cube.close()
 
