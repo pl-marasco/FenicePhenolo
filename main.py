@@ -75,7 +75,9 @@ def main(param):
                                  project='DASK_Parabellum',
                                  queue='long_fast',
                                  local_directory='/local0/maraspi/',
-                                 walltime='120:00:00')
+                                 walltime='120:00:00',
+                                 death_timeout=240,
+                                 log_directory='/tmp/marapi/workers/')
             cluster.scale(n_workers)
 
         client = Client(cluster)
@@ -139,10 +141,8 @@ if __name__ == '__main__':
         if args.log:
             try:
                 logpath = os.path.join(param.outFilePth, param.outName + '.log')
-                log = logging.basicConfig(filename=logpath,
-                                          level=args.log * 10,
-                                          filemode='w')
-            except:
+                logging.basicConfig(filename=logpath, level=args.log * 10, filemode='w')
+            except Exception as ex:
                 print('Error logging file creation')
                 raise IOError
         logger = logging.getLogger(__name__)
