@@ -158,8 +158,9 @@ def analyse(cube, client, param, out):
 
         cache = _cache_def(indices, dim_val, col_val)
         prg_bar = 0
+        n_chunks = 2
 
-        for chunk in np.array_split(range(0, len(param.row_val)),2):
+        for chunk in np.array_split(range(0, len(param.row_val)), n_chunks):
 
             chunked = cube.isel(dict([(param.row_nm, slice(chunk[0], chunk[-1]+1))])).compute()
 
