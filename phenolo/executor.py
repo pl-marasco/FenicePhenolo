@@ -149,8 +149,6 @@ def analyse(cube, client, param, out):
     s_param = client.scatter(param, broadcast=True)
 
     try:
-        nxt_row, nxt_y_lst, nxt_cache = [None] * 3
-
         dim_val = pd.to_datetime(param.dim_val).year.unique()
         col_val = range(0, len(param.col_val))
 
