@@ -371,7 +371,7 @@ def attribute_extractor_se(pxldrl, attribute, param):
                  'value': getattr(phency,  attribute)},  pxldrl.phen))
         if not values:
             raise Exception
-        return pd.DataFrame(values).groupby('index').min(numeric_only=True).reindex(param.dms).squeeze()
+        return pd.DataFrame(values).groupby('index').min(numeric_only=True).reindex(param.time_dms).squeeze()
 
     except (RuntimeError,  Exception):
         raise RuntimeError('Impossible to extract the attribute requested')
