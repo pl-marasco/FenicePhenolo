@@ -187,18 +187,18 @@ def phenolo(pxldrl, **kwargs):
 
     # General statistic aggregation
     try:
-        pxldrl.stb = metrics.attribute_extractor_se(pxldrl, 'stb')
-        pxldrl.mpi = metrics.attribute_extractor_se(pxldrl, 'mpi')
-        pxldrl.sbd = metrics.attribute_extractor_se(pxldrl, 'sbd')
-        pxldrl.sed = metrics.attribute_extractor_se(pxldrl, 'sed')
-        pxldrl.sl = metrics.attribute_extractor(pxldrl, 'sl')
-        pxldrl.spi = metrics.attribute_extractor(pxldrl, 'spi')
-        pxldrl.si = metrics.attribute_extractor(pxldrl, 'si')
-        pxldrl.cf = metrics.attribute_extractor(pxldrl, 'cf')
-        pxldrl.afi = metrics.attribute_extractor(pxldrl, 'afi')
-        pxldrl.sei = metrics.attribute_extractor(pxldrl, 'sei')
+        pxldrl.stb = metrics.attribute_extractor_se(pxldrl, 'stb', param)
+        pxldrl.mpi = metrics.attribute_extractor_se(pxldrl, 'mpi', param)
+        pxldrl.sbd = metrics.attribute_extractor_se(pxldrl, 'sbd', param)
+        pxldrl.sed = metrics.attribute_extractor_se(pxldrl, 'sed', param)
+        pxldrl.sl = metrics.attribute_extractor(pxldrl, 'sl', param)
+        pxldrl.spi = metrics.attribute_extractor(pxldrl, 'spi', param)
+        pxldrl.si = metrics.attribute_extractor(pxldrl, 'si', param)
+        pxldrl.cf = metrics.attribute_extractor(pxldrl, 'cf', param)
+        pxldrl.afi = metrics.attribute_extractor(pxldrl, 'afi', param)
+        pxldrl.sei = metrics.attribute_extractor(pxldrl, 'sei', param)
 
-        pxldrl.warn = metrics.attribute_extractor(pxldrl, 'warn')
+        pxldrl.warn = metrics.attribute_extractor(pxldrl, 'warn', param)
     except(RuntimeError, Exception, ValueError):
         logger.info(f'Statistical aggregation:{pxldrl.position}')
         pxldrl.error = True

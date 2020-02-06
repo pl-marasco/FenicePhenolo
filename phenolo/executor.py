@@ -152,6 +152,8 @@ def analyse(cube, client, param, out):
         dim_val = pd.to_datetime(param.dim_val).year.unique()
         col_val = range(0, len(param.col_val))
 
+        param.time_dms = dim_val
+
         indices = ['stb', 'mpi', 'sbd', 'sed', 'spi', 'si', 'cf', 'afi', 'warn']
 
         cache = _cache_def(indices, dim_val, col_val)
@@ -162,29 +164,35 @@ def analyse(cube, client, param, out):
 
             chunked = cube.isel(dict([(param.row_nm, slice(chunk[0], chunk[-1]+1))])).compute()
 
+            chnk_scat = client.scatter(chunked, broadcast=True)
+
+            quantile = chunked.quantile(0.2, param.dim_nm)
+            where = quantile.where(((quantile > param.min_th) & (quantile < param.max_th)))
+            isfinite = where.reduce(np.isfinite)
+            pxl_lst = np.argwhere(isfinite.values)
+
             for rowi in range(0, chunked.sizes[param.row_nm]):
-                row = chunked.isel(dict([(param.row_nm, rowi)]))
-                y_lst = _pxl_lst(row, param)
+
+                y_lst = pxl_lst[pxl_lst[:, 0] == rowi, :][:, 1]
+
                 cache = _cache_def(indices, dim_val, col_val)
 
-                if y_lst.any():
-                    s_row = client.scatter(row, broadcast=True)
-                    del row
-                else:
+                if not y_lst.any():
                     print_progress_bar(rowi, len(param.row_val))
                     logger.debug(f'Row {rowi} processed')
                     continue
 
-                futures = client.map(process, y_lst, **{'data': s_row, 'row': rowi, 'param': s_param})
+                futures = client.map(process, y_lst, **{'data': chnk_scat, 'row': rowi, 'param': s_param})
 
                 for future, pxldrl in as_completed(futures, with_results=True):
+
                     col = pxldrl.position[1]
 
                     if param.ovr_scratch:
                         try:
                             import phenolo.output as output
                             output.scratch_dump(pxldrl, param)
-                        except Exception:
+                        except Exception as e:
                             raise Exception
 
                     if pxldrl.error:
@@ -224,8 +232,8 @@ def analyse(cube, client, param, out):
                 out.err[abs_row] = cache['err'].values
 
                 del cache
-                client.cancel(s_row)
-                client.cancel(futures)
+                # client.cancel(s_row)
+                # client.cancel(futures)
 
                 prg_bar += 1
                 print_progress_bar(prg_bar, len(param.row_val))

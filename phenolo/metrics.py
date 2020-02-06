@@ -348,7 +348,7 @@ def __mas(tsl,  mavmet,  sdd):
     # TODO to be reviewed
 
 
-def attribute_extractor(pxldrl,  attribute):
+def attribute_extractor(pxldrl, attribute, param):
     try:
         values = list(
             map(lambda phency:
@@ -357,13 +357,13 @@ def attribute_extractor(pxldrl,  attribute):
         if len(values) == 0:
             raise Exception
 
-        return pd.DataFrame(values).groupby('index').sum(numeric_only=True).squeeze()
+        return pd.DataFrame(values).groupby('index').sum(numeric_only=True).reindex(param.time_dms).squeeze()
 
     except (RuntimeError,  Exception):
         raise RuntimeError('Impossible to extract the attribute requested')
 
 
-def attribute_extractor_se(pxldrl,  attribute):
+def attribute_extractor_se(pxldrl, attribute, param):
     try:
         values = list(
             map(lambda phency:
@@ -371,7 +371,7 @@ def attribute_extractor_se(pxldrl,  attribute):
                  'value': getattr(phency,  attribute)},  pxldrl.phen))
         if not values:
             raise Exception
-        return pd.DataFrame(values).groupby('index').min(numeric_only=True).squeeze()
+        return pd.DataFrame(values).groupby('index').min(numeric_only=True).reindex(param.dms).squeeze()
 
     except (RuntimeError,  Exception):
         raise RuntimeError('Impossible to extract the attribute requested')

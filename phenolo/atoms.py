@@ -12,7 +12,7 @@ class PixelDrill(object):
     """
     Pixel drill:
 
-    a single pixel drill rappresent the minimum unit of analye
+    a single pixel drill represent the minimum unit of analysis
     """
 
     def __init__(self, ts, px):
