@@ -92,12 +92,28 @@ def _cache_def(indices, dim_val, col_val):
     :param col_val: list of couliumns {int}
     :return: cache {pd.dataframe}
     """
+    cache = {}
 
-    cache = {name: pd.DataFrame(index=dim_val, columns=col_val) for name in indices}
-    # cache['sl'] = pd.DataFrame(pd.Timedelta(0, unit='D'), index=dim_val, columns=col_val)
-    cache['sl'] = pd.DataFrame(index=dim_val, columns=col_val)
-    cache['season'] = pd.Series(0, index=col_val)
-    cache['err'] = pd.Series(0, index=col_val)
+    for name in indices:
+        d = {name: np.ndarray((dim_val, col_val), dtype=np.float64, buffer=None)}
+        d[name][:] = np.NaN
+        cache.update(d)
+
+    # season length
+    sl = np.ndarray((dim_val, col_val), dtype=np.float64, buffer=None) # non mi torna il formato
+    sl[:] = np.NaN
+    cache.update({'sl': sl})
+
+    # season
+    season = np.ndarray(col_val, dtype=np.int64, buffer=None)
+    season[:] = 0
+    cache.update({'season': season})
+
+    # update
+    update = np.ndarray(col_val, dtype=np.int64, buffer=None)
+    update[:] = 0
+    cache.update({'err': update})
+
     return cache
 
 
@@ -150,14 +166,15 @@ def analyse(cube, client, param, out):
     s_param = client.scatter(param, broadcast=True)
 
     try:
-        dim_val = pd.to_datetime(param.dim_val).year.unique()
+        param.dim_unq_val = pd.to_datetime(param.dim_val).year.unique()
         col_val = range(0, len(param.col_val))
 
-        param.time_dms = dim_val
+
+        # todo riinizia da qui concludendo la trasformazione della cache da pandas a numpy
 
         indices = ['stb', 'mpi', 'sbd', 'sed', 'spi', 'si', 'cf', 'afi', 'warn']
 
-        cache = _cache_def(indices, dim_val, col_val)
+        cache = _cache_def(indices, param.dim_unq_val, col_val)
         prg_bar = 0
         n_chunks = 2
 
@@ -176,7 +193,7 @@ def analyse(cube, client, param, out):
 
                 y_lst = pxl_lst[pxl_lst[:, 0] == rowi, :][:, 1]
 
-                cache = _cache_def(indices, dim_val, col_val)
+                cache = _cache_def(indices, param.dim_unq_val, col_val)
 
                 if not y_lst.any():
                     print_progress_bar(rowi, len(param.row_val))
@@ -185,7 +202,15 @@ def analyse(cube, client, param, out):
 
                 futures = client.map(process, y_lst, **{'data': chnk_scat, 'row': rowi, 'param': s_param})
 
+                pxls_rs = []
+
                 for future, pxldrl in as_completed(futures, with_results=True):
+
+                    pxls_rs.append(pxldrl)
+
+                # metodo a doppia mano
+
+                for pxldrl in pxls_rs:
 
                     col = pxldrl.position[1]
 
@@ -213,7 +238,6 @@ def analyse(cube, client, param, out):
                                     cache['season'].iloc[col] = int(pxldrl.season_lng)
                         except (RuntimeError, Exception, ValueError):
                             continue
-                    del pxldrl, future
 
                 abs_row = chunk[rowi]
                 out.stb[:, abs_row, :] = cache['stb'].values
