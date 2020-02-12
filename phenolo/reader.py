@@ -540,7 +540,7 @@ def ingest(prmts):
 
             if cube.chunks is None:
                 col_blocks = prmts.col_val.size
-                row_blocks = 1  # prmts.row_val.size
+                row_blocks = 1 # prmts.row_val.size
                 dim_blocks = prmts.dim_val.size
                 cube = _dasker(cube, dim_blocks, col_blocks, row_blocks)
 

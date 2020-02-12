@@ -53,6 +53,30 @@ class PixelDrill(object):
         for ith in self.__dict__.keys():
             setattr(self, ith, None)
 
+    def int_cleaner(self):
+        self.ts_raw = None
+        self.tst = None
+        self.ts_interpolated = None
+        self.season_lng = None
+        self.expSeason = None
+        self.trend_ts = None
+        self.medspan = None
+        self.ts_sv = None
+        self.mpd_val = None
+
+        self.ts = None
+        self.ts_resc = None
+        self.ts_cleaned = None
+        self.ts_filtered = None
+        self.seasons = None
+        self.trend = None
+        self.ts_d = None
+        self.trend_d = None
+        self.ps = None
+        self.pks = None
+        self.sincys = None
+        self.phen = None
+        
 
 class SingularCycle(object):
     def __init__(self, ts, sd, ed):
@@ -85,8 +109,6 @@ class SingularCycle(object):
             cf: Seasons cyclic fractions
             afi: Season Active Fraction
             warn: Warning flags
-
-
 
         :param : Time series as pandas.Series object
         """

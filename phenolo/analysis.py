@@ -8,23 +8,6 @@ from seasonal import fit_seasons
 logger = logging.getLogger(__name__)
 
 
-def _cleaner(pxldrl):
-    pxldrl.ts = None
-    pxldrl.ts_resc = None
-    pxldrl.ts_cleaned = None
-    pxldrl.ts_filtered = None
-    pxldrl.seasons = None
-    pxldrl.trend = None
-    pxldrl.ts_d = None
-    pxldrl.trend_d = None
-    pxldrl.ps = None
-    pxldrl.pks = None
-    pxldrl.sincys = None
-    pxldrl.phen = None
-
-    return pxldrl
-
-
 def phenolo(pxldrl, **kwargs):
     param = kwargs.pop('settings', '')
 
@@ -208,6 +191,6 @@ def phenolo(pxldrl, **kwargs):
     logger.debug(f'Pixel {pxldrl.position[0]}-{pxldrl.position[1]} processed')
 
     if not param.ovr_scratch and not param.single_pnt:
-        pxldrl = _cleaner(pxldrl)
+        pxldrl.int_cleaner()
 
     return pxldrl
