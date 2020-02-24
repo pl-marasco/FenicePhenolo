@@ -178,14 +178,14 @@ def _cache_shared_close(shared):
         shm.close()
 
 
-def _cache_cleaner(cache, indices, dim_val, col_val):
+def _cache_cleaner(cache, indices):
 
     for name in indices:
-        cache[name] = cache[name][0:0].reindex(dim_val)
-    cache['sl'] = pd.DataFrame(pd.Timedelta(0, unit='D'), index=dim_val, columns=col_val)
-    cache['season'] = cache['season'][0:0].reindex(col_val)
-    cache['err'] = cache['err'][0:0].reindex(col_val)
-    return cache
+        cache[name][:] = np.NaN
+
+    cache['sl'][:] = np.NaN
+    cache['season'][:] = 0
+    cache['err'][:] = 0
 
 
 def _pxl_filler(r_queue, param, signal):
@@ -310,6 +310,14 @@ def analyse(cube, client, param, out):
 
             pxl_lst = np.argwhere(isfinite.values)
 
+            cache, shared = _cache_def(param.indices, param.dim_sz, param.col_sz)
+            stop_event = Event()
+            r_queue = JoinableQueue()
+
+            processes = [Process(name=str(n), target=_pxl_filler, args=(r_queue, param, stop_event)) for n in range(2)]
+            for worker in processes:
+                worker.start()
+
             for rowi in range(0, chunked.sizes[param.row_nm]):
 
                 y_lst = pxl_lst[pxl_lst[:, 0] == rowi, :][:, 1]
@@ -319,24 +327,10 @@ def analyse(cube, client, param, out):
                     logger.debug(f'Row {rowi} processed')
                     continue
 
-                cache, shared = _cache_def(param.indices, param.dim_sz, param.col_sz)
-                stop_event = Event()
-                r_queue = JoinableQueue()
-
-                processes = [Process(name=str(n), target=_pxl_filler, args=(r_queue, param, stop_event)) for n in range(5)]
-                for worker in processes:
-                    worker.start()
-
                 futures = client.map(process, y_lst, **{'data': chnk_scat, 'row': rowi, 'param': s_param})
 
                 for future, pxldrl in as_completed(futures, with_results=True):
                     r_queue.put(pxldrl)
-
-                r_queue.join()
-                stop_event.set()
-
-                for worker in processes:
-                    worker.join()
 
                 abs_row = chunk[rowi]
                 out.stb[:, abs_row, :] = cache['stb']
@@ -355,16 +349,21 @@ def analyse(cube, client, param, out):
                 out.n_seasons[abs_row] = cache['season']
                 out.err[abs_row] = cache['err']
 
-                _cache_shared_close(shared)
-                _cache_shared_unlink(shared)
-
-                # client.cancel(s_row)
-                # client.cancel(futures)
-
                 prg_bar += 1
                 print_progress_bar(prg_bar, len(param.row_val))
 
+                _cache_cleaner(cache, param.indices)
+
                 logger.debug(f'Row {abs_row} has been processed')
+
+            r_queue.join()
+            stop_event.set()
+
+            for worker in processes:
+                worker.join()
+
+            _cache_shared_close(shared)
+            _cache_shared_unlink(shared)
 
         return out
 
