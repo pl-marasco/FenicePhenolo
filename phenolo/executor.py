@@ -9,8 +9,10 @@ from dask.distributed import as_completed
 
 from phenolo import atoms, analysis
 
-logger = logging.getLogger(__name__)
+from multiprocessing import Process, shared_memory, JoinableQueue, Event
+import queue
 
+logger = logging.getLogger(__name__)
 import copy
 import gc
 
@@ -93,28 +95,87 @@ def _cache_def(indices, dim_sz, col_sz):
     :return: cache {pd.dataframe}
     """
     cache = {}
+    shared = []
+
+    mock = np.empty((dim_sz, col_sz), dtype=np.float64)
+    mock_int = np.empty((dim_sz, col_sz), dtype=np.int64)
 
     for name in indices:
-        d = {name: np.ndarray((dim_sz, col_sz), dtype=np.float64, buffer=None)}
+        shm = shared_memory.SharedMemory(create=True, size=mock.nbytes, name=name)
+        shared.append(shm)
+        d = {name: np.ndarray((dim_sz, col_sz), dtype=np.float64, buffer=shm.buf)}
         d[name][:] = np.NaN
         cache.update(d)
 
     # season length
-    sl = np.ndarray((dim_sz, col_sz), dtype=np.float64, buffer=None)  # non mi torna il formato
+    shm_sl = shared_memory.SharedMemory(create=True, size=mock.nbytes, name='sl')
+    shared.append(shm_sl)
+    sl = np.ndarray((dim_sz, col_sz), dtype=np.float64, buffer=shm_sl.buf)  # non mi torna il formato
     sl[:] = np.NaN
     cache.update({'sl': sl})
 
     # season
-    season = np.ndarray(col_sz, dtype=np.int64, buffer=None)
+    shm_season = shared_memory.SharedMemory(create=True, size=mock_int.nbytes, name='season')
+    shared.append(shm_season)
+    season = np.ndarray(col_sz, dtype=np.int64, buffer=shm_season.buf)
     season[:] = 0
     cache.update({'season': season})
 
     # update
-    update = np.ndarray(col_sz, dtype=np.int64, buffer=None)
+    shm_err = shared_memory.SharedMemory(create=True, size=mock_int.nbytes, name='err')
+    shared.append(shm_err)
+    update = np.ndarray(col_sz, dtype=np.int64, buffer=shm_err.buf)
     update[:] = 0
     cache.update({'err': update})
 
-    return cache
+    return cache, shared
+
+
+def _cache_shared(indices, dim_sz, col_sz):
+    """
+    :param indices: indices that needed to be in cache {list}
+    :param dim_sz: list of years {pd.series}
+    :param col_sz: list of couliumns {int}
+    :return: cache {pd.dataframe}
+    """
+    cache = {}
+    shared = []
+
+    for name in indices:
+        shm = shared_memory.SharedMemory(name=name)
+        shared.append(shm)
+        d = {name: np.ndarray((dim_sz, col_sz), dtype=np.float64, buffer=shm.buf)}
+        cache.update(d)
+
+    # season length
+    shm_sl = shared_memory.SharedMemory(name='sl')
+    shared.append(shm_sl)
+    sl = np.ndarray((dim_sz, col_sz), dtype=np.float64, buffer=shm_sl.buf)  # non mi torna il formato
+    cache.update({'sl': sl})
+
+    # season
+    shm_season = shared_memory.SharedMemory(name='season')
+    shared.append(shm_season)
+    season = np.ndarray(col_sz, dtype=np.int64, buffer=shm_season.buf)
+    cache.update({'season': season})
+
+    # update
+    shm_err = shared_memory.SharedMemory(name='err')
+    shared.append(shm_err)
+    update = np.ndarray(col_sz, dtype=np.int64, buffer=shm_err.buf)
+    cache.update({'err': update})
+
+    return cache, shared
+
+
+def _cache_shared_unlink(shared):
+    for shm in shared:
+        shm.unlink()
+
+
+def _cache_shared_close(shared):
+    for shm in shared:
+        shm.close()
 
 
 def _cache_cleaner(cache, indices, dim_val, col_val):
@@ -127,41 +188,57 @@ def _cache_cleaner(cache, indices, dim_val, col_val):
     return cache
 
 
-def _pxl_filler(pxldrl, param, cache):
+def _pxl_filler(r_queue, param, signal):
 
-    # for pxldrl in pxls_rs:
+    cache, shared = _cache_shared(param.indices, param.dim_sz, param.col_sz)
 
-    col = pxldrl.position[1]
-
-    if param.ovr_scratch:
+    while True:
         try:
-            import phenolo.output as output
-            output.scratch_dump(pxldrl, param)
-        except Exception as e:
-            raise Exception
+            pxldrl = r_queue.get(False)
+            try:
+                col = pxldrl.position[1]
 
-    if pxldrl.error:
-        cache['err'][col] = 1
-        cache['season'][col] = -1
-        logger.debug(f'Error: {_error_decoder(pxldrl.errtyp)} in position:{pxldrl.position}')
-    else:
-        try:
-            for key in cache:
-                if key is not 'season' and key is not 'err':
-                    _filler(cache[key], pxldrl, key, col)
+                if param.ovr_scratch:
+                    try:
+                        import phenolo.output as output
+                        output.scratch_dump(pxldrl, param)
+                    except Exception as e:
+                        raise Exception
 
-            if pxldrl.season_lng:
-                if pxldrl.season_lng <= 365.0:
-                    cache['season'][col] = int(365 / pxldrl.season_lng)
+                if pxldrl.error:
+                    cache['err'][col] = 1
+                    cache['season'][col] = -1
+                    logger.debug(f'Error: {_error_decoder(pxldrl.errtyp)} in position:{pxldrl.position}')
                 else:
-                    cache['season'][col] = int(pxldrl.season_lng)
-                    # TODO add more seasons sub division
+                    try:
+                        for key in cache:
+                            if key is not 'season' and key is not 'err':
+                                _filler(cache[key], pxldrl, key, col)
 
-        except Exception as e:
-            pass
-            # continue
+                        if pxldrl.season_lng:
+                            if pxldrl.season_lng <= 365.0:
+                                cache['season'][col] = int(365 / pxldrl.season_lng)
+                            else:
+                                cache['season'][col] = int(pxldrl.season_lng)
+                                # TODO add more seasons sub division
 
-    return cache
+                    except Exception as e:
+                        logger.error('Error in a worker during the filling')
+                        pass
+            except Exception as e:
+                print(e)
+            finally:
+                r_queue.task_done()
+        except queue.Empty:
+            if signal.is_set():
+                try:
+                    _cache_shared_close(shared)
+                except Exception as e:
+                    logger.error('Error during shared memory closure')
+                finally:
+                    break
+            else:
+                continue
 
 
 def _filler(key, pxldrl, att, col):
@@ -174,7 +251,7 @@ def _filler(key, pxldrl, att, col):
     :return:
     """
     try:
-        key[:, col] = getattr(pxldrl, att).values #to_numpy(copy=False)
+        key[:, col] = getattr(pxldrl, att) #to_numpy(copy=False)
     except Exception as e:
         pass
         # TO DO proper manage the exception
@@ -205,9 +282,11 @@ def analyse(cube, client, param, out):
 
     try:
         param.dim_unq_val = pd.to_datetime(param.dim_val).year.unique()
-        col_val = range(0, len(param.col_val))
+        param.col_sz = len(param.col_val)
+        rl_col_val = range(0, param.col_sz)
+        param.dim_sz = len(param.dim_unq_val)
 
-        indices = ['stb', 'mpi', 'sbd', 'sed', 'spi', 'si', 'cf', 'afi', 'warn']
+        param.indices = ['stb', 'mpi', 'sbd', 'sed', 'spi', 'si', 'cf', 'afi', 'warn']
 
         # cache = _cache_def(indices, len(param.dim_unq_val), len(col_val))
         prg_bar = 0
@@ -235,25 +314,29 @@ def analyse(cube, client, param, out):
 
                 y_lst = pxl_lst[pxl_lst[:, 0] == rowi, :][:, 1]
 
-                cache = _cache_def(indices, len(param.dim_unq_val), len(col_val))
-
                 if not y_lst.any():
                     print_progress_bar(rowi, len(param.row_val))
                     logger.debug(f'Row {rowi} processed')
                     continue
 
+                cache, shared = _cache_def(param.indices, param.dim_sz, param.col_sz)
+                stop_event = Event()
+                r_queue = JoinableQueue()
+
+                processes = [Process(name=str(n), target=_pxl_filler, args=(r_queue, param, stop_event)) for n in range(5)]
+                for worker in processes:
+                    worker.start()
+
                 futures = client.map(process, y_lst, **{'data': chnk_scat, 'row': rowi, 'param': s_param})
 
-                pxls_rs = []
-
                 for future, pxldrl in as_completed(futures, with_results=True):
-                    cache = _pxl_filler(pxldrl, param, cache)
+                    r_queue.put(pxldrl)
 
-                    # pxls_rs.append(pxldrl)
+                r_queue.join()
+                stop_event.set()
 
-                # metodo a doppia mano
-
-                # cache_c = _pxl_filler(pxls_rs, param, cache)
+                for worker in processes:
+                    worker.join()
 
                 abs_row = chunk[rowi]
                 out.stb[:, abs_row, :] = cache['stb']
@@ -271,6 +354,9 @@ def analyse(cube, client, param, out):
 
                 out.n_seasons[abs_row] = cache['season']
                 out.err[abs_row] = cache['err']
+
+                _cache_shared_close(shared)
+                _cache_shared_unlink(shared)
 
                 # client.cancel(s_row)
                 # client.cancel(futures)
