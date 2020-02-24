@@ -350,14 +350,23 @@ def __mas(tsl,  mavmet,  sdd):
 
 def attribute_extractor(pxldrl, attribute, param):
     try:
-        values = list(
-            map(lambda phency:
-                {'index': phency.ref_yr.values[0], 
-                 'value': getattr(phency,  attribute)},  pxldrl.phen))
+        # values = list(
+        #     map(lambda phency:
+        #         {'index': phency.ref_yr.values[0],
+        #          'value': getattr(phency,  attribute)},  pxldrl.phen))
+        # if len(values) == 0:
+        #     raise Exception
+        #
+        # return pd.DataFrame(values).groupby('index').sum(numeric_only=True).reindex(param.dim_unq_val).squeeze()
+
+        values = {}
+        for phency in pxldrl.phen:
+            values[phency.ref_yr.values[0]] = getattr(phency,  attribute)
+
         if len(values) == 0:
             raise Exception
 
-        return pd.DataFrame(values).groupby('index').sum(numeric_only=True).reindex(param.dim_unq_val).squeeze()
+        return pd.Series(values).groupby(level=0).sum(numeric_only=True).reindex(index=param.dim_unq_val, copy=False).values
 
     except (RuntimeError,  Exception):
         raise RuntimeError('Impossible to extract the attribute requested')
@@ -365,13 +374,22 @@ def attribute_extractor(pxldrl, attribute, param):
 
 def attribute_extractor_se(pxldrl, attribute, param):
     try:
-        values = list(
-            map(lambda phency:
-                {'index': phency.ref_yr.values[0], 
-                 'value': getattr(phency,  attribute)},  pxldrl.phen))
-        if not values:
+        # values = list(
+        #     map(lambda phency:
+        #         {'index': phency.ref_yr.values[0],
+        #          'value': getattr(phency,  attribute)},  pxldrl.phen))
+        # if not values:
+        #     raise Exception
+        # return pd.DataFrame(values).groupby('index').min(numeric_only=True).reindex(param.dim_unq_val).squeeze()
+
+        values = {}
+        for phency in pxldrl.phen:
+            values[phency.ref_yr.values[0]] = getattr(phency,  attribute)
+
+        if len(values) == 0:
             raise Exception
-        return pd.DataFrame(values).groupby('index').min(numeric_only=True).reindex(param.dim_unq_val).squeeze()
+
+        return pd.Series(values).groupby(level=0).min(numeric_only=True).reindex(index=param.dim_unq_val, copy=False).values
 
     except (RuntimeError,  Exception):
         raise RuntimeError('Impossible to extract the attribute requested')
