@@ -48,7 +48,7 @@ def main(param):
 
         viz.plot(sng_pnt)
 
-    elif len(cube.coords.get(param.col_nm)) is not 1 and len(cube.coords.get(param.row_nm)) is not 1:
+    elif len(cube.coords.get(param.col_nm)) != 1 and len(cube.coords.get(param.row_nm)) != 1:
 
         cluster = param.cluster
         localproc = param.processes

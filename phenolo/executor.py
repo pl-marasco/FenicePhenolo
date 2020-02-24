@@ -278,8 +278,6 @@ def analyse(cube, client, param, out):
     :param out:
     :return:
     """
-    s_param = client.scatter(param, broadcast=True)
-
     try:
         param.dim_unq_val = pd.to_datetime(param.dim_val).year.unique()
         param.col_sz = len(param.col_val)
@@ -287,6 +285,8 @@ def analyse(cube, client, param, out):
         param.dim_sz = len(param.dim_unq_val)
 
         param.indices = ['stb', 'mpi', 'sbd', 'sed', 'spi', 'si', 'cf', 'afi', 'warn']
+
+        s_param = client.scatter(param, broadcast=True)
 
         # cache = _cache_def(indices, len(param.dim_unq_val), len(col_val))
         prg_bar = 0
