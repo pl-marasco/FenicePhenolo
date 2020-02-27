@@ -296,17 +296,11 @@ def analyse(cube, client, param, out):
 
             chunked = cube.isel(dict([(param.row_nm, slice(chunk[0], chunk[-1]+1))])).compute()
 
-            # # -->
-            # chunked.chunk({param.row_nm: 100, param.col_nm: 100, param.dim_nm: -1})
-            # # <--
-
             chnk_scat = client.scatter(chunked, broadcast=True)
 
-            # -->
             quantile = chunked.quantile(0.2, param.dim_nm)
             where = quantile.where(((quantile > param.min_th) & (quantile < param.max_th)))
             isfinite = where.reduce(np.isfinite)
-            # <--
 
             pxl_lst = np.argwhere(isfinite.values)
 
