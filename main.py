@@ -58,43 +58,7 @@ def main(param):
         out = output.OutputCointainer(cube, param, name=param.outName)
         print('\rInfo -- Output ready', end='')
 
-        if not cluster and localproc and n_workers and threads_per_worker:
-            cluster = LocalCluster(processes=localproc,
-                                   n_workers=n_workers,
-                                   threads_per_worker=threads_per_worker,
-                                   host='localhost')
-        elif not localproc:
-            cluster = LocalCluster(processes=localproc,
-                                   n_workers=n_workers,
-                                   threads_per_worker=threads_per_worker)
-        elif cluster:
-            from dask_jobqueue import PBSCluster
-
-            cluster = PBSCluster(cores=threads_per_worker,
-                                 memory="4GB",
-                                 project='DASK_Parabellum',
-                                 queue='long_fast',
-                                 local_directory='/local0/maraspi/',
-                                 walltime='120:00:00',
-                                 death_timeout=240,
-                                 log_directory='/tmp/marapi/workers/')
-            cluster.scale(n_workers)
-
-        client = Client(cluster)
-
-        x = 0
-        while len(client.nthreads()) < 1 or x == 1000:
-            time.sleep(0.25)
-            x += 1
-            print(f'\rStill waiting the for the cluster boot... up to now {len(client.nthreads())} are up', end='')
-
-        if client:
-            print('\rInfo -- Client up and running', end='')
-            http = 'http://localhost:8787/status'
-            print('\rInfo -- Analysis is up and running')
-            webbrowser.open(http, new=2, autoraise=True)
-
-        result_cube = executor.analyse(cube, client, param, out)
+        result_cube = executor.analyse(cube, param, out)
 
         result_cube.close()
 

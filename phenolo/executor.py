@@ -5,11 +5,10 @@ import time
 
 import numpy as np
 import pandas as pd
-from dask.distributed import as_completed
-
 from phenolo import atoms, analysis
-
 from multiprocessing import Process, shared_memory, JoinableQueue, Event
+from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import as_completed
 import queue
 
 logger = logging.getLogger(__name__)
@@ -48,7 +47,7 @@ def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, lengt
         print()
 
 
-def process(px, **kwargs):
+def process(px, cube, row, param):
     """
     Wrapper for a function pass as "action" over a Pandas time series.
 
@@ -59,9 +58,9 @@ def process(px, **kwargs):
                       'row': row position in the cube as {int}
     :return: Obj{pxdrl}
     """
-    cube = kwargs.pop('data', '')
-    param = kwargs.pop('param', '')
-    row = kwargs.pop('row', '')
+    # cube = kwargs.pop('data', '')
+    # param = kwargs.pop('param', '')
+    # row = kwargs.pop('row', '')
 
     pxldrl = atoms.PixelDrill(cube.isel(dict([(param.col_nm, px), (param.row_nm, row)])).to_series().astype(float),
                               [row, px])
@@ -268,7 +267,7 @@ def _error_decoder(err):
     return err_cod[err]
 
 
-def analyse(cube, client, param, out):
+def analyse(cube, param, out):
     """
 
     :param cube:
@@ -286,7 +285,7 @@ def analyse(cube, client, param, out):
 
         param.indices = ['stb', 'mpi', 'sbd', 'sed', 'spi', 'si', 'cf', 'afi', 'warn']
 
-        s_param = client.scatter(param, broadcast=True)
+        executor = ProcessPoolExecutor()
 
         # cache = _cache_def(indices, len(param.dim_unq_val), len(col_val))
         prg_bar = 0
@@ -295,8 +294,6 @@ def analyse(cube, client, param, out):
         for chunk in np.array_split(range(0, len(param.row_val)), n_chunks):
 
             chunked = cube.isel(dict([(param.row_nm, slice(chunk[0], chunk[-1]+1))])).compute()
-
-            chnk_scat = client.scatter(chunked, broadcast=True)
 
             quantile = chunked.quantile(0.2, param.dim_nm)
             where = quantile.where(((quantile > param.min_th) & (quantile < param.max_th)))
@@ -321,9 +318,10 @@ def analyse(cube, client, param, out):
                     logger.debug(f'Row {rowi} processed')
                     continue
 
-                futures = client.map(process, y_lst, **{'data': chnk_scat, 'row': rowi, 'param': s_param})
+                futures = {executor.submit(process, y, **{'cube': chunked, 'row': rowi, 'param': param}) for y in y_lst}
 
-                for future, pxldrl in as_completed(futures, with_results=True):
+                for future in as_completed(futures):
+                    pxldrl = future.result()
                     r_queue.put(pxldrl)
 
                 abs_row = chunk[rowi]
