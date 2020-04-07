@@ -61,6 +61,17 @@ def _get_rasterio(prmts):
         return dataset
 
 
+def _get_gs_zarr(prmts, dim):
+    import gcsfs
+
+    fs = gcsfs.GCSFileSystem(project='pheno', token='cloud')
+    bucket = prmts.inFilePth.replace('gs://','')
+    gcsmap = gcsfs.mapping.GCSMap(bucket, gcs=fs, check=True, create=False)
+    dataset = xr.open_zarr(gcsmap, mask_and_scale=False)
+
+    return _slice_cube(dataset, dim)
+
+
 def _get_netcdf(prmts, dim):
     dataset = xr.open_dataset(prmts.inFilePth,
                               chunks={'lat': 250, 'lon': 250},
@@ -520,6 +531,8 @@ def ingest(prmts):
                 cube = _get_rasterio(prmts, dim)
             elif fnmatch.fnmatch(prmts.inFilePth, '*.img'):
                 cube = _get_img(prmts, dim)
+            elif fnmatch.fnmatch(prmts.inFilePth, '*.zarr'):
+                cube = _get_gs_zarr(prmts, dim)
             else:
                 cube = _get_rasterio(prmts.inFilePth, dim)
         elif os.path.isdir(os.path.dirname(prmts.inFilePth)):

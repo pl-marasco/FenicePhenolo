@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def main(param):
-    start_time = time.process_time()
+    start_time = time.time()
 
     print('\rReading Cube', end='')
     cube = reader.ingest(param)
@@ -54,6 +54,7 @@ def main(param):
         localproc = param.processes
         n_workers = param.n_workers
         threads_per_worker = param.threads_per_worker
+        scheduler = param.scheduler
 
         out = output.OutputCointainer(cube, param, name=param.outName)
         print('\rInfo -- Output ready', end='')
@@ -68,25 +69,29 @@ def main(param):
                                    n_workers=n_workers,
                                    threads_per_worker=threads_per_worker)
         elif cluster:
-            from dask_jobqueue import PBSCluster
+            if scheduler:
+                cluster = scheduler
+            else:
+                from dask_jobqueue import PBSCluster
 
-            cluster = PBSCluster(cores=threads_per_worker,
-                                 memory="4GB",
-                                 project='DASK_Parabellum',
-                                 queue='long_fast',
-                                 local_directory='/local0/maraspi/',
-                                 walltime='120:00:00',
-                                 death_timeout=240,
-                                 log_directory='/tmp/marapi/workers/')
-            cluster.scale(n_workers)
+                cluster = PBSCluster(cores=threads_per_worker,
+                                     memory="4GB",
+                                     project='DASK_Parabellum',
+                                     queue='long_fast',
+                                     local_directory='/local0/maraspi/',
+                                     walltime='120:00:00',
+                                     death_timeout=240,
+                                     log_directory='/tmp/marapi/workers/')
+                cluster.scale(n_workers)
 
         client = Client(cluster)
+        client.wait_for_workers(2)
 
-        x = 0
-        while len(client.nthreads()) < 1 or x == 1000:
-            time.sleep(0.25)
-            x += 1
-            print(f'\rStill waiting the for the cluster boot... up to now {len(client.nthreads())} are up', end='')
+        # x = 0
+        # while len(client.nthreads()) < 1 or x == 1000:
+        #     time.sleep(0.25)
+        #     x += 1
+        #     print(f'\rStill waiting the for the cluster boot... up to now {len(client.nthreads())} are up', end='')
 
         if client:
             print('\rInfo -- Client up and running', end='')
@@ -101,7 +106,7 @@ def main(param):
     else:
         raise ValueError
 
-    end = time.process_time() - start_time
+    end = time.time() - start_time
 
     print(f'\rProcess ended @{datetime.now()} after a total time of '
           f'{end} processing {len(param.col_val)*len(param.row_val)}')

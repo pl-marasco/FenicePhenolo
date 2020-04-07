@@ -296,10 +296,6 @@ def analyse(cube, client, param, out):
 
             chunked = cube.isel(dict([(param.row_nm, slice(chunk[0], chunk[-1]+1))])).compute()
 
-            # # -->
-            # chunked.chunk({param.row_nm: 100, param.col_nm: 100, param.dim_nm: -1})
-            # # <--
-
             chnk_scat = client.scatter(chunked, broadcast=True)
 
             # -->
@@ -314,7 +310,7 @@ def analyse(cube, client, param, out):
             stop_event = Event()
             r_queue = JoinableQueue()
 
-            processes = [Process(name=str(n), target=_pxl_filler, args=(r_queue, param, stop_event)) for n in range(2)]
+            processes = [Process(name=str(n), target=_pxl_filler, args=(r_queue, param, stop_event)) for n in range(4)]
             for worker in processes:
                 worker.start()
 

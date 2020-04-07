@@ -131,6 +131,11 @@ class ProjectParameters(object):
                 else:
                     self.cluster = False
 
+                if self.__read(config, section, 'scheduler') is not '':
+                    self.scheduler = self.__read(config, section, 'scheduler')
+                else:
+                    self.scheduler = None
+
                 if self.__read(config, section, 'processes').lower() == 'true':
                     self.processes = True
                 else:
