@@ -42,7 +42,7 @@ def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, lengt
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
     filled_length = int(length * iteration // total)
     bar = fill * filled_length + '-' * (length - filled_length)
-    print(f'\r{prefix} |{bar}| {percent}{suffix}', end='')
+    print(f'\r{prefix} |{bar}| {percent}{suffix}', end='\n')
     # Print New Line on Complete
     if iteration == total:
         print()
@@ -315,19 +315,28 @@ def analyse(cube, client, param, out):
                 worker.start()
 
             for rowi in range(0, chunked.sizes[param.row_nm]):
-
+                start_t = time.time()
+                pxl_t = time.time()
                 y_lst = pxl_lst[pxl_lst[:, 0] == rowi, :][:, 1]
+
+                print(f'\n------\n\rpxl list:{round(time.time() - pxl_t, 3)}', end='')
 
                 if not y_lst.any():
                     print_progress_bar(rowi, len(param.row_val))
-                    logger.debug(f'Row {rowi} processed')
+                    print('\rrow skipped', end='\n')
+                    logger.debug(f'\rRow {rowi} processed')
                     continue
 
+                f_t = time.time()
                 futures = client.map(process, y_lst, **{'data': chnk_scat, 'row': rowi, 'param': s_param})
+                print(f'\rmapping  :{round(time.time() - f_t, 3)}', end='\n')
 
+                proc_t = time.time()
                 for future, pxldrl in as_completed(futures, with_results=True):
                     r_queue.put(pxldrl)
+                print(f'\rexecuted :{round(time.time() - proc_t, 3)}', end='\n')
 
+                filling_t = time.time()
                 abs_row = chunk[rowi]
                 out.stb[:, abs_row, :] = cache['stb']
                 out.mpi[:, abs_row, :] = cache['mpi']
@@ -345,13 +354,16 @@ def analyse(cube, client, param, out):
                 out.n_seasons[abs_row] = cache['season']
                 out.err[abs_row] = cache['err']
 
+                print(f'\rfilling  :{round(time.time() - filling_t, 3)}', end='\n')
+                cleaner_t = time.time()
+                _cache_cleaner(cache, param.indices)
+                print(f'\rcleaner  :{round(time.time() - cleaner_t, 3)}', end='\n')
+
+                print(f'\rTotal    :{round(time.time() - start_t, 3)}\n------', end='\n')
                 prg_bar += 1
                 print_progress_bar(prg_bar, len(param.row_val))
 
-                _cache_cleaner(cache, param.indices)
-
                 logger.debug(f'Row {abs_row} has been processed')
-
             r_queue.join()
             stop_event.set()
 
