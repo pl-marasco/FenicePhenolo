@@ -29,6 +29,7 @@ def mad_segments(x):
 
 
 def dblMAD(x, mad_pwr=2.575):
+
     median = np.median(x)
 
     lower, higher = mad_segments(x)
@@ -44,9 +45,23 @@ def dblMAD(x, mad_pwr=2.575):
     return fx
 
 
+def npMAD(x, mad_pwr=2.575):
+    from scipy.stats import median_absolute_deviation as MAD
+    median = np.nanmedian(x)
+    x_left = np.where(x <= median, x, np.NaN)
+    x_right = np.where(x >= median, x, np.NaN)
+    left_MAD = MAD(x_left, scale=1, nan_policy='omit')
+    right_MAD = MAD(x_right, scale=1, nan_policy='omit')
+    MAD_val = np.where(x<=median, left_MAD, right_MAD)
+    MAD_dst = np.abs(x-median)/MAD_val
+    MAD_dst = np.where(x == median, 0, MAD_dst)
+    fx = np.where(MAD_dst >= mad_pwr, np.NaN, x)
+    return fx
+
+
 def doubleMAD(ts, mad_pwr=2.575):
     if ts.median() == 0:
         return ts
     else:
-        r = dblMAD(ts.values, mad_pwr)
+        r = npMAD(ts.values, mad_pwr)
         return pd.Series(r, ts.index)
