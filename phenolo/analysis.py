@@ -3,7 +3,7 @@
 import logging
 
 from phenolo import chronos, filters, metrics, nodata, outlier
-from seasonal import fit_seasons
+from seasonal import fit_seasons, periodogram_peaks
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ def phenolo(pxldrl, **kwargs):
 
     try:
         if pxldrl.ts_filtered is not None:
-            pxldrl.ts_cleaned = pxldrl.ts_filtered.interpolate()
+            pxldrl.ts_cleaned = pxldrl.ts_filtered.interpolate(method='linear')
             # TODO make possible to use onother type of interpol
             if len(pxldrl.ts_cleaned[pxldrl.ts_cleaned.isna()]) > 0:
                 pxldrl.ts_cleaned = pxldrl.ts_cleaned.fillna(method='bfill')
@@ -79,7 +79,8 @@ def phenolo(pxldrl, **kwargs):
 
     # Estimate Season length
     try:
-        pxldrl.seasons, pxldrl.trend = fit_seasons(pxldrl.ts_cleaned)
+        periods = periodogram_peaks(pxldrl.ts_cleaned, min_period=9, max_period=36)
+        pxldrl.seasons, pxldrl.trend = fit_seasons(pxldrl.ts_cleaned, period=periods[0][0], periodogram_thresh=0.9)
         if pxldrl.seasons is not None and pxldrl.trend is not None:
             pxldrl.trend_ts = metrics.to_timeseries(pxldrl.trend, pxldrl.ts_cleaned.index)
         else:
