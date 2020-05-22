@@ -46,7 +46,7 @@ def plot(pxldrl):
         if phency.forward is not None:
             phency.forward.plot(style='-', color='olive')
         if phency.sbd is not None:
-            sb = phency.mms.loc[phency.sbd]
+            sb = phency.mms.loc[phency.sbd] #todo not working with latest modification regarding the aggregation of data
             sb.plot(style='r>', )
             sb_list = sb_list.append(sb)
         if phency.sed is not None:
