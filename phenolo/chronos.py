@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import pandas as pd
+import numpy as np
 
 
 def create(dts, dte, dektyp):
@@ -54,4 +55,5 @@ def medspan(season_lng, param):
 
 
 def time_resample(ts):
+    ts = ts.astype(np.float64)
     return ts.asfreq('D').interpolate(method='linear').fillna(0)
