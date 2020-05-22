@@ -27,6 +27,7 @@ def main(param):
 
     if param.col_nm is None and param.row_nm is None and param.dim_nm is not None:
         # single pixel analysis
+        import pandas as pd
 
         param.add_px_list(cube.compute())
 
@@ -35,6 +36,7 @@ def main(param):
         else:
             ts = cube.to_series()
 
+        param.dim_unq_val = pd.to_datetime(param.dim_val).year.unique()
         pxldrl = atoms.PixelDrill(ts, (0, 0))
 
         if len(param.pixel_list) == 0:
