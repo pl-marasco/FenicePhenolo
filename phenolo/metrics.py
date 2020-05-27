@@ -401,4 +401,5 @@ def __intercept(s):
     :param s: Pandas TS
     :return:
     """
-    return np.argwhere((np.diff(np.sign(s)) != 0) & np.isfinite(np.diff(np.sign(s))))
+    diff = np.diff(np.sign(s))
+    return np.argwhere((diff != 0) & np.isfinite(diff))
