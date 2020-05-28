@@ -4,6 +4,7 @@ import logging
 
 from phenolo import chronos, filters, metrics, nodata, outlier
 from seasonal import fit_seasons, periodogram_peaks
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +67,7 @@ def phenolo(pxldrl, **kwargs):
 
     try:
         if pxldrl.ts_filtered is not None:
+            pxldrl.ts_filtered.astype('float64', copy=False)
             pxldrl.ts_cleaned = pxldrl.ts_filtered.interpolate(method='linear')
             # TODO make possible to use onother type of interpol
             if len(pxldrl.ts_cleaned[pxldrl.ts_cleaned.isna()]) > 0:
