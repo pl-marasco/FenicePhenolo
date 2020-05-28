@@ -189,9 +189,8 @@ def __back(sincy,  delta_shift):
     :param delta_shift: pandas timedelta
     :return: pandas ts
     """
-    shifted = sincy.smoothed.loc[:sincy.cbcd].shift(1,  freq=delta_shift)
-    truncated = shifted.loc[sincy.sd:].dropna()
-    return truncated
+    shifted = sincy.smoothed.loc[:sincy.cbcd].shift(delta_shift.days, freq='d')
+    return shifted.loc[sincy.sd:].dropna()
 
 
 def __forward(sincy,  delta_shift):
@@ -202,9 +201,8 @@ def __forward(sincy,  delta_shift):
     :param delta_shift: pandas timedelta
     :return: pandas ts
     """
-    shifted = sincy.smoothed.loc[sincy.cbcd:].shift(1,  freq=-delta_shift)
-    truncated = shifted.loc[:sincy.ed].dropna()
-    return truncated
+    shifted = sincy.smoothed.loc[sincy.cbcd:].shift(-delta_shift.days,  freq='d')
+    return shifted.loc[:sincy.ed].dropna()
 
 
 # @profile
@@ -248,7 +246,7 @@ def phen_metrics(pxldrl,  param):
         sincy.smoothed = sincy.smth_crv.loc[sincy.sd - sincy.td:sincy.ed + sincy.td]
 
         # shift of the smoothed curve
-        delta_shift = pd.Timedelta(days=int(sincy.mas.days / 2))
+        delta_shift = (sincy.mas / 2).round('d')
 
         # calculate the back curve
         sincy.back = __back(sincy,  delta_shift)
@@ -306,7 +304,8 @@ def phen_metrics(pxldrl,  param):
             # Season permanent
             sincy.sp = sincy.season.copy()
             sincy.sp[1:-1] = np.NaN
-            sincy.sp.interpolate()
+            sincy.sp.astype('float64', copy=False)
+            sincy.sp.interpolate(method='linear')
 
             # Season permanent Integral [OX]
             sincy.spi = sincy.sp.sum()
@@ -322,7 +321,7 @@ def phen_metrics(pxldrl,  param):
             sincy.afi = sincy.af.sum()
 
             # Reference yr
-            sincy.ref_yr = (sincy.sb.index + pd.Timedelta(days= sincy.sl[0] * 0.66)).year
+            sincy.ref_yr = (sincy.sb.index + pd.Timedelta(days=sincy.sl[0] * 0.66)).year
 
         except ValueError:
             sincy.sbd, sincy.sed, sincy.sl, sincy.sp, sincy.spi, \
