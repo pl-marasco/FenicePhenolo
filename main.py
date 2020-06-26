@@ -48,7 +48,7 @@ def main(param):
 
         sng_pnt = aa.phenolo(pxldrl, settings=param)
 
-        viz.plot(sng_pnt)
+        viz.plot(sng_pnt, param)
 
     elif len(cube.coords.get(param.col_nm)) != 1 and len(cube.coords.get(param.row_nm)) != 1:
 
