@@ -229,7 +229,7 @@ class SingularCycle(object):
         """Barycenter"""
         cbc = 0
         try:
-            self.posix_time = self.vox.index.astype(np.int64) / 10 ** 9
+            self.posix_time = self.vox.index.astype(np.int64) // 10 ** 9
             cbc = (self.posix_time * self.vox).sum() / self.vox_i
         except(RuntimeError, Exception, ValueError):
             self.err = True
