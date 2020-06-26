@@ -17,6 +17,9 @@ def create(dts, dte, dektyp):
     # Gimm model
     elif dektyp.lower() == 's15':
         dd = pd.date_range(dts, dte, freq='SMS')
+    # ProbaV
+    elif dektyp.lower() == 'p5':
+        dd = ms[ms.day.isin([1, 6, 11, 21, 26])]
     else:
         dd = ms
     return dd
@@ -38,6 +41,10 @@ def day_calc(dekstr):
     elif dekstr == 's15':  # TODO to be tested
         dys_mlt = 24.33333333333333
         dek_xyr = 24
+    elif dekstr == 'p5':  # TODO to be tested
+        dys_mlt = 5.069444444444444
+        dek_xyr = 72
+
     return dys_mlt, dek_xyr
 
 
