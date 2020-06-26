@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-def plot(pxldrl):
+def plot(pxldrl, param):
     fig, axes = plt.subplots(3, 1, figsize=(20, 10))
 
     pxldrl.ts_raw.plot(ax=axes[0], style='k', title='Original Time Series for pixel in {0}'.format(pxldrl.position))
@@ -46,51 +46,58 @@ def plot(pxldrl):
         if phency.forward is not None:
             phency.forward.plot(style='-', color='olive')
         if phency.sbd is not None:
-            sb = phency.mms.loc[phency.sbd] #todo not working with latest modification regarding the aggregation of data
+            sbd = pd.to_datetime(phency.sbd)
+            sb = phency.mms.loc[sbd]
             sb.plot(style='r>', )
             sb_list = sb_list.append(sb)
         if phency.sed is not None:
-            se = phency.mms.loc[phency.sed]
+            sed = pd.to_datetime(phency.sed)
+            se = phency.mms.loc[sed]
             se.plot(style='r<', )
             se_list = se_list.append(se)
         if phency.max_idx is not None:
             phency.mms.loc[[phency.max_idx]].plot(style='rD')
 
-    fig, axes = plt.subplots(7, 1, figsize=(22, 10))
+    fig, axes = plt.subplots(6, 1, figsize=(22, 10))
     plt.tight_layout()
 
-    plt.subplot(7, 1, 1)
+    plt.subplot(6, 1, 1)
     plt.tight_layout()
     if len(sb_list) is not None:
-        sb_list.plot(style='r', title='Season beginning')
+        sb_list.plot(style='r>', title='Season beginning')
 
-    plt.subplot(7, 1, 2)
+    plt.subplot(6, 1, 2)
     plt.tight_layout()
     if len(se_list) is not None:
-        se_list.plot(style='r', title='Season end')
+        se_list.plot(style='r<', title='Season end')
 
-    plt.subplot(7, 1, 3)
+    plt.subplot(6, 1, 3)
     plt.tight_layout()
     if pxldrl.sl is not None:
-        pxldrl.sl.plot(style='r', title='Season Lenght')
+        sl = pd.Series(pxldrl.sl, index=param.dim_unq_val)
+        sl.plot.bar(style='r', title='Season Lenght')
 
-    plt.subplot(7, 1, 4)
+    plt.subplot(6, 1, 4)
     plt.tight_layout()
     if pxldrl.spi is not None:
-        pxldrl.spi.plot(style='r', title='Season permanet')
+        spi = pd.Series(pxldrl.spi, index=param.dim_unq_val)
+        spi.plot.bar(style='r', title='Season permanet')
 
-    plt.subplot(7, 1, 5)
+    plt.subplot(6, 1, 5)
     plt.tight_layout()
     if pxldrl.si is not None:
-        pxldrl.si.plot(style='r', title='Season Integral')
+        si = pd.Series(pxldrl.si, index=param.dim_unq_val)
+        si.plot.bar(style='r', title='Season Integral')
 
-    plt.subplot(7, 1, 6)
+    plt.subplot(6, 1, 6)
     plt.tight_layout()
     if pxldrl.cf is not None:
-        pxldrl.cf.plot(style='r', title='Cyclic fraction')
+        cf = pd.Series(pxldrl.cf, index=param.dim_unq_val)
+        cf.plot.bar(style='r', title='Cyclic fraction')
 
-    plt.subplot(7, 1, 7)
-    if pxldrl.afi is not None:
-        pxldrl.afi.plot(style='r', title='Active fraction')
+    # plt.subplot(7, 1, 7)
+    # if pxldrl.afi is not None:
+    #     afi = pd.Series(pxldrl.afi, index=param.dim_unq_val)
+    #     afi.plot.bar(style='r', title='Active fraction')
 
     plt.show(block=True)
