@@ -74,7 +74,6 @@ def _get_gs_zarr(prmts, dim):
 
 def _get_netcdf(prmts, dim):
     dataset = xr.open_dataset(prmts.inFilePth,
-                              chunks={'lat': 250, 'lon': 250},
                               mask_and_scale=False,
                               decode_times=True)
 
