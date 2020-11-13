@@ -16,6 +16,8 @@ def phenolo(pxldrl, **kwargs):
     try:
         if param.sensor_typ == 'spot':
             pxldrl.ts = nodata.climate_fx(pxldrl.ts_raw, settings=param)
+        else:
+            pxldrl.ts = pxldrl.ts_raw
     except(RuntimeError, ValueError, Exception):
         logger.info(f'Nodata removal error in position:{pxldrl.position}')
         pxldrl.error = True
@@ -57,7 +59,7 @@ def phenolo(pxldrl, **kwargs):
         if pxldrl.ts_resc.isnull().sum() > 0:
             pxldrl.ts_resc.fillna(method='bfill', inplace=True)
 
-        pxldrl.ts_filtered = outlier.doubleMAD(pxldrl.ts_resc, param.mad_pwr)
+        pxldrl.ts_filtered = outlier.doubleMAD(pxldrl.ts_resc, mad_pwr=param.mad_pwr)
 
     except (RuntimeError, ValueError, Exception):
         logger.info(f'Error in filtering outlier in position:{pxldrl.position}')
@@ -82,7 +84,8 @@ def phenolo(pxldrl, **kwargs):
     # Estimate Season length
     try:
         periods = periodogram_peaks(pxldrl.ts_cleaned, min_period=9, max_period=36)
-        pxldrl.seasons, pxldrl.trend = fit_seasons(pxldrl.ts_cleaned, period=periods[0][0], periodogram_thresh=0.9)
+        pxldrl.seasons, pxldrl.trend = fit_seasons(pxldrl.ts_cleaned, period=periods[0][0], periodogram_thresh=0.5)
+        # pxldrl.seasons, pxldrl.trend = fit_seasons(pxldrl.ts_cleaned)
         if pxldrl.seasons is not None and pxldrl.trend is not None:
             pxldrl.trend_ts = metrics.to_timeseries(pxldrl.trend, pxldrl.ts_cleaned.index)
         else:
