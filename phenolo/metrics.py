@@ -254,7 +254,7 @@ def phen_metrics(pxldrl,  param):
 
         # research the starting point of the season (SB)
         try:
-            sincy.intcpt_bk = __intercept((sincy.mms - sincy.back).values)
+            sincy.intcpt_bk = __intercept(sincy.mms, sincy.back)
             sincy.sb = sincy.mms.iloc[sincy.intcpt_bk[0]]
             if sincy.sb.index > sincy.max_idx:
                 raise Exception
@@ -266,7 +266,7 @@ def phen_metrics(pxldrl,  param):
 
         # research the end point of the season (SE)
         try:
-            sincy.intcpt_fw = __intercept((sincy.mms - sincy.forward).values)
+            sincy.intcpt_fw = __intercept(sincy.mms, sincy.forward)
             sincy.se = sincy.mms.iloc[sincy.intcpt_fw[-1]]
             if sincy.se.index < sincy.max_idx:
                 raise Exception
@@ -280,7 +280,7 @@ def phen_metrics(pxldrl,  param):
         try:
             sincy.sslp = ((sincy.se.values - sincy.sb.values) / (sincy.se.index - sincy.sb.index).days) * 1e2
         except ValueError:
-            logger.debug(f'Warning! Error in slope calculation in pixel:{pxldrl.position} '
+            logger.debug(f'Warning! Error in slope calculation in pixel:{pxldrl.position}'
                          f'for the cycle starting in {sincy.sd}')
             pxldrl.warn = 6  # 'Slope'
             continue
@@ -392,11 +392,12 @@ def attribute_extractor_se(pxldrl, attribute, param):
         raise RuntimeError('Impossible to extract the attribute requested')
 
 
-def __intercept(s):
+def __intercept(reference_ts, shifted_ts):
     """
     Calculcate the intercept point
     :param s: Pandas TS
     :return:
     """
+    s = (reference_ts - shifted_ts).values
     diff = np.diff(np.sign(s))
     return np.argwhere((diff != 0) & np.isfinite(diff))
