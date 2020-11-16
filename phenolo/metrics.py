@@ -160,7 +160,7 @@ def attr_statistic(objects,  stat_type,  attribute):
     return value_d
 
 
-def __buffer_ext(sincy):
+def __buffer_ext(sd, ed, mas, mms_b):
     """
     Add a buffer before and after the single cycle
 
@@ -168,15 +168,15 @@ def __buffer_ext(sincy):
     :return: buffered sincy
     """
 
-    sd,  ed = None,  None
-    if sincy.sd - sincy.mas >= sincy.mms_b.index[0]:
-        sd = sincy.sd - sincy.mas
-    if sincy.ed + sincy.mas <= sincy.mms_b.index[-1]:
-        ed = sincy.ed + sincy.mas
+    b_sd,  b_ed = None,  None
+    if sd - mas >= mms_b.index[0]:
+        b_sd = sd - mas
+    if ed + mas <= mms_b.index[-1]:
+        b_ed = ed + mas
     if sd or ed:
-        return sincy.mms_b.loc[sd:ed]
+        return mms_b.loc[b_sd:b_ed]
     else:
-        return sincy.mms_b
+        return mms_b
 
 
 def __back(sincy,  delta_shift):
@@ -227,7 +227,7 @@ def phen_metrics(pxldrl,  param):
 
         # buffer extractor
         try:
-            sincy.buffered = __buffer_ext(sincy)
+            sincy.buffered = __buffer_ext(sincy.sd, sincy.ed, sincy.mas, sincy.mms_b )
         except (RuntimeError,  Exception,  ValueError):
             logger.debug(f'Warning! Buffered curve not properly created,  in position:{pxldrl.position}')
             sincy.warn = 2  # 'Buffered curve'
