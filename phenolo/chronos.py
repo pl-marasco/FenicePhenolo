@@ -48,9 +48,9 @@ def day_calc(dekstr):
     return dys_mlt, dek_xyr
 
 
-def season_ext(pxldrl):
+def season_ext(ts, season_lng):
     return int(
-        (pxldrl.ts_cleaned.index.max() - pxldrl.ts_cleaned.index.min()) / pd.Timedelta(pxldrl.season_lng, unit='d'))
+        (ts.index.max() - ts.index.min()) / pd.Timedelta(season_lng, unit='d'))
 
 
 def medspan(season_lng, param):
