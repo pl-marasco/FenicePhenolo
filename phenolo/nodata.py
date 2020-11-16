@@ -3,7 +3,8 @@ import phenolo.chronos as chronos
 import pandas as pd
 
 
-def climate_fx(ts, settings, **kwargs):
+def climate_fx(ts, byr_date, eyr_date, **kwargs):
+
     singleinterp = True
 
     tsm = ts.mask(ts > 250)
@@ -30,8 +31,8 @@ def climate_fx(ts, settings, **kwargs):
                 if clm.isnull().sum():
                     clm = clm.mask(clm.isnull(), tsm.min())
 
-        dataindex = chronos.create(f'1/1/{settings.dim_unq_val[0]}', f'31/12/{settings.dim_unq_val[-1]}', 's10') # TODO make it flexible !!!
-        values = pd.concat([clm] * len(dataindex.year.unique()))
+        dataindex = chronos.create(f'1/1/{byr_date}', f'31/12/{eyr_date}', 's10') # TODO make it flexible !!!
+        values = pd.concat([clm] * dataindex.year.unique().size)
         climate = pd.Series(values.values, index=dataindex)
         tsm.where(tsm.notnull(), climate, inplace=True)
 
