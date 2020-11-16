@@ -13,33 +13,31 @@ logger = logging.getLogger(__name__)
 np.warnings.filterwarnings('ignore')
 
 
-def rescale(ts,  **kwargs):
+def rescale(ts, min, max, **kwargs):
     # Rescale values to  0-100
-    param = kwargs.pop('settings',  '')
+
     try:
-        return ((ts - param.min) / (param.max - param.min)) * 100
+        return ((ts - min) / (max - min)) * 100
     except (RuntimeError,  Exception,  ValueError):
         print('Error in rescaling,  in position')
         logger.debug('Error in rescaling')
         sys.exit()
 
 
-def offset(ts,  **kwargs):
+def offset(ts,  offset, **kwargs):
     # add the offset
-    param = kwargs.pop('param',  '')
     try:
-        return ts - param.offset
+        return ts - offset
     except (RuntimeError,  Exception,  ValueError):
         print('Error in rescaling,  in position')
         logger.debug('Error in rescaling')
         sys.exit()
 
 
-def scale(ts,  **kwargs):
+def scale(ts, scale, **kwargs):
     # scale according to the metadata
-    param = kwargs.pop('param',  '')
     try:
-        return ts * param.scale
+        return ts * scale
     except (RuntimeError,  Exception,  ValueError):
         print('Error in rescaling,  in position')
         logger.debug('Error in rescaling')
