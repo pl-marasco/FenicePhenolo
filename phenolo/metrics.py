@@ -52,7 +52,7 @@ def to_timeseries(values,  index):
     return pd.Series(values,  index=index)
 
 
-def scipy_valley_detection(pxldrl,  param):
+def scipy_valley_detection(pxldrl, tr):
     # Valley detection
     # Detrending to catch better points
 
@@ -64,7 +64,7 @@ def scipy_valley_detection(pxldrl,  param):
     elif pxldrl.season_lng < 200:
         mpd_val = int(pxldrl.season_lng * 1 / 3)
     else:
-        mpd_val = int(pxldrl.season_lng * (param.tr - param.tr * 1 / 3) / 100)
+        mpd_val = int(pxldrl.season_lng * (tr - tr * 1 / 3) / 100)
 
     n_vdetr = np.negative(vdetr)
 
