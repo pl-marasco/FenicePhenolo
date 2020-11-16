@@ -15,7 +15,7 @@ def phenolo(pxldrl, **kwargs):
     # no data removing
     try:
         if param.sensor_typ == 'spot':
-            pxldrl.ts = nodata.climate_fx(pxldrl.ts_raw, settings=param)
+            pxldrl.ts = nodata.climate_fx(pxldrl.ts_raw, param.dim_unq_val[0], param.dim_unq_val[-1])
         else:
             pxldrl.ts = pxldrl.ts_raw
     except(RuntimeError, ValueError, Exception):
@@ -27,7 +27,7 @@ def phenolo(pxldrl, **kwargs):
     # scaling
     try:
         if param.scale is not None:
-            pxldrl.ts = metrics.scale(pxldrl.ts, settinngs=param)
+            pxldrl.ts = metrics.scale(pxldrl.ts, param.scale)
     except(RuntimeError, ValueError, Exception):
         logger.info(f'Scaling error in position:{pxldrl.position}')
         pxldrl.error = True
@@ -37,7 +37,7 @@ def phenolo(pxldrl, **kwargs):
     # off set
     try:
         if param.offset is not None:
-            pxldrl.ts = metrics.offset(pxldrl.ts, settings=param)
+            pxldrl.ts = metrics.offset(pxldrl.ts, param.offeset)
     except(RuntimeError, ValueError, Exception):
         logger.info(f'Off set error in position:{pxldrl.position}')
         pxldrl.error = True
@@ -47,7 +47,7 @@ def phenolo(pxldrl, **kwargs):
     # scaling to 0-100
     try:
         if param.min is not None and param.max is not None:
-            pxldrl.ts_resc = metrics.rescale(pxldrl.ts, settings=param)
+            pxldrl.ts_resc = metrics.rescale(pxldrl.ts, param.min, param.max)
     except(RuntimeError, ValueError, Exception):
         logger.info(f'Scaling error in position:{pxldrl.position}')
         pxldrl.error = True
@@ -83,7 +83,7 @@ def phenolo(pxldrl, **kwargs):
 
     # Estimate Season length
     try:
-        periods = periodogram_peaks(pxldrl.ts_cleaned, min_period=9, max_period=36)
+        periods = periodogram_peaks(pxldrl.ts_cleaned, min_period=9, max_period=180)
         pxldrl.seasons, pxldrl.trend = fit_seasons(pxldrl.ts_cleaned, period=periods[0][0], periodogram_thresh=0.5)
         # pxldrl.seasons, pxldrl.trend = fit_seasons(pxldrl.ts_cleaned)
         if pxldrl.seasons is not None and pxldrl.trend is not None:
@@ -101,8 +101,8 @@ def phenolo(pxldrl, **kwargs):
 
     # Calculate season length and expected number of season
     try:
-        pxldrl.season_lng = len(pxldrl.seasons) * param.yr_dys
-        pxldrl.expSeason = chronos.season_ext(pxldrl)
+        pxldrl.season_lng = pxldrl.seasons.size * param.yr_dys
+        pxldrl.expSeason = chronos.season_ext(pxldrl.ts_cleaned, pxldrl.season_lng)
     except(RuntimeError, Exception, ValueError):
         logger.info(f'Error! Season conversion to days failed, in position:{pxldrl.position}')
         pxldrl.error = True
@@ -111,7 +111,7 @@ def phenolo(pxldrl, **kwargs):
 
     # medspan loading
     try:
-        pxldrl.medspan = chronos.medspan(pxldrl.season_lng, param)
+        pxldrl.medspan = chronos.medspan(pxldrl.season_lng, param.medspan)
     except(RuntimeError, Exception, ValueError):
         logger.info(f'Error! Medspan calculation:{pxldrl.position}')
         pxldrl.error = True
@@ -130,7 +130,7 @@ def phenolo(pxldrl, **kwargs):
 
     # Svainsky Golet
     try:
-        pxldrl.ps = filters.sv(pxldrl, param)
+        pxldrl.ps = filters.sv(pxldrl, param.smp, param.medspan)
     except (RuntimeError, Exception, ValueError):
         logger.info(f'Error! Savinsky Golet filter problem, in position:{pxldrl.position}')
         pxldrl.error = True
@@ -140,7 +140,7 @@ def phenolo(pxldrl, **kwargs):
     # TODO create the option to pre process or not data
     # Valley detection
     try:
-        pxldrl.pks = metrics.valley_detection(pxldrl, param)
+        pxldrl.pks = metrics.valley_detection(pxldrl.ps, pxldrl.trend_d, pxldrl.season_lng, param.tr)
     except(RuntimeError, Exception, ValueError):
         logger.info(f'Error in valley detection in position:{pxldrl.position}')
         pxldrl.error = True
@@ -149,7 +149,7 @@ def phenolo(pxldrl, **kwargs):
 
     # Cycle with matrics
     try:
-        pxldrl.sincys = metrics.cycle_metrics(pxldrl)
+        pxldrl.sincys = metrics.cycle_metrics(pxldrl.pks, pxldrl.ps, pxldrl.position)
     except(RuntimeError, Exception, ValueError):
         logger.info(f'Error in season detection in position:{pxldrl.position}')
         pxldrl.error = True
