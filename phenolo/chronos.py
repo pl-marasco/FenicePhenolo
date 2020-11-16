@@ -53,11 +53,9 @@ def season_ext(ts, season_lng):
         (ts.index.max() - ts.index.min()) / pd.Timedelta(season_lng, unit='d'))
 
 
-def medspan(season_lng, param):
-    if param.medspan == 0:
+def medspan(season_lng, medspan):
+    if medspan == 0:
         medspan = season_lng / 7
-    else:
-        medspan = param.medspan
     return medspan
 
 
