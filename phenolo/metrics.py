@@ -179,7 +179,7 @@ def __buffer_ext(sd, ed, mas, mms_b):
         return mms_b
 
 
-def __back(sincy,  delta_shift):
+def __back(smoothed, cbcd, sd, delta_shift):
     """
     Calculate the curve shifted positively and truncated according to the delta and the starting date
 
@@ -187,11 +187,11 @@ def __back(sincy,  delta_shift):
     :param delta_shift: pandas timedelta
     :return: pandas ts
     """
-    shifted = sincy.smoothed.loc[:sincy.cbcd].shift(delta_shift.days, freq='d')
-    return shifted.loc[sincy.sd:].dropna()
+    shifted = smoothed.loc[:cbcd].shift(delta_shift.days, freq='d')
+    return shifted.loc[sd:].dropna()
 
 
-def __forward(sincy,  delta_shift):
+def __forward(smoothed, cbcd, ed, delta_shift):
     """
     Calculate the curve shifted negatively and truncated according to the delta and the starting date
 
@@ -199,8 +199,8 @@ def __forward(sincy,  delta_shift):
     :param delta_shift: pandas timedelta
     :return: pandas ts
     """
-    shifted = sincy.smoothed.loc[sincy.cbcd:].shift(-delta_shift.days,  freq='d')
-    return shifted.loc[:sincy.ed].dropna()
+    shifted = smoothed.loc[cbcd:].shift(-delta_shift.days,  freq='d')
+    return shifted.loc[:ed].dropna()
 
 
 # @profile
@@ -227,7 +227,7 @@ def phen_metrics(pxldrl,  param):
 
         # buffer extractor
         try:
-            sincy.buffered = __buffer_ext(sincy.sd, sincy.ed, sincy.mas, sincy.mms_b )
+            sincy.buffered = __buffer_ext(sincy.sd, sincy.ed, sincy.mas, sincy.mms_b)
         except (RuntimeError,  Exception,  ValueError):
             logger.debug(f'Warning! Buffered curve not properly created,  in position:{pxldrl.position}')
             sincy.warn = 2  # 'Buffered curve'
@@ -247,10 +247,10 @@ def phen_metrics(pxldrl,  param):
         delta_shift = (sincy.mas / 2).round('d')
 
         # calculate the back curve
-        sincy.back = __back(sincy,  delta_shift)
+        sincy.back = __back(sincy.smoothed, sincy.cbcd, sincy.sd,  delta_shift)
 
         # calculate the forward curve
-        sincy.forward = __forward(sincy,  delta_shift)
+        sincy.forward = __forward(sincy.smoothed, sincy.cbcd, sincy.ed,  delta_shift)
 
         # research the starting point of the season (SB)
         try:
