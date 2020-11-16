@@ -107,7 +107,7 @@ def valley_detection(pxldrl,  param):
     return pks
 
 
-def cycle_metrics(pxldrl):
+def cycle_metrics(pks, ps, position):
     """
     Create an array of cycles with all the attributes populated
 
@@ -118,14 +118,14 @@ def cycle_metrics(pxldrl):
     sincys = []
     from phenolo import atoms
 
-    for i in range(len(pxldrl.pks) - 1):
+    for i in range(pks.size - 1):
 
         # Minimum minimum time series
-        sincy = atoms.SingularCycle(pxldrl.ps,  pxldrl.pks.index[i],  pxldrl.pks.index[i + 1])
+        sincy = atoms.SingularCycle(ps,  pks.index[i],  pks.index[i + 1])
 
         # avoid unusual results
-        if sincy.ref_yr not in range(pxldrl.pks.index[i].year - 1,  pxldrl.pks.index[i + 1].year + 1):
-            logger.info(f'Warning! sbc not in a valid range,  in position:{pxldrl.position}')
+        if sincy.ref_yr not in range(pks.index[i].year - 1, pks.index[i + 1].year + 1):
+            logger.info(f'Warning! sbc not in a valid range,  in position:{position}')
             sincy.warn = 1  # 'sbc not in a valid range'
             continue
 
