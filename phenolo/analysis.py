@@ -140,7 +140,7 @@ def phenolo(pxldrl, **kwargs):
     # TODO create the option to pre process or not data
     # Valley detection
     try:
-        pxldrl.pks = metrics.valley_detection(pxldrl.ps, pxldrl.trend_d, pxldrl.season_lng, param.tr)
+        pxldrl.pks = metrics.valley_detection(pxldrl.ps, pxldrl.trend_d, pxldrl.season_lng)
     except(RuntimeError, Exception, ValueError):
         logger.info(f'Error in valley detection in position:{pxldrl.position}')
         pxldrl.error = True

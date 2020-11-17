@@ -79,7 +79,7 @@ def scipy_valley_detection(pxldrl, tr):
     return pks
 
 
-def valley_detection(ps, trend_d, season_lng, tr):
+def valley_detection(ps, trend_d, season_lng):
     # Valley detection
     # Detrending to catch better points
 
@@ -91,7 +91,8 @@ def valley_detection(ps, trend_d, season_lng, tr):
     elif season_lng < 200:
         mpd_val = int(season_lng * 1 / 3)
     else:
-        mpd_val = int(season_lng * (tr - tr * 1 / 3) / 100)
+        pass #TODO figureout what was tr
+        #mpd_val = int(season_lng * (tr - tr * 1 / 3) / 100)
 
     ind = peaks.detect_peaks(vdetr,  mph=vdetr.mean(), 
                              mpd=mpd_val, 
