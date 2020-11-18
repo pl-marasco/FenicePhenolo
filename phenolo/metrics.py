@@ -2,6 +2,7 @@
 
 import logging
 import sys
+from unittest.mock import inplace
 
 import numpy as np
 import pandas as pd
@@ -297,16 +298,17 @@ def phen_metrics(pxldrl,  param):
             sincy.sl = (sincy.se.index - sincy.sb.index).days.values
 
             # Season Integral [VX]
-            sincy.season = sincy.mms.loc[sincy.sb.index[0]:sincy.se.index[0]]
+            sincy.season = sincy.mms.loc[sincy.sb.index[0]:sincy.se.index[0]]  #TODO se.index == 0
             sincy.si = sincy.season.sum()
 
             # Season permanent
             sincy.sp = sincy.season.copy()
             sincy.sp[1:-1] = np.NaN
             sincy.sp.astype('float64', copy=False)
-            sincy.sp.interpolate(method='linear')
+            sincy.sp.interpolate(method='linear', inplace=True)
 
             # Season permanent Integral [OX]
+            sincy.sp = sincy.sp.where((sincy.season - (sincy.sp)) >= 0, sincy.season)
             sincy.spi = sincy.sp.sum()
 
             # Cyclic fraction [VOX]
