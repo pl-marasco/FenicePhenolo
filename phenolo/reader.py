@@ -21,14 +21,15 @@ class Reader(object):
         return
 
 
-def _get_img(prmts, dim):
+def _get_rasterio(prmts, dim):
+
     from phenolo import chronos as dk
 
     try:
         # dataset = xr.open_rasterio(prmts.inFilePth, chunks={'x': 500, 'y': 500})
         dataset = xr.open_rasterio(prmts.inFilePth)
     except IOError:
-        logger.debug('Error reading img file')
+        logger.debug('Error reading file through RasterIO')
         sys.exit(1)
 
     if prmts.start_time is not pd.NaT and prmts.end_time is not pd.NaT:
@@ -39,26 +40,18 @@ def _get_img(prmts, dim):
             import re
             time_dom = pd.to_datetime(re.findall(r'\d\d\d\d\d\d\d\d', dataset.attrs['band_names']))
         else:
-            logger.debug('Bands name doesn\'t contains datase')
+            logger.debug('Bands name doesn\'t contains dates; please add to the setting file under obs_start obs_end')
             raise sys.exit(1)
 
     if dict(dataset.sizes)['band'] == time_dom.size:
         dt = dataset.assign_coords(band=time_dom)
     else:
-        logger.debug('Ups! we have a problem with the time size. Doesn\'t mathc the datalenght')
+        logger.debug('Ups! we have a problem with the time size. Doesn\'t match the data lenght')
         raise sys.exit(1)
 
     dt = dt.rename(x='lon', y='lat', band='time')
 
     return _slice_cube(dt, dim)
-
-
-def _get_rasterio(prmts):
-    import rasterio as rs
-
-    with rs.Env(CPL_DEBUG=True):
-        dataset = rs.open(prmts.inFilePth, 'r')
-        return dataset
 
 
 def _get_gs_zarr(prmts, dim):
@@ -322,7 +315,7 @@ def _slice_cube(dataset, dim):
             else:
                 raise ValueError
 
-            if dim['time'] == slice(pd.NaT, pd.NaT, None):
+            if dim['time'] == slice(pd.NaT, pd.NaT, None) or dim['time'] == slice(None, None, None):
                 return itrm_cube
             else:
                 return itrm_cube.sel(dict([(crd_t, dim['time'])]))
@@ -413,17 +406,19 @@ def _coord_range_check(dim, data, crd_x, crd_y, crd_t):
             raise ValueError
 
     # time check
-    tm_rng = pd.date_range(data.coords[crd_t].min().values, data.coords[crd_t].max().values).floor('D')
-
     if dim['time'].start is not None:
-        if dim['time'].start.floor('D') not in tm_rng:
-            logger.info('Time slice Start out of range')
-            raise ValueError
+        # todo add the possibility to build the time dimension if unaviable, this should avoid the possibility to subsample
+        tm_rng = pd.date_range(data.coords[crd_t].min().values, data.coords[crd_t].max().values).floor('D')
 
-    if dim['time'].stop is not None:
-        if dim['time'].stop.floor('D') not in tm_rng:
-            logger.info('Time slice Start out of range')
-            raise ValueError
+        if dim['time'].start is not None:
+            if dim['time'].start.floor('D') not in tm_rng:
+                logger.info('Time slice Start out of range')
+                raise ValueError
+
+        if dim['time'].stop is not None:
+            if dim['time'].stop.floor('D') not in tm_rng:
+                logger.info('Time slice Start out of range')
+                raise ValueError
 
 
 def _coord(coord):
@@ -529,7 +524,7 @@ def ingest(prmts):
             elif fnmatch.fnmatch(prmts.inFilePth, '*.vrt'):
                 cube = _get_rasterio(prmts, dim)
             elif fnmatch.fnmatch(prmts.inFilePth, '*.img'):
-                cube = _get_img(prmts, dim)
+                cube = _get_rasterio(prmts, dim)
             elif fnmatch.fnmatch(prmts.inFilePth, '*.zarr'):
                 cube = _get_gs_zarr(prmts, dim)
             else:
