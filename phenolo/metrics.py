@@ -236,8 +236,8 @@ def phen_metrics(pxldrl,  param):
             continue
 
         try:
-            sincy.smth_crv = sincy.buffered.rolling(sincy.mas.days,  win_type='boxcar',  center=True) \
-                .mean(numeric_only=True)
+            sincy.smth_crv = sincy.buffered.rolling(sincy.mas.days, center=True).mean(numeric_only=True)
+
         except (RuntimeError,  Exception,  ValueError):
             logger.debug(f'Warning! Smoothed curve calculation went wrong,  in position:{pxldrl.position}')
             sincy.warn = 3  # 'Smoothed curve'
