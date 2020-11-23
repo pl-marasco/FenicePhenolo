@@ -280,9 +280,9 @@ def analyse(cube, client, param, out):
     """
     try:
         param.dim_unq_val = pd.to_datetime(param.dim_val).year.unique()
-        param.col_sz = len(param.col_val)
+        param.col_sz = param.col_val.size
         rl_col_val = range(0, param.col_sz)
-        param.dim_sz = len(param.dim_unq_val)
+        param.dim_sz = param.dim_unq_val.size
 
         param.indices = ['stb', 'mpi', 'sbd', 'sed', 'spi', 'si', 'cf', 'afi', 'warn']
 
@@ -292,7 +292,7 @@ def analyse(cube, client, param, out):
         prg_bar = 0
         n_chunks = 2
 
-        for chunk in np.array_split(range(0, len(param.row_val)), n_chunks):
+        for chunk in np.array_split(range(0, param.row_val.size), n_chunks):
 
             chunked = cube.isel(dict([(param.row_nm, slice(chunk[0], chunk[-1]+1))])).compute()
 
@@ -322,7 +322,7 @@ def analyse(cube, client, param, out):
                 print(f'\n------\n\rpxl list:{round(time.time() - pxl_t, 3)}', end='')
 
                 if not y_lst.any():
-                    print_progress_bar(rowi, len(param.row_val))
+                    print_progress_bar(rowi, param.row_val.size)
                     print('\rrow skipped', end='\n')
                     logger.debug(f'\rRow {rowi} processed')
                     continue
@@ -361,7 +361,7 @@ def analyse(cube, client, param, out):
 
                 print(f'\rTotal    :{round(time.time() - start_t, 3)}\n------', end='\n')
                 prg_bar += 1
-                print_progress_bar(prg_bar, len(param.row_val))
+                print_progress_bar(prg_bar, param.row_val.size)
 
                 logger.debug(f'Row {abs_row} has been processed')
             r_queue.join()
