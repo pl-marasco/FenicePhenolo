@@ -2,8 +2,6 @@
 
 import logging
 import sys
-from unittest.mock import inplace
-
 import numpy as np
 import pandas as pd
 import scipy
@@ -237,7 +235,6 @@ def phen_metrics(pxldrl,  param):
 
         try:
             sincy.smth_crv = sincy.buffered.rolling(sincy.mas.days, center=True).mean(numeric_only=True)
-
         except (RuntimeError,  Exception,  ValueError):
             logger.debug(f'Warning! Smoothed curve calculation went wrong,  in position:{pxldrl.position}')
             sincy.warn = 3  # 'Smoothed curve'
