@@ -15,7 +15,8 @@ def phenolo(pxldrl, **kwargs):
     # no data removing
     try:
         if param.sensor_typ == 'spot':
-            pxldrl.ts = nodata.climate_fx(pxldrl.ts_raw, param.dim_unq_val[0], param.dim_unq_val[-1])
+            # pxldrl.ts = nodata.climate_fx(pxldrl.ts_raw, param.dim_unq_val[0], param.dim_unq_val[-1])
+            pxldrl.ts = nodata.interpolation_fx(pxldrl.ts_raw)
         else:
             pxldrl.ts = pxldrl.ts_raw
     except(RuntimeError, ValueError, Exception):
