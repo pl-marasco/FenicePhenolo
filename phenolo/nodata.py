@@ -21,7 +21,7 @@ def climate_fx(ts, byr_date, eyr_date, **kwargs):
         # Rough climatic indices without nan included
         agg = tsm.groupby([ts.index.month, ts.index.day])
         count = agg.count()
-        cl = agg.median()
+        cl = agg.median(numeric_only=True)
         clm = cl.mask(count < count.max() * 0.2)
 
         if clm.isnull().sum():
@@ -42,3 +42,10 @@ def climate_fx(ts, byr_date, eyr_date, **kwargs):
         #     tsm.loc[ith] = clm.loc[ith.month, ith.day]
 
     return tsm
+
+
+def interpolation_fx(ts):
+
+    ts.mask(ts > 250, inplace=True)
+    ts.interpolate(method='time', inplace=True)
+    return ts
