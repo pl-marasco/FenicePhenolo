@@ -58,7 +58,8 @@ def main(param):
         threads_per_worker = param.threads_per_worker
         scheduler = param.scheduler
 
-        out = output.OutputCointainer(cube, param, name=param.outName)
+        template = output.template_creator(cube, param)
+
         print('\rInfo -- Output ready', end='')
 
         if not cluster and localproc and n_workers and threads_per_worker:
@@ -101,9 +102,23 @@ def main(param):
             print('\rInfo -- Analysis is up and running')
             webbrowser.open(http, new=2, autoraise=True)
 
-        result_cube = executor.analyse(cube, client, param, out)
+        result_cube = executor.analyse(cube, client, param, template)
 
-        result_cube.close()
+        result_cube.to_netcdf(param.outFilePth, mode='w', format='NETCDF4',
+                              encoding={'Standing_Biomass': {"dtype": "double", "zlib": True, "complevel": 7},
+                               'Min_min_PermanentIntegral': {"dtype": "double", "zlib": True, "complevel": 7},
+                               'Startdate': {"dtype": "double", "zlib": True, "complevel": 7},
+                               'Enddate': {"dtype": "double", "zlib": True, "complevel": 7},
+                               'SeasonLenght': {"dtype": "double", "zlib": True, "complevel": 7},
+                               'SeasonalPermanentIntegral': {"dtype": "double", "zlib": True, "complevel": 7},
+                               'SeasonIntegral': {"dtype": "double", "zlib": True, "complevel": 7},
+                               'CyclicFraction': {"dtype": "double", "zlib": True, "complevel": 7},
+                               'ActiveFractionIntegral': {"dtype": "double", "zlib": True, "complevel": 7},
+                               'CycleWarning': {"dtype": "int", "zlib": True, "complevel": 7},
+                               'NumberOfSeasons': {"dtype": "int64", "zlib": True, "complevel": 7},
+                               'PixelCriticalError': {"dtype": "int64", "zlib": True, "complevel": 9}},
+                              compute=True
+                              )
 
     else:
         raise ValueError
