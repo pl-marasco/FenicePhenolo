@@ -508,56 +508,59 @@ def _dasker(dataset, dim_bloks, col_bloks, row_bloks):
     return dataset.chunk({crd_t: dim_bloks, crd_x: row_bloks, crd_y: col_bloks})
 
 
-def ingest(prmts):
+def ingest(param):
     start = time.time()
 
-    dim = _get_slicers(prmts)
+    dim = _get_slicers(param)
 
     try:
         cube = None
         # TODO adapt to GCFS file
-        if os.path.isfile(prmts.inFilePth) or 'gs://' in prmts.inFilePth:
-            if fnmatch.fnmatch(prmts.inFilePth, '*.nc'):
-                cube = _get_netcdf(prmts, dim)
-            elif fnmatch.fnmatch(prmts.inFilePth, '*.hdf'):
-                cube = _get_hdf(prmts, dim)
-            elif fnmatch.fnmatch(prmts.inFilePth, '*.vrt'):
-                cube = _get_rasterio(prmts, dim)
-            elif fnmatch.fnmatch(prmts.inFilePth, '*.img'):
-                cube = _get_rasterio(prmts, dim)
-            elif fnmatch.fnmatch(prmts.inFilePth, '*.zarr'):
-                cube = _get_gs_zarr(prmts, dim)
+        if os.path.isfile(param.inFilePth) or 'gs://' in param.inFilePth:
+            if fnmatch.fnmatch(param.inFilePth, '*.nc'):
+                cube = _get_netcdf(param, dim)
+            elif fnmatch.fnmatch(param.inFilePth, '*.hdf'):
+                cube = _get_hdf(param, dim)
+            elif fnmatch.fnmatch(param.inFilePth, '*.vrt'):
+                cube = _get_rasterio(param, dim)
+            elif fnmatch.fnmatch(param.inFilePth, '*.img'):
+                cube = _get_rasterio(param, dim)
+            elif fnmatch.fnmatch(param.inFilePth, '*.zarr'):
+                cube = _get_gs_zarr(param, dim)
             else:
-                cube = _get_rasterio(prmts.inFilePth, dim)
-        elif os.path.isdir(os.path.dirname(prmts.inFilePth)):
-            if '*.nc' in prmts.inFilePth:
-                cube = _get_multi_netcdf(prmts.inFilePth, dim, prmts)
-            elif '*.hdf' in prmts.inFilePth:
-                cube = _get_multi_hdf(glob.glob(os.path.join(prmts.inFilePth, '*.hdf')), dim)
+                cube = _get_rasterio(param.inFilePth, dim)
+        elif os.path.isdir(os.path.dirname(param.inFilePth)):
+            if '*.nc' in param.inFilePth:
+                cube = _get_multi_netcdf(param.inFilePth, dim, param)
+            elif '*.hdf' in param.inFilePth:
+                cube = _get_multi_hdf(glob.glob(os.path.join(param.inFilePth, '*.hdf')), dim)
             else:
-                cube = _get_rasterio(prmts.inFilePth, dim)
+                cube = _get_rasterio(param.inFilePth, dim)
         else:
             logger.info('File or directory not found')
             raise FileNotFoundError
 
-        if prmts.ext is None:
+        if param.ext is None:
             deltatime = time.time() - start
             logger.info('Loading data required:{}'.format(deltatime))
-            prmts.add_dims(cube)
+            param.add_dims(cube)
 
             if cube.chunks is None:
-                col_blocks = prmts.col_val.size
-                row_blocks = 1 # prmts.row_val.size
-                dim_blocks = prmts.dim_val.size
+                col_blocks = param.col_val.size
+                row_blocks = 1 # param.row_val.size
+                dim_blocks = param.dim_val.size
                 cube = _dasker(cube, dim_blocks, col_blocks, row_blocks)
 
-            return cube
-
         else:
-            prmts.add_dims(cube)
+            param.add_dims(cube)
             deltatime = time.time() - start
             logger.info('Loading data required:{}'.format(deltatime))
-            return cube
+
+        param.dim_unq_val = pd.to_datetime(param.dim_val).year.unique()
+        param.col_sz = param.col_val.size
+        param.dim_sz = param.dim_unq_val.size
+
+        return cube
 
     except Exception as ex:
         raise ex
