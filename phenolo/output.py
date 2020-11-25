@@ -226,3 +226,40 @@ def scratch_dump(pxldrl, param):
     file_path = os.path.join(param.scratch_pth, file_name)
     with open(file_path, 'wb') as handle:
         pickle.dump(pxldrl, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+def template_creator(cube, param,):
+    import dask.array as da
+    import xarray as xr
+
+    years = pd.to_datetime(param.dim_val).year.unique()
+    chunks = (22, 56, 56)
+
+    stb = da.empty((years.size, cube[param.row_nm].size, cube[param.col_nm].size), dtype=np.float, chunks=chunks)
+    mpi = da.empty((years.size, cube[param.row_nm].size, cube[param.col_nm].size), dtype=np.float, chunks=chunks)
+    sbd = da.empty((years.size, cube[param.row_nm].size, cube[param.col_nm].size), dtype=np.float, chunks=chunks)
+    sed = da.empty((years.size, cube[param.row_nm].size, cube[param.col_nm].size), dtype=np.float, chunks=chunks)
+    sl = da.empty((years.size, cube[param.row_nm].size, cube[param.col_nm].size), dtype=np.float, chunks=chunks)
+    spi = da.empty((years.size, cube[param.row_nm].size, cube[param.col_nm].size), dtype=np.float, chunks=chunks)
+    si = da.empty((years.size, cube[param.row_nm].size, cube[param.col_nm].size), dtype=np.float, chunks=chunks)
+    cf = da.empty((years.size, cube[param.row_nm].size, cube[param.col_nm].size), dtype=np.float, chunks=chunks)
+    afi = da.empty((years.size, cube[param.row_nm].size, cube[param.col_nm].size), dtype=np.float, chunks=chunks)
+    warn = da.empty((years.size, cube[param.row_nm].size, cube[param.col_nm].size), dtype=np.float, chunks=chunks)
+    n_seasons = da.empty((years.size, cube[param.row_nm].size, cube[param.col_nm].size), dtype=np.int64, chunks=chunks)
+    err = da.empty((years.size, cube[param.row_nm].size, cube[param.col_nm].size), dtype=np.int64, chunks=chunks)
+
+    return xr.Dataset({'Standing_Biomass': (['time', 'lat', 'lon'], stb),
+                       'Min_min_PermanentIntegral': (['time', 'lat', 'lon'], mpi),
+                       'Startdate': (['time', 'lat', 'lon'], sbd),
+                       'Enddate': (['time', 'lat', 'lon'], sed),
+                       'SeasonLenght': (['time', 'lat', 'lon'], sl),
+                       'SeasonalPermanentIntegral': (['time', 'lat', 'lon'], spi),
+                       'SeasonIntegral': (['time', 'lat', 'lon'], si),
+                       'CyclicFraction': (['time', 'lat', 'lon'], cf),
+                       'ActiveFractionIntegral': (['time', 'lat', 'lon'], afi),
+                       'CycleWarning': (['time', 'lat', 'lon'], warn),
+                       'NumberOfSeasons': (['time', 'lat', 'lon'], n_seasons),
+                       'PixelCriticalError': (['time', 'lat', 'lon'], err)},
+                        coords={param.dim_nm: years,
+                                param.row_nm: param.row_val,
+                                param.col_nm: param.col_val})
