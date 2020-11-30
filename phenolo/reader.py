@@ -540,25 +540,20 @@ def ingest(param):
             logger.info('File or directory not found')
             raise FileNotFoundError
 
-        if param.ext is None:
-            deltatime = time.time() - start
-            logger.info('Loading data required:{}'.format(deltatime))
-            param.add_dims(cube)
+        param.add_dims(cube)
 
-            if cube.chunks is None:
-                col_blocks = param.col_val.size
-                row_blocks = 1 # param.row_val.size
-                dim_blocks = param.dim_val.size
-                cube = _dasker(cube, dim_blocks, col_blocks, row_blocks)
-
-        else:
-            param.add_dims(cube)
-            deltatime = time.time() - start
-            logger.info('Loading data required:{}'.format(deltatime))
+        if cube.chunks is None:
+            col_blocks = param.col_val.size/2
+            row_blocks = param.row_val.size/2
+            dim_blocks = param.dim_val.size
+            cube = _dasker(cube, dim_blocks, col_blocks, row_blocks)
 
         param.dim_unq_val = pd.to_datetime(param.dim_val).year.unique()
         param.col_sz = param.col_val.size
         param.dim_sz = param.dim_unq_val.size
+
+        deltatime = time.time() - start
+        logger.info('Loading data required:{}'.format(deltatime))
 
         return cube
 
