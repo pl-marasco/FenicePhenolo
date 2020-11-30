@@ -57,7 +57,6 @@ class PixelDrill(object):
         self.ts_raw = None
         self.tst = None
         self.ts_interpolated = None
-        self.season_lng = None
         self.expSeason = None
         self.trend_ts = None
         self.medspan = None
