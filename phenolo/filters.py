@@ -8,8 +8,8 @@ from scipy.signal import savgol_filter
 def sv(pxldrl, smp, medspan):
     if smp != 0:  # TODO Check the smp value meanong
         # Savinsky Golet filter
-        pxldrl.ps = savgol_filter(pxldrl.ts_d, medspan, smp, mode='nearest')
+        ts = savgol_filter(pxldrl.ts, medspan, smp, mode='nearest')
         # TODO automatic selection of savgol window
-        return pd.Series(pxldrl.ps, pxldrl.ts_d.index)
+        return pd.Series(ts, pxldrl.ts.index)
     else:
-        ps = pxldrl.ts_d.rolling(pxldrl.medspan // 2 * 2, win_type='boxcar', center=True).mean()
+        return pxldrl.ts.rolling(pxldrl.medspan // 2 * 2, center=True).mean()
