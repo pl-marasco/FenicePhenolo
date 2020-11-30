@@ -48,7 +48,7 @@ def phenolo(pxldrl, **kwargs):
     # scaling to 0-100
     try:
         if param.min is not None and param.max is not None:
-            pxldrl.ts_resc = metrics.rescale(pxldrl.ts, param.min, param.max)
+            pxldrl.ts = metrics.rescale(pxldrl.ts, param.min, param.max)
     except(RuntimeError, ValueError, Exception):
         logger.info(f'Scaling error in position:{pxldrl.position}')
         pxldrl.error = True
@@ -57,10 +57,10 @@ def phenolo(pxldrl, **kwargs):
 
     # Filter outlier
     try:
-        if pxldrl.ts_resc.isnull().sum() > 0:
-            pxldrl.ts_resc.fillna(method='bfill', inplace=True)
+        if pxldrl.ts.isnull().sum() > 0:
+            pxldrl.ts.fillna(method='bfill', inplace=True)
 
-        pxldrl.ts_filtered = outlier.doubleMAD(pxldrl.ts_resc, mad_pwr=param.mad_pwr)
+        pxldrl.ts = outlier.doubleMAD(pxldrl.ts, mad_pwr=param.mad_pwr)
 
     except (RuntimeError, ValueError, Exception):
         logger.info(f'Error in filtering outlier in position:{pxldrl.position}')
@@ -69,12 +69,12 @@ def phenolo(pxldrl, **kwargs):
         return pxldrl
 
     try:
-        if pxldrl.ts_filtered is not None:
-            pxldrl.ts_filtered.astype('float64', copy=False)
-            pxldrl.ts_cleaned = pxldrl.ts_filtered.interpolate(method='linear')
+        if pxldrl.ts is not None:
+            pxldrl.ts.astype('float64', copy=False)
+            pxldrl.ts = pxldrl.ts.interpolate(method='linear')
             # TODO make possible to use onother type of interpol
-            if len(pxldrl.ts_cleaned[pxldrl.ts_cleaned.isna()]) > 0:
-                pxldrl.ts_cleaned = pxldrl.ts_cleaned.fillna(method='bfill')
+            if len(pxldrl.ts[pxldrl.ts.isna()]) > 0:
+                pxldrl.ts = pxldrl.ts.fillna(method='bfill')
 
     except (RuntimeError, ValueError, Exception):
         logger.info(f'Error in interpolating outlier in position:{pxldrl.position}')
@@ -84,11 +84,10 @@ def phenolo(pxldrl, **kwargs):
 
     # Estimate Season length
     try:
-        periods = periodogram_peaks(pxldrl.ts_cleaned, min_period=9, max_period=180)
-        pxldrl.seasons, pxldrl.trend = fit_seasons(pxldrl.ts_cleaned, period=periods[0][0], periodogram_thresh=0.5)
-        # pxldrl.seasons, pxldrl.trend = fit_seasons(pxldrl.ts_cleaned)
+        periods = periodogram_peaks(pxldrl.ts, min_period=9, max_period=180)
+        pxldrl.seasons, pxldrl.trend = fit_seasons(pxldrl.ts, period=periods[0][0], periodogram_thresh=0.5)
         if pxldrl.seasons is not None and pxldrl.trend is not None:
-            pxldrl.trend_ts = metrics.to_timeseries(pxldrl.trend, pxldrl.ts_cleaned.index)
+            pxldrl.trend_ts = metrics.to_timeseries(pxldrl.trend, pxldrl.ts.index)
         else:
             raise Exception
         # TODO add the no season option
@@ -103,7 +102,7 @@ def phenolo(pxldrl, **kwargs):
     # Calculate season length and expected number of season
     try:
         pxldrl.season_lng = pxldrl.seasons.size * param.yr_dys
-        pxldrl.expSeason = chronos.season_ext(pxldrl.ts_cleaned, pxldrl.season_lng)
+        pxldrl.expSeason = chronos.season_ext(pxldrl.ts, pxldrl.season_lng)
     except(RuntimeError, Exception, ValueError):
         logger.info(f'Error! Season conversion to days failed, in position:{pxldrl.position}')
         pxldrl.error = True
@@ -121,7 +120,7 @@ def phenolo(pxldrl, **kwargs):
 
     # Interpolate data to daily pxldrl
     try:
-        pxldrl.ts_d = chronos.time_resample(pxldrl.ts_cleaned)
+        pxldrl.ts = chronos.time_resample(pxldrl.ts)
         pxldrl.trend_d = chronos.time_resample(pxldrl.trend_ts)
     except(RuntimeError, Exception, ValueError):
         logger.info(f'Error! Conversion to days failed, in position:{pxldrl.position}')
@@ -131,7 +130,7 @@ def phenolo(pxldrl, **kwargs):
 
     # Svainsky Golet
     try:
-        pxldrl.ps = filters.sv(pxldrl, param.smp, param.medspan)
+        pxldrl.ts = filters.sv(pxldrl, param.smp, param.medspan)
     except (RuntimeError, Exception, ValueError):
         logger.info(f'Error! Savinsky Golet filter problem, in position:{pxldrl.position}')
         pxldrl.error = True
@@ -141,16 +140,16 @@ def phenolo(pxldrl, **kwargs):
     # TODO create the option to pre process or not data
     # Valley detection
     try:
-        pxldrl.pks = metrics.valley_detection(pxldrl.ps, pxldrl.trend_d, pxldrl.season_lng)
+        pxldrl.pks = metrics.valley_detection(pxldrl.ts, pxldrl.trend_d, pxldrl.season_lng)
     except(RuntimeError, Exception, ValueError):
         logger.info(f'Error in valley detection in position:{pxldrl.position}')
         pxldrl.error = True
         pxldrl.errtyp = 12  # 'Valley detection'
         return pxldrl
 
-    # Cycle with matrics
+    # Cycle with metrics
     try:
-        pxldrl.sincys = metrics.cycle_metrics(pxldrl.pks, pxldrl.ps, pxldrl.position)
+        pxldrl.sincys = metrics.cycle_metrics(pxldrl.pks, pxldrl.ts, pxldrl.position)
     except(RuntimeError, Exception, ValueError):
         logger.info(f'Error in season detection in position:{pxldrl.position}')
         pxldrl.error = True
