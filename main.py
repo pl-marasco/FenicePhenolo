@@ -50,7 +50,7 @@ def main(param):
 
         viz.plot(sng_pnt, param)
 
-    elif len(cube.coords.get(param.col_nm)) != 1 and len(cube.coords.get(param.row_nm)) != 1:
+    elif cube.coords.get(param.col_nm).size != 1 and cube.coords.get(param.row_nm).size != 1:
 
         cluster = param.cluster
         localproc = param.processes
@@ -88,7 +88,7 @@ def main(param):
                 cluster.scale(n_workers)
 
         client = Client(cluster)
-        client.wait_for_workers(2)
+        client.wait_for_workers(1)
 
         # x = 0
         # while len(client.nthreads()) < 1 or x == 1000:
@@ -99,24 +99,25 @@ def main(param):
         if client:
             print('\rInfo -- Client up and running', end='')
             http = 'http://localhost:8787/status'
-            print('\rInfo -- Analysis is up and running')
+            print('\rInfo -- Analysis is up and running, progress can be followed at:')
+            print(client)
             webbrowser.open(http, new=2, autoraise=True)
 
         result_cube = executor.analyse(cube, client, param, template)
 
-        result_cube.to_netcdf(param.outFilePth, mode='w', format='NETCDF4',
-                              encoding={'Standing_Biomass': {"dtype": "double", "zlib": True, "complevel": 7},
-                               'Min_min_PermanentIntegral': {"dtype": "double", "zlib": True, "complevel": 7},
-                               'Startdate': {"dtype": "double", "zlib": True, "complevel": 7},
-                               'Enddate': {"dtype": "double", "zlib": True, "complevel": 7},
-                               'SeasonLenght': {"dtype": "double", "zlib": True, "complevel": 7},
-                               'SeasonalPermanentIntegral': {"dtype": "double", "zlib": True, "complevel": 7},
-                               'SeasonIntegral': {"dtype": "double", "zlib": True, "complevel": 7},
-                               'CyclicFraction': {"dtype": "double", "zlib": True, "complevel": 7},
-                               'ActiveFractionIntegral': {"dtype": "double", "zlib": True, "complevel": 7},
-                               'CycleWarning': {"dtype": "int", "zlib": True, "complevel": 7},
-                               'NumberOfSeasons': {"dtype": "int64", "zlib": True, "complevel": 7},
-                               'PixelCriticalError': {"dtype": "int64", "zlib": True, "complevel": 9}},
+        result_cube.to_netcdf(os.path.join(param.outFilePth, '.'.join((param.outName, 'nc'))), mode='w', format='NETCDF4',
+                              encoding={'Standing_Biomass': {"dtype": "double", "zlib": True, "complevel": 4},
+                              'Min_min_PermanentIntegral': {"dtype": "double", "zlib": True, "complevel": 4},
+                              'Season_Start_date': {"dtype": "double", "zlib": True, "complevel": 4},
+                              'Season_End_date': {"dtype": "double", "zlib": True, "complevel": 4},
+                              'Season_Lenght': {"dtype": "double", "zlib": True, "complevel": 4},
+                              'Seasonal_Permanent_Integral': {"dtype": "double", "zlib": True, "complevel": 4},
+                              'Season_Integral': {"dtype": "double", "zlib": True, "complevel": 4},
+                              'Cyclic_Fraction': {"dtype": "double", "zlib": True, "complevel": 4},
+                              'Active_Fraction_Integral': {"dtype": "double", "zlib": True, "complevel": 4},
+                              'Cycle_Warning': {"dtype": "int", "zlib": True, "complevel": 4},
+                              'Number_of_Seasons': {"dtype": "int64", "zlib": True, "complevel": 4},
+                              'Pixel_Critical_Error': {"dtype": "int64", "zlib": True, "complevel": 4}},
                               compute=True
                               )
 
@@ -143,7 +144,7 @@ def _log_info(logger, param):
 
 if __name__ == '__main__':
 
-    assert sys.version_info[:2] >= (3, 7), "You need at minimum python 3.7 to execute this script"
+    assert sys.version_info[:2] >= (3, 8), "You need at minimum python 3.7 to execute this script"
 
     print('~~~ Phenolo 2.0 ~~~\r\n')
 
