@@ -5,12 +5,20 @@ import logging
 from phenolo import chronos, filters, metrics, nodata, outlier
 from seasonal import fit_seasons, periodogram_peaks
 import numpy as np
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
 
 def phenolo(pxldrl, **kwargs):
     param = kwargs.pop('settings', '')
+
+    if pxldrl.ts_raw[0] == 254:
+        return _skip(pxldrl, param)
+
+    reduced = pxldrl.ts_raw.quantile(param.qt) # np.percentile, dim=param.dim_nm, q=)
+    if not (reduced > param.min_th) & (reduced < param.max_th):
+        return _skip(pxldrl, param)
 
     # no data removing
     try:
@@ -200,3 +208,24 @@ def phenolo(pxldrl, **kwargs):
         pxldrl.int_cleaner()
 
     return pxldrl
+
+
+def _skip(pxldrl, param):
+    nan = pd.Series(np.NaN, index=param.dim_unq_val)
+
+    pxldrl.stb = nan
+    pxldrl.mpi = nan
+    pxldrl.sbd = nan
+    pxldrl.sed = nan
+    pxldrl.sl = nan
+    pxldrl.spi = nan
+    pxldrl.si = nan
+    pxldrl.cf = nan
+    pxldrl.afi = nan
+    pxldrl.sei = nan
+
+    pxldrl.warn = nan
+    pxldrl.season_lng = np.nan
+
+    return pxldrl
+
