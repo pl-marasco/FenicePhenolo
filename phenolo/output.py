@@ -233,7 +233,7 @@ def template_creator(cube, param,):
     import xarray as xr
 
     years = pd.to_datetime(param.dim_val).year.unique()
-    chunks = (22, 56, 56)
+    chunks = (years.size, cube.chunks[1][0], cube.chunks[2][0])
 
     stb = da.empty((years.size, cube[param.row_nm].size, cube[param.col_nm].size), dtype=np.float, chunks=chunks)
     mpi = da.empty((years.size, cube[param.row_nm].size, cube[param.col_nm].size), dtype=np.float, chunks=chunks)
@@ -250,16 +250,17 @@ def template_creator(cube, param,):
 
     return xr.Dataset({'Standing_Biomass': (['time', 'lat', 'lon'], stb),
                        'Min_min_PermanentIntegral': (['time', 'lat', 'lon'], mpi),
-                       'Startdate': (['time', 'lat', 'lon'], sbd),
-                       'Enddate': (['time', 'lat', 'lon'], sed),
-                       'SeasonLenght': (['time', 'lat', 'lon'], sl),
-                       'SeasonalPermanentIntegral': (['time', 'lat', 'lon'], spi),
-                       'SeasonIntegral': (['time', 'lat', 'lon'], si),
-                       'CyclicFraction': (['time', 'lat', 'lon'], cf),
-                       'ActiveFractionIntegral': (['time', 'lat', 'lon'], afi),
-                       'CycleWarning': (['time', 'lat', 'lon'], warn),
-                       'NumberOfSeasons': (['time', 'lat', 'lon'], n_seasons),
-                       'PixelCriticalError': (['time', 'lat', 'lon'], err)},
+                       'Season_Start_date': (['time', 'lat', 'lon'], sbd),
+                       'Season_End_date': (['time', 'lat', 'lon'], sed),
+                       'Season_Lenght': (['time', 'lat', 'lon'], sl),
+                       'Seasonal_Permanent_Integral': (['time', 'lat', 'lon'], spi),
+                       'Season_Integral': (['time', 'lat', 'lon'], si),
+                       'Cyclic_Fraction': (['time', 'lat', 'lon'], cf),
+                       'Active_Fraction_Integral': (['time', 'lat', 'lon'], afi),
+                       'Cycle_Warning': (['time', 'lat', 'lon'], warn),
+                       'Number_of_Seasons': (['time', 'lat', 'lon'], n_seasons),
+                       'Pixel_Critical_Error': (['time', 'lat', 'lon'], err)},
                         coords={param.dim_nm: years,
                                 param.row_nm: param.row_val,
                                 param.col_nm: param.col_val})
+
