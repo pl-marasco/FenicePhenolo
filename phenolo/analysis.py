@@ -5,6 +5,8 @@ import logging
 from phenolo import chronos, filters, metrics, nodata, outlier
 from seasonal import fit_seasons, periodogram_peaks
 import numpy as np
+import time
+
 
 logger = logging.getLogger(__name__)
 

@@ -203,7 +203,6 @@ def __forward(smoothed, cbcd, ed, delta_shift):
     return shifted.loc[:ed].dropna()
 
 
-# @profile
 def phen_metrics(pxldrl,  param):
     """
     Calculate the Phenology parameter
@@ -277,7 +276,7 @@ def phen_metrics(pxldrl,  param):
 
         # Season slope (SLOPE)
         try:
-            sincy.sslp = ((sincy.se.values - sincy.sb.values) / (sincy.se.index - sincy.sb.index).days) * 1e2
+            sincy.sslp = ((sincy.se.values - sincy.sb.values) / (sincy.se.index - sincy.sb.index).days) * 100
         except ValueError:
             logger.debug(f'Warning! Error in slope calculation in pixel:{pxldrl.position}'
                          f'for the cycle starting in {sincy.sd}')
@@ -301,8 +300,7 @@ def phen_metrics(pxldrl,  param):
             # Season permanent
             sincy.sp = sincy.season.copy()
             sincy.sp[1:-1] = np.NaN
-            sincy.sp.astype('float64', copy=False)
-            sincy.sp.interpolate(method='linear', inplace=True)
+            sincy.sp.interpolate(inplace=True)
 
             # Season permanent Integral [OX]
             sincy.sp = sincy.sp.where((sincy.season - (sincy.sp)) >= 0, sincy.season)

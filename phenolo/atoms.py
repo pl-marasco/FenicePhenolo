@@ -4,9 +4,10 @@ import logging
 
 import numpy as np
 import pandas as pd
+import scipy.interpolate as interpolate
 import copy
 logger = logging.getLogger(__name__)
-
+from numba import jit
 
 class PixelDrill(object):
     """
@@ -79,6 +80,7 @@ class PixelDrill(object):
         
 
 class SingularCycle(object):
+
     def __init__(self, ts, sd, ed):
         """
         Rappresent a singular cycle defined as the curve between two minima
@@ -121,13 +123,16 @@ class SingularCycle(object):
         self.td = self.mml * 0.33  # time delta
         self.mms_b = ts.loc[sd - self.td:ed + self.td]  # buffered time series #TODO verify possible referencing
         self.mms = self.mms_b.loc[sd:ed]  # minimum minimum time series
+        self.posix_time = self.mms.index.asi8 // 10 ** 9
         self.stb = self.__integral(self.mms)  # Standing biomass (minimum minimum integral) [mi] [VOX x cycle]
-        self.mp = self.__min_min_line(self.mms)  # minimum minimum permanent (MPI minimum permanent Integral)
+        #self.mp = self.__min_min_line(self.mms)  # minimum minimum permanent (MPI minimum permanent Integral)
+        self.mp = pd.Series(_min_min_line(self.mms.index.asi8.copy(), self.mms.values.copy()), self.mms.index)# minimum minimum permanent (MPI minimum permanent Integral)
         self.mpi = self.__integral(self.mp)  # minimum minimum permanent integral
 
         self.vox = self.__difference(self.mms, self.mp)  # Values between two min subtracted the permanent integral
         self.vox_i = self.__integral(self.vox)
-        self.cbc = self.__barycenter()  # cycle barycenter / ex season barycenter
+        #self.cbc = self.__barycenter()  # cycle barycenter / ex season barycenter
+        self.cbc = _barycenter(self.posix_time, self.vox.values.copy())
         self.cbcd = self.__to_gregorian_date(self.cbc)
         self.csd = self.__cycle_deviation_standard()  # cycle deviation standard / Season deviation standard
         self.csdd = self.__to_gregorian(self.csd)  # cycle deviation standard in days /Season deviation standard in days
@@ -177,7 +182,7 @@ class SingularCycle(object):
         """Interpolated line between two min and give back a time series"""
         try:
             pf = ts.copy()
-            pf.iloc[1:-1] = np.nan
+            pf[1:-1] = np.nan
             return pf.interpolate()
         except (RuntimeError, Exception, ValueError):
             self.err = True
@@ -229,7 +234,7 @@ class SingularCycle(object):
         """Barycenter"""
         cbc = 0
         try:
-            self.posix_time = self.vox.index.astype(np.int64) // 10 ** 9
+            self.posix_time = self.vox.index.asi8 // 10**9
             cbc = (self.posix_time * self.vox).sum() / self.vox_i
         except(RuntimeError, Exception, ValueError):
             self.err = True
@@ -260,3 +265,22 @@ class SingularCycle(object):
             self.err = True
             logger.debug('Warning! Season deviation standard failed')
             return None
+
+
+@jit(nopython=True)
+def _barycenter(index, vox):
+    """Barycenter"""
+    cbc = (index * vox).sum() / vox.sum()
+
+    if cbc > 0:
+        return cbc
+    else:
+        return 0
+
+
+@jit(nopython=True)
+def _min_min_line(x, y):
+    m = (y[-1] - y[0]) / (x[-1] - x[0])
+    c = y[0] - m * x[0]
+    y[1:-1] = m*x[1:-1]+c
+    return y

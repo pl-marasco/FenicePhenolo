@@ -47,5 +47,4 @@ def climate_fx(ts, byr_date, eyr_date, **kwargs):
 def interpolation_fx(ts):
 
     ts.mask(ts > 250, inplace=True)
-    ts.interpolate(method='time', inplace=True)
-    return ts
+    return ts.interpolate()
