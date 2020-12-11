@@ -4,13 +4,15 @@ import logging
 
 from phenolo import chronos, filters, metrics, nodata, outlier
 from seasonal import fit_seasons, periodogram_peaks
+import pandas as pd
+
 import numpy as np
 import time
 
 
 logger = logging.getLogger(__name__)
 
-
+#@profile
 def phenolo(pxldrl, **kwargs):
     param = kwargs.pop('settings', '')
 
@@ -18,7 +20,7 @@ def phenolo(pxldrl, **kwargs):
     try:
         if param.sensor_typ == 'spot':
             # pxldrl.ts = nodata.climate_fx(pxldrl.ts_raw, param.dim_unq_val[0], param.dim_unq_val[-1])
-            pxldrl.ts = nodata.interpolation_fx(pxldrl.ts_raw)
+            pxldrl.ts = nodata.interpolation_fx(pxldrl.ts_raw).astype('float64', copy=False)
         else:
             pxldrl.ts = pxldrl.ts_raw
     except(RuntimeError, ValueError, Exception):
@@ -30,7 +32,7 @@ def phenolo(pxldrl, **kwargs):
     # scaling
     try:
         if param.scale is not None:
-            pxldrl.ts = metrics.scale(pxldrl.ts, param.scale)
+            pxldrl.ts = pd.Series(metrics.scale(pxldrl.ts.values, param.scale), index=pxldrl.ts.index)
     except(RuntimeError, ValueError, Exception):
         logger.info(f'Scaling error in position:{pxldrl.position}')
         pxldrl.error = True
@@ -50,7 +52,7 @@ def phenolo(pxldrl, **kwargs):
     # scaling to 0-100
     try:
         if param.min is not None and param.max is not None:
-            pxldrl.ts_resc = metrics.rescale(pxldrl.ts, param.min, param.max)
+            pxldrl.ts_resc = pd.Series(metrics.rescale(pxldrl.ts.values, param.min, param.max), index=pxldrl.ts.index)
     except(RuntimeError, ValueError, Exception):
         logger.info(f'Scaling error in position:{pxldrl.position}')
         pxldrl.error = True
@@ -72,7 +74,6 @@ def phenolo(pxldrl, **kwargs):
 
     try:
         if pxldrl.ts_filtered is not None:
-            pxldrl.ts_filtered.astype('float64', copy=False)
             pxldrl.ts_cleaned = pxldrl.ts_filtered.interpolate(method='linear')
             # TODO make possible to use onother type of interpol
             if len(pxldrl.ts_cleaned[pxldrl.ts_cleaned.isna()]) > 0:

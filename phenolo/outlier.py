@@ -2,6 +2,8 @@
 
 import numpy as np
 import pandas as pd
+from scipy.stats import median_absolute_deviation as MAD
+from numba import jit
 
 """
 Based on:
@@ -18,6 +20,7 @@ Journal of the American Statistical Association, December 1993, pp. 1273-1283.
 """
 
 
+@jit(nopython=True, cache=True)
 def mad_segments(x):
     m = np.nanmedian(x)  # calculate the median inside the window
     abs_dev = np.abs(x - m)  # absolute deviation
@@ -28,25 +31,27 @@ def mad_segments(x):
     return lower, higher
 
 
+@jit(nopython=True, cache=True)
 def dblMAD(x, mad_pwr=2.575):
 
     median = np.median(x)
-
+    if median == 0:
+        return x
     lower, higher = mad_segments(x)
-
     madMap = np.where(x < median, lower, higher)
-
     MAD = np.divide(np.abs(np.subtract(x, median)), madMap)
-
     MAD_cld = np.where(x == median, 0, MAD)
-
     fx = np.where(MAD_cld >= mad_pwr, np.NaN, x)
-
     return fx
 
 
+@jit(nopython=True, cache=True)
+def median(values):
+    return np.median(values)
+
+
 def npMAD(x, mad_pwr):
-    from scipy.stats import median_absolute_deviation as MAD
+
     median = np.nanmedian(x)
     x_left = np.where(x <= median, x, np.NaN)
     x_right = np.where(x >= median, x, np.NaN)
@@ -59,12 +64,9 @@ def npMAD(x, mad_pwr):
     return fx
 
 
-def doubleMAD(ts, mad_pwr):
-    if mad_pwr is None:
-        mad_pwr = 2.575
+def doubleMAD(ts, mad_pwr=2.575):
 
-    if ts.median() == 0:
-        return ts
-    else:
-        r = npMAD(ts.values, mad_pwr)
-        return pd.Series(r, ts.index)
+    r = dblMAD(ts.values, mad_pwr)
+    return pd.Series(r, ts.index)
+
+#TODO rivedere doubleMAD

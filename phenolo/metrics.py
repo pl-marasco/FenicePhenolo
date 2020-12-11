@@ -5,22 +5,19 @@ import sys
 import numpy as np
 import pandas as pd
 import scipy
+from numba import jit, vectorize, float64
+from phenolo import peaks, atoms
+import xarray as xr
 
-from phenolo import peaks
 
 logger = logging.getLogger(__name__)
 np.warnings.filterwarnings('ignore')
 
 
-def rescale(ts, min, max, **kwargs):
+@jit(nopython=True, cache=True)
+def rescale(ts, min, max):
     # Rescale values to  0-100
-
-    try:
-        return ((ts - min) / (max - min)) * 100
-    except (RuntimeError,  Exception,  ValueError):
-        print('Error in rescaling,  in position')
-        logger.debug('Error in rescaling')
-        sys.exit()
+    return ((ts - min) / (max - min)) * 100
 
 
 def offset(ts,  offset, **kwargs):
@@ -33,14 +30,10 @@ def offset(ts,  offset, **kwargs):
         sys.exit()
 
 
-def scale(ts, scale, **kwargs):
+@jit(nopython=True, cache=True)
+def scale(ts, scale):
     # scale according to the metadata
-    try:
-        return ts * scale
-    except (RuntimeError,  Exception,  ValueError):
-        print('Error in rescaling,  in position')
-        logger.debug('Error in rescaling')
-        sys.exit()
+    return ts * scale
 
 
 def to_timeseries(values,  index):
@@ -82,8 +75,12 @@ def valley_detection(ps, trend_d, season_lng):
     # Valley detection
     # Detrending to catch better points
 
-    vtrend = pd.Series(trend_d,  index=ps.index)
-    vdetr = ps - vtrend
+    # vtrend = pd.Series(trend_d,  index=ps.index)
+    # vdetr = ps - vtrend
+    # mph = vdetr.mean()
+
+    vdetr = subtract(ps.values, trend_d.values)
+    mph = vdetr.mean()
 
     if 200.0 < season_lng < 400.0:
         mpd_val = int(season_lng * 2 / 3)
@@ -93,7 +90,7 @@ def valley_detection(ps, trend_d, season_lng):
         pass #TODO figureout what was tr
         #mpd_val = int(season_lng * (tr - tr * 1 / 3) / 100)
 
-    ind = peaks.detect_peaks(vdetr,  mph=vdetr.mean(), 
+    ind = peaks.detect_peaks(vdetr,  mph=mph,
                              mpd=mpd_val, 
                              valley=True, 
                              edge='both', 
@@ -107,6 +104,11 @@ def valley_detection(ps, trend_d, season_lng):
     return pks
 
 
+@jit(nopython=True, cache=True)
+def subtract(val1, val2):
+    return np.subtract(val1, val2)
+
+
 def cycle_metrics(pks, ps, position):
     """
     Create an array of cycles with all the attributes populated
@@ -116,7 +118,6 @@ def cycle_metrics(pks, ps, position):
     """
 
     sincys = []
-    from phenolo import atoms
 
     for i in range(pks.size - 1):
 
@@ -179,19 +180,22 @@ def __buffer_ext(sd, ed, mas, mms_b):
         return mms_b
 
 
-def __back(smoothed, cbcd, sd, delta_shift):
+def __back(smoothed, cbcd, sd, ed, delta_shift):
     """
     Calculate the curve shifted positively and truncated according to the delta and the starting date
 
     :param sincy: pandas time series
     :param delta_shift: pandas timedelta
     :return: pandas ts
-    """
-    shifted = smoothed.loc[:cbcd].shift(delta_shift.days, freq='d')
-    return shifted.loc[sd:].dropna()
+    # """
+    # shifted = smoothed.loc[:cbcd].shift(delta_shift.days, freq='d')
+    # return shifted.loc[sd:].dropna()
+
+    shifted = smoothed.shift(delta_shift.days, freq='d')
+    return shifted.loc[sd:ed]
 
 
-def __forward(smoothed, cbcd, ed, delta_shift):
+def __forward(smoothed, cbcd, sd, ed, delta_shift):
     """
     Calculate the curve shifted negatively and truncated according to the delta and the starting date
 
@@ -199,10 +203,16 @@ def __forward(smoothed, cbcd, ed, delta_shift):
     :param delta_shift: pandas timedelta
     :return: pandas ts
     """
-    shifted = smoothed.loc[cbcd:].shift(-delta_shift.days,  freq='d')
-    return shifted.loc[:ed].dropna()
+    # shifted = smoothed.loc[cbcd:].shift(-delta_shift.days,  freq='d')
+    # return shifted.loc[:ed].dropna()
+    shifted = smoothed.shift(-delta_shift.days,  freq='d')
+    return shifted.loc[sd:ed]
 
 
+def __xarray_mean(data, width):
+    return xr.DataArray(data, dims='x').rolling(x=width, min_periods=1, center=True).mean().to_pandas()
+
+#@profile
 def phen_metrics(pxldrl,  param):
     """
     Calculate the Phenology parameter
@@ -225,34 +235,40 @@ def phen_metrics(pxldrl,  param):
             sincy.mas = pd.to_timedelta(param.mavspan,  unit='D')
 
         # buffer extractor
-        try:
-            sincy.buffered = __buffer_ext(sincy.sd, sincy.ed, sincy.mas, sincy.mms_b)
-        except (RuntimeError,  Exception,  ValueError):
-            logger.debug(f'Warning! Buffered curve not properly created,  in position:{pxldrl.position}')
-            sincy.warn = 2  # 'Buffered curve'
-            continue
+        # try:
+        #     # sincy.buffered = __buffer_ext(sincy.sd, sincy.ed, sincy.mas, sincy.mms_b)
+        #
+        # except (RuntimeError,  Exception,  ValueError):
+        #     logger.debug(f'Warning! Buffered curve not properly created,  in position:{pxldrl.position}')
+        #     sincy.warn = 2  # 'Buffered curve'
+        #     continue
 
         try:
-            sincy.smth_crv = sincy.buffered.rolling(sincy.mas.days, center=True).mean(numeric_only=True)
+            # sincy.smth_crv = sincy.buffered.rolling(sincy.mas.days, center=True).mean(numeric_only=True)
+            sincy.smth_crv = __xarray_mean(sincy.mms_b, sincy.mas.days)
         except (RuntimeError,  Exception,  ValueError):
             logger.debug(f'Warning! Smoothed curve calculation went wrong,  in position:{pxldrl.position}')
             sincy.warn = 3  # 'Smoothed curve'
             continue
 
-        sincy.smoothed = sincy.smth_crv.loc[sincy.sd - sincy.td:sincy.ed + sincy.td]
+        # sincy.smoothed = sincy.smth_crv.loc[sincy.sd - sincy.td:sincy.ed + sincy.td]
+        sincy.smoothed = sincy.smth_crv
 
         # shift of the smoothed curve
         delta_shift = (sincy.mas / 2).round('d')
 
         # calculate the back curve
-        sincy.back = __back(sincy.smoothed, sincy.cbcd, sincy.sd,  delta_shift)
+        sincy.back = __back(sincy.smoothed, sincy.cbcd, sincy.sd, sincy.ed, delta_shift)
 
         # calculate the forward curve
-        sincy.forward = __forward(sincy.smoothed, sincy.cbcd, sincy.ed,  delta_shift)
+        sincy.forward = __forward(sincy.smoothed, sincy.cbcd, sincy.sd, sincy.ed,  delta_shift)
 
         # research the starting point of the season (SB)
         try:
-            sincy.intcpt_bk = __intercept(sincy.mms, sincy.back)
+
+            #sincy.intcpt_bk = __intercept(sincy.mms, sincy.back)
+
+            sincy.intcpt_bk = _intercept(sincy.mms.values, sincy.back.values)
             sincy.sb = sincy.mms.iloc[sincy.intcpt_bk[0]]
             if sincy.sb.index > sincy.max_idx:
                 raise Exception
@@ -264,7 +280,9 @@ def phen_metrics(pxldrl,  param):
 
         # research the end point of the season (SE)
         try:
-            sincy.intcpt_fw = __intercept(sincy.mms, sincy.forward)
+            # sincy.intcpt_fw = __intercept(sincy.mms, sincy.forward)
+
+            sincy.intcpt_fw = _intercept(sincy.mms.values, sincy.forward.values)
             sincy.se = sincy.mms.iloc[sincy.intcpt_fw[-1]]
             if sincy.se.index < sincy.max_idx:
                 raise Exception
@@ -276,7 +294,7 @@ def phen_metrics(pxldrl,  param):
 
         # Season slope (SLOPE)
         try:
-            sincy.sslp = ((sincy.se.values - sincy.sb.values) / (sincy.se.index - sincy.sb.index).days) * 100
+            sincy.sslp = ((sincy.se.values - sincy.sb.values) / (sincy.se.index.asi8 - sincy.sb.index.asi8)) * 100
         except ValueError:
             logger.debug(f'Warning! Error in slope calculation in pixel:{pxldrl.position}'
                          f'for the cycle starting in {sincy.sd}')
@@ -298,12 +316,14 @@ def phen_metrics(pxldrl,  param):
             sincy.si = sincy.season.sum()
 
             # Season permanent
-            sincy.sp = sincy.season.copy()
-            sincy.sp[1:-1] = np.NaN
-            sincy.sp.interpolate(inplace=True)
+            sincy.sp = pd.Series(_min_min_line(sincy.season.index.asi8.copy(), sincy.season.values.copy()), sincy.season.index)
+            # sincy.sp = sincy.season.copy()
+            # sincy.sp[1:-1] = np.NaN
+            # sincy.sp.interpolate(inplace=True)
 
             # Season permanent Integral [OX]
-            sincy.sp = sincy.sp.where((sincy.season - (sincy.sp)) >= 0, sincy.season)
+            #sincy.sp = sincy.sp.where(sincy.season.values - sincy.sp.values >= 0, sincy.season)
+            sincy.sp = pd.Series(_sub(sincy.season.values, sincy.sp.values), index=sincy.sp.index)
             sincy.spi = sincy.sp.sum()
 
             # Cyclic fraction [VOX]
@@ -399,3 +419,23 @@ def __intercept(reference_ts, shifted_ts):
     s = (reference_ts - shifted_ts).values
     diff = np.diff(np.sign(s))
     return np.argwhere((diff != 0) & np.isfinite(diff))
+
+
+@jit(nopython=True, cache=True)
+def _min_min_line(x, y):
+    m = (y[-1] - y[0]) / (x[-1] - x[0])
+    c = y[0] - m * x[0]
+    y[1:-1] = m*x[1:-1]+c
+    return y
+
+
+@jit(nopython=True, cache=True)
+def _intercept(mms, shifted):
+    delta = mms - shifted
+    diff = np.diff(np.sign(delta))
+    return np.argwhere((diff != 0) & np.isfinite(diff))
+
+
+@jit(nopython=True, cache=True)
+def _sub(val1, val2):
+    return np.where(val1 - val2 >= 0, val1, val2)
