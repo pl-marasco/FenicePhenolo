@@ -9,7 +9,6 @@ from numba import jit, vectorize, float64
 from phenolo import peaks, atoms
 import xarray as xr
 
-
 logger = logging.getLogger(__name__)
 np.warnings.filterwarnings('ignore')
 
@@ -17,9 +16,10 @@ np.warnings.filterwarnings('ignore')
 @jit(nopython=True, cache=True)
 def rescale(ts, min, max):
     # Rescale values to  0-100
+    #np.multiply(np.divide(np.subtract(ts, min), np.subtract(max, min)), 100)
     return ((ts - min) / (max - min)) * 100
 
-
+@jit(nopython=True, cache=True)
 def offset(ts,  offset, **kwargs):
     # add the offset
     try:
@@ -33,6 +33,7 @@ def offset(ts,  offset, **kwargs):
 @jit(nopython=True, cache=True)
 def scale(ts, scale):
     # scale according to the metadata
+    # np.multiply(ts, scale)
     return ts * scale
 
 
@@ -179,7 +180,7 @@ def __buffer_ext(sd, ed, mas, mms_b):
     else:
         return mms_b
 
-
+#@profile
 def __back(smoothed, cbcd, sd, ed, delta_shift):
     """
     Calculate the curve shifted positively and truncated according to the delta and the starting date
@@ -190,11 +191,11 @@ def __back(smoothed, cbcd, sd, ed, delta_shift):
     # """
     # shifted = smoothed.loc[:cbcd].shift(delta_shift.days, freq='d')
     # return shifted.loc[sd:].dropna()
-
-    shifted = smoothed.shift(delta_shift.days, freq='d')
+    #shifted = smoothed.shift(delta_shift.days, freq='d')
+    shifted = smoothed.shift(delta_shift.days)
     return shifted.loc[sd:ed]
 
-
+#@profile
 def __forward(smoothed, cbcd, sd, ed, delta_shift):
     """
     Calculate the curve shifted negatively and truncated according to the delta and the starting date
@@ -205,7 +206,8 @@ def __forward(smoothed, cbcd, sd, ed, delta_shift):
     """
     # shifted = smoothed.loc[cbcd:].shift(-delta_shift.days,  freq='d')
     # return shifted.loc[:ed].dropna()
-    shifted = smoothed.shift(-delta_shift.days,  freq='d')
+    #shifted = smoothed.shift(-delta_shift.days,  freq='d')
+    shifted = smoothed.shift(-delta_shift.days)
     return shifted.loc[sd:ed]
 
 
@@ -312,7 +314,8 @@ def phen_metrics(pxldrl,  param):
             sincy.sl = (sincy.se.index - sincy.sb.index).days.values
 
             # Season Integral [VX]
-            sincy.season = sincy.mms.loc[sincy.sb.index[0]:sincy.se.index[0]]  #TODO se.index == 0
+            # sincy.season = sincy.mms.loc[sincy.sb.index[0]:sincy.se.index[0]]  #TODO se.index == 0
+            sincy.season = sincy.mms.iloc[sincy.intcpt_bk[0][0]:sincy.intcpt_fw[-1][0]]
             sincy.si = sincy.season.sum()
 
             # Season permanent
@@ -333,6 +336,7 @@ def phen_metrics(pxldrl,  param):
             sincy.sei = sincy.stb - sincy.si
 
             # Active fraction
+            # sincy.af = sincy.mms.iloc[sincy.intcpt_bk[0]:sincy.max_i] - sincy.sp[:sincy.max_i]
             sincy.af = sincy.mms.loc[sincy.sb.index[0]:sincy.max_idx] - sincy.sp[:sincy.max_idx]
             sincy.afi = sincy.af.sum()
 
@@ -438,4 +442,5 @@ def _intercept(mms, shifted):
 
 @jit(nopython=True, cache=True)
 def _sub(val1, val2):
+    # np.where(np.subtract(val1, val2) >= 0, val1, val2)
     return np.where(val1 - val2 >= 0, val1, val2)
