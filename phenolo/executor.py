@@ -63,7 +63,7 @@ def process(px, **kwargs):
     param = kwargs.pop('param', '')
     row = kwargs.pop('row', '')
 
-    pxldrl = atoms.PixelDrill(cube.isel(dict([(param.col_nm, px), (param.row_nm, row)])).to_series().astype(float),
+    pxldrl = atoms.PixelDrill(cube.isel(dict([(param.col_nm, px), (param.row_nm, row)])).to_series().astype(np.float64),
                               [row, px])
 
     return analysis.phenolo(pxldrl, settings=param)
