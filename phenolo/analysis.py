@@ -134,7 +134,7 @@ def phenolo(pxldrl, **kwargs):
 
     # Svainsky Golet
     try:
-        pxldrl.ps = filters.sv(pxldrl, param.smp, param.medspan)
+        pxldrl.ps = filters.sv(pxldrl.ts_d, param.smp, param.medspan)
     except (RuntimeError, Exception, ValueError):
         logger.info(f'Error! Savinsky Golet filter problem, in position:{pxldrl.position}')
         pxldrl.error = True
@@ -160,14 +160,14 @@ def phenolo(pxldrl, **kwargs):
         pxldrl.errtyp = 13  # 'Season detection'
         return pxldrl
 
-    try:
-        import statistics
-        pxldrl.msdd = metrics.attr_statistic(pxldrl.sincys, statistics.median, 'csd')
-    except(RuntimeError, Exception, ValueError):
-        logger.info(f'Error in season mean calculation in position:{pxldrl.position}')
-        pxldrl.error = True
-        pxldrl.errtyp = 14  # 'Season mean'
-        return pxldrl
+    # try:
+    #     import statistics
+    #     pxldrl.msdd = metrics.attr_statistic(pxldrl.sincys, statistics.median, 'csd')
+    # except(RuntimeError, Exception, ValueError):
+    #     logger.info(f'Error in season mean calculation in position:{pxldrl.position}')
+    #     pxldrl.error = True
+    #     pxldrl.errtyp = 14  # 'Season mean'
+    #     return pxldrl
 
     # Season metrics
     try:

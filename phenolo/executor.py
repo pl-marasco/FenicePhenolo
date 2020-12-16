@@ -11,6 +11,7 @@ from phenolo import atoms, analysis
 
 from multiprocessing import Process, shared_memory, JoinableQueue, Event
 import queue
+from numba import jit
 
 logger = logging.getLogger(__name__)
 import copy
@@ -268,6 +269,18 @@ def _error_decoder(err):
     return err_cod[err]
 
 
+@jit(nopython=True, cache=True)
+def _pxl_list(data, dim_psx, min_th, max_th):
+    values = np.zeros(np.int32(0))
+    for x in range(0, data.shape[1]):
+        for y in range(0, data.shape[2]):
+            serie = data[:, x, y]
+            quant = np.nanquantile(serie, np.float64(0.2))
+            if np.logical_and(np.greater(quant, min_th), np.less(quant, max_th)):
+                values = np.append(values, [np.int32(x), np.int32(y)])
+    return values
+
+
 def analyse(cube, client, param, out):
     """
 
@@ -298,13 +311,16 @@ def analyse(cube, client, param, out):
 
             chnk_scat = client.scatter(chunked, broadcast=True)
 
-            # -->
-            quantile = chunked.quantile(0.2, param.dim_nm)
-            where = quantile.where(((quantile > param.min_th) & (quantile < param.max_th)))
-            isfinite = where.reduce(np.isfinite)
-            # <--
 
-            pxl_lst = np.argwhere(isfinite.values)
+            # # -->
+            # quantile = chunked.quantile(0.2, param.dim_nm)
+            # where = quantile.where(((quantile > param.min_th) & (quantile < param.max_th)))
+            # isfinite = where.reduce(np.isfinite)
+            # # <--
+            #
+            # pxl_lst = np.argwhere(isfinite.values)
+
+            pxl_lst = _pxl_list(np.float64(chunked.values), 0, param.min_th, param.max_th).reshape(-1, 2)
 
             cache, shared = _cache_def(param.indices, param.dim_sz, param.col_sz)
             stop_event = Event()
@@ -317,7 +333,7 @@ def analyse(cube, client, param, out):
             for rowi in range(0, chunked.sizes[param.row_nm]):
                 start_t = time.time()
                 pxl_t = time.time()
-                y_lst = pxl_lst[pxl_lst[:, 0] == rowi, :][:, 1]
+                y_lst = np.int32(pxl_lst[pxl_lst[:, 0] == rowi, :][:, 1])
 
                 print(f'\n------\n\rpxl list:{round(time.time() - pxl_t, 3)}', end='')
 
