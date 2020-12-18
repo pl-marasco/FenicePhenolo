@@ -19,6 +19,7 @@ def rescale(ts, min, max):
     #np.multiply(np.divide(np.subtract(ts, min), np.subtract(max, min)), 100)
     return ((ts - min) / (max - min)) * 100
 
+
 @jit(nopython=True, cache=True)
 def offset(ts,  offset, **kwargs):
     # add the offset
@@ -214,7 +215,7 @@ def __forward(smoothed, cbcd, sd, ed, delta_shift):
 def __xarray_mean(data, width):
     return xr.DataArray(data, dims='x').rolling(x=width, min_periods=1, center=True).mean().to_pandas()
 
-#@profile
+
 def phen_metrics(pxldrl,  param):
     """
     Calculate the Phenology parameter
@@ -234,7 +235,7 @@ def phen_metrics(pxldrl,  param):
         sincy.mas = __mas(sincy.mml,  param.mavmet,  sincy.csdd)
 
         if sincy.mas.days < 0:
-            sincy.mas = pd.to_timedelta(param.mavspan,  unit='D')
+            sincy.mas = pd.to_timedelta(param.mavspan,  unit='D').days
 
         # buffer extractor
         # try:
@@ -247,7 +248,8 @@ def phen_metrics(pxldrl,  param):
 
         try:
             # sincy.smth_crv = sincy.buffered.rolling(sincy.mas.days, center=True).mean(numeric_only=True)
-            sincy.smth_crv = __xarray_mean(sincy.mms_b, sincy.mas.days)
+            #sincy.smth_crv = __xarray_mean(sincy.mms_b, sincy.mas.days)
+            sincy.smth_crv = pd.Series(moving_average(sincy.mms_b.values, sincy.mas.days, center=True), index=sincy.mms_b.index)
         except (RuntimeError,  Exception,  ValueError):
             logger.debug(f'Warning! Smoothed curve calculation went wrong,  in position:{pxldrl.position}')
             sincy.warn = 3  # 'Smoothed curve'
@@ -257,7 +259,7 @@ def phen_metrics(pxldrl,  param):
         sincy.smoothed = sincy.smth_crv
 
         # shift of the smoothed curve
-        delta_shift = (sincy.mas / 2).round('d')
+        delta_shift = (sincy.mas / 2)
 
         # calculate the back curve
         sincy.back = __back(sincy.smoothed, sincy.cbcd, sincy.sd, sincy.ed, delta_shift)
@@ -337,8 +339,10 @@ def phen_metrics(pxldrl,  param):
 
             # Active fraction
             # sincy.af = sincy.mms.iloc[sincy.intcpt_bk[0]:sincy.max_i] - sincy.sp[:sincy.max_i]
-            sincy.af = sincy.mms.loc[sincy.sb.index[0]:sincy.max_idx] - sincy.sp[:sincy.max_idx]
-            sincy.afi = sincy.af.sum()
+            # sincy.af = sincy.mms.loc[sincy.sb.index[0]:sincy.max_idx] - sincy.sp[:sincy.max_idx]
+            # sincy.afi = sincy.af.sum()
+            sincy.af = np.NaN
+            sincy.afi = np.NaN
 
             # Reference yr
             sincy.ref_yr = (sincy.sb.index + pd.Timedelta(days=sincy.sl[0] * 0.66)).year
@@ -363,7 +367,10 @@ def __mas(tsl,  mavmet,  sdd):
     :param sdd: standard deviation expressed in yrs
     :return: mas ( moving avarage yearly)
     """
-    return tsl - (2 * mavmet * sdd)
+    mas = tsl - (2 * mavmet * sdd)
+    if mas.days % 2 == 0:
+        mas = mas + pd.to_timedelta(1,  unit='D')
+    return mas
     # TODO to be reviewed
 
 
@@ -444,3 +451,19 @@ def _intercept(mms, shifted):
 def _sub(val1, val2):
     # np.where(np.subtract(val1, val2) >= 0, val1, val2)
     return np.where(val1 - val2 >= 0, val1, val2)
+
+
+@jit(nopython=True, cache=True)
+def moving_average(array, window, center=False):
+    if center:
+        ret = np.cumsum(array)
+        ret[window:] = ret[window:] - ret[:-window]
+        ma = ret[window - 1:] / window
+        n = np.empty(window//2); n.fill(np.nan)
+        return np.concatenate((n.ravel(), ma.ravel(), n.ravel()))
+    else:
+        ret = np.cumsum(array)
+        ret[window:] = ret[window:] - ret[:-window]
+        ma = ret[window - 1:] / window
+        n = np.empty(window-1); n.fill(np.nan)
+        return np.concatenate((n.ravel(), ma.ravel(),n.ravel()))
