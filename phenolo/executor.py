@@ -2,6 +2,7 @@
 
 import logging
 import numpy as np
+import pandas as pd
 import xarray as xr
 
 from phenolo import atoms, analysis
@@ -84,7 +85,7 @@ def _process(cube, **kwargs):
                         cache['Active_Fraction_Integral'][:, row, col] = pxldrl.afi
                         cache['Cycle_Warning'][:, row, col] = pxldrl.warn
 
-                        if not np.isnan(pxldrl.season_lng):
+                        if not pd.isnull(pxldrl.season_lng):
                             if pxldrl.season_lng <= 365.0:
                                 cache['Number_of_Seasons'][:, row, col] = int(365 / pxldrl.season_lng)
                             else:
