@@ -4,9 +4,10 @@ import logging
 
 import numpy as np
 import pandas as pd
+import scipy.interpolate as interpolate
 import copy
 logger = logging.getLogger(__name__)
-
+from numba import jit
 
 class PixelDrill(object):
     """
@@ -57,6 +58,7 @@ class PixelDrill(object):
         self.ts_raw = None
         self.tst = None
         self.ts_interpolated = None
+        self.season_lng = None
         self.expSeason = None
         self.trend_ts = None
         self.medspan = None
@@ -78,6 +80,7 @@ class PixelDrill(object):
         
 
 class SingularCycle(object):
+
     def __init__(self, ts, sd, ed):
         """
         Rappresent a singular cycle defined as the curve between two minima
@@ -112,25 +115,75 @@ class SingularCycle(object):
         :param : Time series as pandas.Series object
         """
         self.err = False
-        self.warn = None
+        self.warn = np.NaN
 
         self.sd = sd  # Start date - MBD
         self.ed = ed  # End date - MED
-        self.mml = self.__time_delta(self.sd, self.ed)  # Cycle length in days
-        self.td = self.mml * 0.33  # time delta
+        self.mml = self.__time_delta(self.sd, self.ed)# Cycle length in days
+        self.td = self.mml * 0.20  # time delta
         self.mms_b = ts.loc[sd - self.td:ed + self.td]  # buffered time series #TODO verify possible referencing
         self.mms = self.mms_b.loc[sd:ed]  # minimum minimum time series
-        self.stb = self.__integral(self.mms)  # Standing biomass (minimum minimum integral) [mi] [VOX x cycle]
-        self.mp = self.__min_min_line(self.mms)  # minimum minimum permanent (MPI minimum permanent Integral)
-        self.mpi = self.__integral(self.mp)  # minimum minimum permanent integral
+        self.posix_time = self.mms.index.asi8 // 10 ** 9
 
-        self.vox = self.__difference(self.mms, self.mp)  # Values between two min subtracted the permanent integral
-        self.vox_i = self.__integral(self.vox)
-        self.cbc = self.__barycenter()  # cycle barycenter / ex season barycenter
+        #self.stb = self.__integral(self.mms)  # Standing biomass (minimum minimum integral) [mi] [VOX x cycle]
+        try:
+            self.stb = _integral(self.mms.values)  # Standing biomass (minimum minimum integral) [mi] [VOX x cycle]
+        except (RuntimeError, Exception, ValueError):
+            self.err = True
+            logger.debug('Warning! error in the integral calculation')
+            return
+
+        #self.mp = self.__min_min_line(self.mms)  # minimum minimum permanent (MPI minimum permanent Integral)
+        try:
+            self.mp = pd.Series(_min_min_line(self.mms.index.asi8.copy(), self.mms.values.copy()), self.mms.index)# minimum minimum permanent (MPI minimum permanent Integral)
+        except (RuntimeError, Exception, ValueError):
+            self.err = True
+            logger.debug('Warning! Error in interpolated line between two min')
+            return
+
+        #self.mpi = self.__integral(self.mp)  # minimum minimum permanent integral
+        try:
+            self.mpi = _integral(self.mp.values)  # Standing biomass (minimum minimum integral) [mi] [VOX x cycle]
+        except (RuntimeError, Exception, ValueError):
+            self.err = True
+            logger.debug('Warning! error in the integral calculation')
+            return
+
+        #self.vox = self.__difference(self.mms, self.mp)  # Values between two min subtracted the permanent integral
+        try:
+            self.vox = pd.Series(_difference(self.mms.values, self.mp.values), self.mms.index)# Values between two min subtracted the permanent integral
+        except (RuntimeError, Exception, ValueError):
+            self.err = True
+            logger.debug('Warning! difference between two time series')
+            return
+
+        self.vox_i = self.__integral(self.vox.values)
+
+        #self.cbc = self.__barycenter()  # cycle barycenter / ex season barycenter
+        try:
+            self.cbc = _barycenter(self.posix_time, self.vox.values.copy())
+        except(RuntimeError, Exception, ValueError):
+            self.err = True
+            logger.debug('Warning! Barycenter calculation went wrong in reference')
+            return
+
+        if not self.cbc > 0:
+            self.err = True
+            logger.debug('Warning! Barycenter has a negative value')
+            return
+
         self.cbcd = self.__to_gregorian_date(self.cbc)
-        self.csd = self.__cycle_deviation_standard()  # cycle deviation standard / Season deviation standard
+
+        #self.csd = self.__cycle_deviation_standard()  # cycle deviation standard / Season deviation standard
+        try:
+            self.csd = _cycle_deviation_standard(self.cbc, self.posix_time, self.vox.values, self.vox_i)
+        except ValueError:
+            self.err = True
+            logger.debug('Warning! Season deviation standard failed')
+            return
+
         self.csdd = self.__to_gregorian(self.csd)  # cycle deviation standard in days /Season deviation standard in days
-        self.max_idx = self.__max(self.mms)  # date of maximum
+        self.max_idx = self.__max(self.mms)# date of maximum
         self.ref_yr = self.cbcd.year  # reference yr
 
         self.sfs = None
@@ -149,7 +202,7 @@ class SingularCycle(object):
 
         self.afi = None  # Season Active Fraction
 
-        self.warn = None  # Warning flags
+
 
     def __time_delta(self, dt1, dt2):
         """Minimum minimum length expressed in delta time
@@ -176,7 +229,7 @@ class SingularCycle(object):
         """Interpolated line between two min and give back a time series"""
         try:
             pf = ts.copy()
-            pf.iloc[1:-1] = np.nan
+            pf[1:-1] = np.nan
             return pf.interpolate()
         except (RuntimeError, Exception, ValueError):
             self.err = True
@@ -228,7 +281,7 @@ class SingularCycle(object):
         """Barycenter"""
         cbc = 0
         try:
-            self.posix_time = self.vox.index.astype(np.int64) // 10 ** 9
+            self.posix_time = self.vox.index.asi8 // 10**9
             cbc = (self.posix_time * self.vox).sum() / self.vox_i
         except(RuntimeError, Exception, ValueError):
             self.err = True
@@ -259,3 +312,49 @@ class SingularCycle(object):
             self.err = True
             logger.debug('Warning! Season deviation standard failed')
             return None
+
+
+def _difference(crv_1, crv_2):
+    """Return the differences between two time series"""
+
+    if crv_2.sum() > 0:
+        out = crv_1 - crv_2
+    else:
+        out = crv_1 + crv_2
+    return out
+
+
+@jit(nopython=True, cache=True)
+def _integral(ts):
+        """Return the integral of a time series"""
+        return ts.sum()
+
+
+@jit(nopython=True, cache=True)
+def _barycenter(index, vox):
+    """Barycenter"""
+    cbc = (index * vox).sum() / vox.sum()
+    return cbc
+
+
+@jit(nopython=True, cache=True)
+def _min_min_line(x, y):
+    m = (y[-1] - y[0]) / (x[-1] - x[0])
+    c = y[0] - m * x[0]
+    y[1:-1] = m*x[1:-1]+c
+    return y
+
+
+@jit(nopython=True, cache=True)
+def _cycle_deviation_standard(cbc, posix_time, vox, vox_i):
+    """Season deviation standard"""
+    if cbc is not None:
+        sup = (np.square(posix_time) * vox).sum() / vox_i
+        inf = np.square(cbc)
+        if sup >= inf:
+            return np.sqrt(sup - inf)
+        else:
+            return 0
+    else:
+        return 0
+

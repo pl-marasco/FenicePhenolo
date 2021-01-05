@@ -6,6 +6,7 @@ from __future__ import division
 
 import numpy as np
 import scipy.signal
+from numba import jit
 
 # by default, assume at least this many cycles of data when
 # establishing FFT window sizes.
@@ -110,16 +111,50 @@ def periodogram(data, min_period=4, max_period=None):
     periods = np.array([int(round(1.0 / freq)) for freq in freqs[1:]])
     power = power[1:]
     # take the max among frequencies having the same integer part
-    idx = 1
-    while idx < len(periods):
-        if periods[idx] == periods[idx - 1]:
-            power[idx - 1] = max(power[idx - 1], power[idx])
-            periods, power = np.delete(periods, idx), np.delete(power, idx)
-        else:
-            idx += 1
+    # idx = 1
+    # while idx < len(periods):
+    #     if periods[idx] == periods[idx - 1]:
+    #         power[idx - 1] = max(power[idx - 1], power[idx])
+    #         periods, power = np.delete(periods, idx), np.delete(power, idx)
+    #     else:
+    #         idx += 1
+    idx = np.asarray(np.where(np.diff(periods) == 0))
+    power[idx+1] = np.maximum(power[idx], power[idx+1])
+    periods, power = np.delete(periods, idx), np.delete(power, idx)
+
     power[periods == nperseg] = 0  # disregard the artifact at nperseg
     min_i = len(periods[periods >= max_period]) - 1
     max_i = len(periods[periods < min_period])
     periods, power = periods[min_i: -max_i], power[min_i: -max_i]
 
     return periods, power
+
+
+
+
+
+
+#     if max_period is None:
+#         max_period = int(min(len(data) / MIN_FFT_CYCLES, MAX_FFT_PERIOD))
+#     nperseg = min(max_period * 2, len(data) // 2)  # FFT window
+#     freqs, power = scipy.signal.welch(data, 1.0, scaling='spectrum', nperseg=nperseg)
+#     periods = np.array([int(round(1.0 / freq)) for freq in freqs[1:]])
+#     power = power[1:]
+#     # take the max among frequencies having the same integer part
+#     periods, power = __deleter(periods, power, nperseg, max_period, min_period)
+#
+#     return periods, power
+#
+#
+# #@jit(nopython=True, cache=True)
+# def __deleter(periods, power, nperseg, max_period, min_period):
+#
+#     idx = np.asarray(np.where(np.diff(periods) == 0))
+#     power[idx+1] = np.maximum(power[idx], power[idx+1])
+#     periods, power = np.delete(periods, idx), np.delete(power, idx)
+#
+#     power[periods == nperseg] = 0  # disregard the artifact at nperseg
+#     min_i = periods[periods >= max_period].size - 1
+#     max_i = periods[periods < min_period].size
+#     periods, power = periods[min_i: -max_i], power[min_i: -max_i]
+#     return periods, power

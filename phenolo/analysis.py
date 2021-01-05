@@ -4,12 +4,15 @@ import logging
 
 from phenolo import chronos, filters, metrics, nodata, outlier
 from seasonal import fit_seasons, periodogram_peaks
-import numpy as np
 import pandas as pd
+
+import numpy as np
+import time
+
 
 logger = logging.getLogger(__name__)
 
-
+#@profile
 def phenolo(pxldrl, **kwargs):
     param = kwargs.pop('settings', '')
 
@@ -36,7 +39,7 @@ def phenolo(pxldrl, **kwargs):
     # scaling
     try:
         if param.scale is not None:
-            pxldrl.ts = metrics.scale(pxldrl.ts, param.scale)
+            pxldrl.ts = pd.Series(metrics.scale(pxldrl.ts.values, param.scale), index=pxldrl.ts.index)
     except(RuntimeError, ValueError, Exception):
         logger.info(f'Scaling error in position:{pxldrl.position}')
         pxldrl.error = True
@@ -56,7 +59,7 @@ def phenolo(pxldrl, **kwargs):
     # scaling to 0-100
     try:
         if param.min is not None and param.max is not None:
-            pxldrl.ts = metrics.rescale(pxldrl.ts, param.min, param.max)
+            pxldrl.ts_resc = pd.Series(metrics.rescale(pxldrl.ts.values, param.min, param.max), index=pxldrl.ts.index)
     except(RuntimeError, ValueError, Exception):
         logger.info(f'Scaling error in position:{pxldrl.position}')
         pxldrl.error = True
@@ -65,10 +68,10 @@ def phenolo(pxldrl, **kwargs):
 
     # Filter outlier
     try:
-        if pxldrl.ts.isnull().sum() > 0:
-            pxldrl.ts.fillna(method='bfill', inplace=True)
+        if pxldrl.ts_resc.isnull().sum() > 0:
+            pxldrl.ts_resc.fillna(method='bfill', inplace=True)
 
-        pxldrl.ts = outlier.doubleMAD(pxldrl.ts, mad_pwr=param.mad_pwr)
+        pxldrl.ts_filtered = outlier.doubleMAD(pxldrl.ts_resc, mad_pwr=param.mad_pwr)
 
     except (RuntimeError, ValueError, Exception):
         logger.info(f'Error in filtering outlier in position:{pxldrl.position}')
@@ -77,12 +80,11 @@ def phenolo(pxldrl, **kwargs):
         return pxldrl
 
     try:
-        if pxldrl.ts is not None:
-            pxldrl.ts.astype('float64', copy=False)
-            pxldrl.ts = pxldrl.ts.interpolate(method='linear')
+        if pxldrl.ts_filtered is not None:
+            pxldrl.ts_cleaned = pxldrl.ts_filtered.interpolate(method='linear')
             # TODO make possible to use onother type of interpol
-            if len(pxldrl.ts[pxldrl.ts.isna()]) > 0:
-                pxldrl.ts = pxldrl.ts.fillna(method='bfill')
+            if len(pxldrl.ts_cleaned[pxldrl.ts_cleaned.isna()]) > 0:
+                pxldrl.ts_cleaned = pxldrl.ts_cleaned.fillna(method='bfill')
 
     except (RuntimeError, ValueError, Exception):
         logger.info(f'Error in interpolating outlier in position:{pxldrl.position}')
@@ -92,10 +94,11 @@ def phenolo(pxldrl, **kwargs):
 
     # Estimate Season length
     try:
-        periods = periodogram_peaks(pxldrl.ts, min_period=9, max_period=180)
-        pxldrl.seasons, pxldrl.trend = fit_seasons(pxldrl.ts, period=periods[0][0], periodogram_thresh=0.5)
+        periods = periodogram_peaks(pxldrl.ts_cleaned, min_period=9, max_period=180)
+        pxldrl.seasons, pxldrl.trend = fit_seasons(pxldrl.ts_cleaned, period=periods[0][0], periodogram_thresh=0.5)
+        # pxldrl.seasons, pxldrl.trend = fit_seasons(pxldrl.ts_cleaned)
         if pxldrl.seasons is not None and pxldrl.trend is not None:
-            pxldrl.trend_ts = metrics.to_timeseries(pxldrl.trend, pxldrl.ts.index)
+            pxldrl.trend_ts = metrics.to_timeseries(pxldrl.trend, pxldrl.ts_cleaned.index)
         else:
             raise Exception
         # TODO add the no season option
@@ -110,7 +113,7 @@ def phenolo(pxldrl, **kwargs):
     # Calculate season length and expected number of season
     try:
         pxldrl.season_lng = pxldrl.seasons.size * param.yr_dys
-        pxldrl.expSeason = chronos.season_ext(pxldrl.ts, pxldrl.season_lng)
+        pxldrl.expSeason = chronos.season_ext(pxldrl.ts_cleaned, pxldrl.season_lng)
     except(RuntimeError, Exception, ValueError):
         logger.info(f'Error! Season conversion to days failed, in position:{pxldrl.position}')
         pxldrl.error = True
@@ -128,7 +131,7 @@ def phenolo(pxldrl, **kwargs):
 
     # Interpolate data to daily pxldrl
     try:
-        pxldrl.ts = chronos.time_resample(pxldrl.ts)
+        pxldrl.ts_d = chronos.time_resample(pxldrl.ts_cleaned)
         pxldrl.trend_d = chronos.time_resample(pxldrl.trend_ts)
     except(RuntimeError, Exception, ValueError):
         logger.info(f'Error! Conversion to days failed, in position:{pxldrl.position}')
@@ -138,7 +141,7 @@ def phenolo(pxldrl, **kwargs):
 
     # Svainsky Golet
     try:
-        pxldrl.ts = filters.sv(pxldrl, param.smp, param.medspan)
+        pxldrl.ps = filters.sv(pxldrl.ts_d, param.smp, param.medspan)
     except (RuntimeError, Exception, ValueError):
         logger.info(f'Error! Savinsky Golet filter problem, in position:{pxldrl.position}')
         pxldrl.error = True
@@ -148,30 +151,30 @@ def phenolo(pxldrl, **kwargs):
     # TODO create the option to pre process or not data
     # Valley detection
     try:
-        pxldrl.pks = metrics.valley_detection(pxldrl.ts, pxldrl.trend_d, pxldrl.season_lng)
+        pxldrl.pks = metrics.valley_detection(pxldrl.ps, pxldrl.trend_d, pxldrl.season_lng)
     except(RuntimeError, Exception, ValueError):
         logger.info(f'Error in valley detection in position:{pxldrl.position}')
         pxldrl.error = True
         pxldrl.errtyp = 12  # 'Valley detection'
         return pxldrl
 
-    # Cycle with metrics
+    # Cycle with matrics
     try:
-        pxldrl.sincys = metrics.cycle_metrics(pxldrl.pks, pxldrl.ts, pxldrl.position)
+        pxldrl.sincys = metrics.cycle_metrics(pxldrl.pks, pxldrl.ps, pxldrl.position)
     except(RuntimeError, Exception, ValueError):
         logger.info(f'Error in season detection in position:{pxldrl.position}')
         pxldrl.error = True
         pxldrl.errtyp = 13  # 'Season detection'
         return pxldrl
 
-    try:
-        import statistics
-        pxldrl.msdd = metrics.attr_statistic(pxldrl.sincys, statistics.median, 'csd')
-    except(RuntimeError, Exception, ValueError):
-        logger.info(f'Error in season mean calculation in position:{pxldrl.position}')
-        pxldrl.error = True
-        pxldrl.errtyp = 14  # 'Season mean'
-        return pxldrl
+    # try:
+    #     import statistics
+    #     pxldrl.msdd = metrics.attr_statistic(pxldrl.sincys, statistics.median, 'csd')
+    # except(RuntimeError, Exception, ValueError):
+    #     logger.info(f'Error in season mean calculation in position:{pxldrl.position}')
+    #     pxldrl.error = True
+    #     pxldrl.errtyp = 14  # 'Season mean'
+    #     return pxldrl
 
     # Season metrics
     try:
@@ -183,19 +186,39 @@ def phenolo(pxldrl, **kwargs):
         return pxldrl
 
     # General statistic aggregation
-    try:
-        pxldrl.stb = metrics.attribute_extractor_se(pxldrl, 'stb', param)
-        pxldrl.mpi = metrics.attribute_extractor_se(pxldrl, 'mpi', param)
-        pxldrl.sbd = metrics.attribute_extractor_se(pxldrl, 'sbd', param)
-        pxldrl.sed = metrics.attribute_extractor_se(pxldrl, 'sed', param)
-        pxldrl.sl = metrics.attribute_extractor(pxldrl, 'sl', param)
-        pxldrl.spi = metrics.attribute_extractor(pxldrl, 'spi', param)
-        pxldrl.si = metrics.attribute_extractor(pxldrl, 'si', param)
-        pxldrl.cf = metrics.attribute_extractor(pxldrl, 'cf', param)
-        pxldrl.afi = metrics.attribute_extractor(pxldrl, 'afi', param)
-        pxldrl.sei = metrics.attribute_extractor(pxldrl, 'sei', param)
+    # try:
+    #     pxldrl.stb = metrics.attribute_extractor_se(pxldrl, 'stb', param)
+    #     pxldrl.mpi = metrics.attribute_extractor_se(pxldrl, 'mpi', param)
+    #     pxldrl.sbd = metrics.attribute_extractor_se(pxldrl, 'sbd', param)
+    #     pxldrl.sed = metrics.attribute_extractor_se(pxldrl, 'sed', param)
+    #     pxldrl.sl = metrics.attribute_extractor(pxldrl, 'sl', param)
+    #     pxldrl.spi = metrics.attribute_extractor(pxldrl, 'spi', param)
+    #     pxldrl.si = metrics.attribute_extractor(pxldrl, 'si', param)
+    #     pxldrl.cf = metrics.attribute_extractor(pxldrl, 'cf', param)
+    #     pxldrl.afi = metrics.attribute_extractor(pxldrl, 'afi', param)
+    #     pxldrl.sei = metrics.attribute_extractor(pxldrl, 'sei', param)
+    #
+    #     pxldrl.warn = metrics.attribute_extractor(pxldrl, 'warn', param)
+    # except(RuntimeError, Exception, ValueError):
+    #     logger.info(f'Statistical aggregation:{pxldrl.position}')
+    #     pxldrl.error = True
+    #     pxldrl.errtyp = 17  # 'Statistical aggregation'
+    #     return pxldrl
 
-        pxldrl.warn = metrics.attribute_extractor(pxldrl, 'warn', param)
+    try:
+        df_agg_rslt = metrics.attribute_extractor(pxldrl, param)
+        pxldrl.stb = df_agg_rslt.stb.values
+        pxldrl.mpi = df_agg_rslt.mpi.values
+        pxldrl.sbd = df_agg_rslt.sbd.values
+        pxldrl.sed = df_agg_rslt.sed.values
+        pxldrl.sl = df_agg_rslt.sl.values
+        pxldrl.spi = df_agg_rslt.spi.values
+        pxldrl.si = df_agg_rslt.si.values
+        pxldrl.cf = df_agg_rslt.cf.values
+        pxldrl.afi = df_agg_rslt.afi.values
+        pxldrl.sei = df_agg_rslt.sei.values
+
+        pxldrl.warn = df_agg_rslt.warn.values
     except(RuntimeError, Exception, ValueError):
         logger.info(f'Statistical aggregation:{pxldrl.position}')
         pxldrl.error = True

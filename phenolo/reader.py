@@ -542,15 +542,15 @@ def ingest(param):
 
         param.add_dims(cube)
 
-        if cube.chunks is None:
-            col_blocks = param.col_val.size/2
-            row_blocks = param.row_val.size/2
+        if cube.chunks is None and param.col_nm is not None:
+            col_blocks = param.col_val.size/4
+            row_blocks = param.row_val.size/4
             dim_blocks = param.dim_val.size
             cube = _dasker(cube, dim_blocks, col_blocks, row_blocks)
 
-        param.dim_unq_val = pd.to_datetime(param.dim_val).year.unique()
-        param.col_sz = param.col_val.size
-        param.dim_sz = param.dim_unq_val.size
+            param.dim_unq_val = pd.to_datetime(param.dim_val).year.unique()
+            param.col_sz = param.col_val.size
+            param.dim_sz = param.dim_unq_val.size
 
         deltatime = time.time() - start
         logger.info('Loading data required:{}'.format(deltatime))
