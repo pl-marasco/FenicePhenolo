@@ -233,7 +233,7 @@ def template_creator(cube, param,):
     import xarray as xr
 
     years = pd.to_datetime(param.dim_val).year.unique()
-    chunks = (years.size, cube.chunks[1][0], cube.chunks[2][0])
+    chunks = (years.size, cube.chunks[1], cube.chunks[2])
 
     stb = da.empty((years.size, cube[param.row_nm].size, cube[param.col_nm].size), dtype=np.float, chunks=chunks)
     mpi = da.empty((years.size, cube[param.row_nm].size, cube[param.col_nm].size), dtype=np.float, chunks=chunks)
