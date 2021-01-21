@@ -4,6 +4,7 @@ import logging
 import numpy as np
 import pandas as pd
 import xarray as xr
+import copy
 
 from phenolo import atoms, analysis
 
@@ -74,25 +75,27 @@ def _process(cube, **kwargs):
                     logger.debug(f'Error: {_error_decoder(pxldrl.errtyp)} in position:{pxldrl.position}')
                 else:
                     try:
-                        cache['Standing_Biomass'][:, row, col] = pxldrl.stb
-                        cache['Min_min_PermanentIntegral'][:, row, col] = pxldrl.mpi
-                        cache['Season_Start_date'][:, row, col] = pxldrl.sbd
-                        cache['Season_End_date'][:, row, col] = pxldrl.sed
-                        cache['Season_Lenght'][:, row, col] = pxldrl.sl
-                        cache['Seasonal_Permanent_Integral'][:, row, col] = pxldrl.spi
-                        cache['Season_Integral'][:, row, col] = pxldrl.si
-                        cache['Cyclic_Fraction'][:, row, col] = pxldrl.cf
-                        cache['Active_Fraction_Integral'][:, row, col] = pxldrl.afi
-                        cache['Cycle_Warning'][:, row, col] = pxldrl.warn
+                        cache['Standing_Biomass'][:, row, col] = copy.deepcopy(pxldrl.stb)
+                        cache['Min_min_PermanentIntegral'][:, row, col] = copy.deepcopy(pxldrl.mpi)
+                        cache['Season_Start_date'][:, row, col] = copy.deepcopy(pxldrl.sbd)
+                        cache['Season_End_date'][:, row, col] = copy.deepcopy(pxldrl.sed)
+                        cache['Season_Lenght'][:, row, col] = copy.deepcopy(pxldrl.sl)
+                        cache['Seasonal_Permanent_Integral'][:, row, col] = copy.deepcopy(pxldrl.spi)
+                        cache['Season_Integral'][:, row, col] = copy.deepcopy(pxldrl.si)
+                        cache['Cyclic_Fraction'][:, row, col] = copy.deepcopy(pxldrl.cf)
+                        cache['Active_Fraction_Integral'][:, row, col] = copy.deepcopy(pxldrl.afi)
+                        cache['Cycle_Warning'][:, row, col] = copy.deepcopy(pxldrl.warn)
 
                         if not pd.isnull(pxldrl.season_lng):
                             if pxldrl.season_lng <= 365.0:
-                                cache['Number_of_Seasons'][:, row, col] = int(365 / pxldrl.season_lng)
+                                cache['Number_of_Seasons'][:, row, col] = int(365 / copy.deepcopy(pxldrl.season_lng))
                             else:
-                                cache['Number_of_Seasons'][:, row, col] = int(pxldrl.season_lng)
+                                cache['Number_of_Seasons'][:, row, col] = int(copy.deepcopy(pxldrl.season_lng))
                                 # TODO add more seasons sub division
                         else:
-                            cache['Number_of_Seasons'][:, row, col] = pxldrl.season_lng
+                            cache['Number_of_Seasons'][:, row, col] = copy.deepcopy(pxldrl.season_lng)
+
+                        del pxldrl
 
                     except Exception as e:
                         logger.error(f'Error in a worker during the filling of type {e}')
