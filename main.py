@@ -61,6 +61,7 @@ def main(param):
         template = output.template_creator(cube, param)
 
         print('\rInfo -- Output ready', end='')
+        from distributed import progress
 
         if not cluster and localproc and n_workers and threads_per_worker:
             cluster = LocalCluster(processes=localproc,
@@ -77,35 +78,31 @@ def main(param):
             else:
                 from dask_jobqueue import PBSCluster
 
-                cluster = PBSCluster(cores=threads_per_worker,
-                                     memory="4GB",
-                                     project='DASK_Parabellum',
-                                     queue='long_fast',
-                                     local_directory='/local0/maraspi/',
-                                     walltime='120:00:00',
-                                     death_timeout=240,
-                                     log_directory='/tmp/marapi/workers/')
+                # cluster = PBSCluster(cores=threads_per_worker,
+                #                      memory="4GB",
+                #                      project='DASK_Parabellum',
+                #                      queue='long_fast',
+                #                      local_directory='/local0/maraspi/',
+                #                      walltime='120:00:00',
+                #                      death_timeout=240,
+                #                      log_directory='/tmp/marapi/workers/')
+                cluster = PBSCluster()
                 cluster.scale(n_workers)
 
         client = Client(cluster)
-        client.wait_for_workers(1)
-
-        # x = 0
-        # while len(client.nthreads()) < 1 or x == 1000:
-        #     time.sleep(0.25)
-        #     x += 1
-        #     print(f'\rStill waiting the for the cluster boot... up to now {len(client.nthreads())} are up', end='')
+        client.wait_for_workers(8)
 
         if client:
             print('\rInfo -- Client up and running', end='')
-            http = 'http://localhost:8787/status'
+            # http = 'http://localhost:8787/status'
             print('\rInfo -- Analysis is up and running, progress can be followed at:')
+            print(cluster)
             print(client)
-            webbrowser.open(http, new=2, autoraise=True)
+            # webbrowser.open(http, new=2, autoraise=True)
 
         result_cube = executor.analyse(cube, client, param, template)
 
-        result_cube.to_netcdf(os.path.join(param.outFilePth, '.'.join((param.outName, 'nc'))), mode='w', format='NETCDF4',
+        results = result_cube.to_netcdf(os.path.join(param.outFilePth, '.'.join((param.outName, 'nc'))), mode='w', format='NETCDF4',
                               encoding={'Standing_Biomass': {"dtype": "double", "zlib": True, "complevel": 4},
                               'Min_min_PermanentIntegral': {"dtype": "double", "zlib": True, "complevel": 4},
                               'Season_Start_date': {"dtype": "double", "zlib": True, "complevel": 4},
@@ -118,8 +115,9 @@ def main(param):
                               'Cycle_Warning': {"dtype": "int", "zlib": True, "complevel": 4},
                               'Number_of_Seasons': {"dtype": "int64", "zlib": True, "complevel": 4},
                               'Pixel_Critical_Error': {"dtype": "int64", "zlib": True, "complevel": 4}},
-                              compute=True
-                              )
+                              compute=False)
+        future = results.persist()
+        progress(future)
 
     else:
         raise ValueError
