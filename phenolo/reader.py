@@ -65,6 +65,14 @@ def _get_gs_zarr(prmts, dim):
     return _slice_cube(dataset, dim)
 
 
+def _get_zarr(inFilePth, dim):
+    dataset = xr.open_zarr(inFilePth,
+                           mask_and_scale=False,
+                           decode_times=True)
+
+    return _slice_cube(dataset, dim)
+
+
 def _get_netcdf(prmts, dim):
     dataset = xr.open_dataset(prmts.inFilePth,
                               mask_and_scale=False,
@@ -532,6 +540,8 @@ def ingest(param):
         elif os.path.isdir(os.path.dirname(param.inFilePth)):
             if '*.nc' in param.inFilePth:
                 cube = _get_multi_netcdf(param.inFilePth, dim, param)
+            elif '.zarr' in param.inFilePth:
+                cube = _get_zarr(param.inFilePth, dim)
             elif '*.hdf' in param.inFilePth:
                 cube = _get_multi_hdf(glob.glob(os.path.join(param.inFilePth, '*.hdf')), dim)
             else:
@@ -548,6 +558,11 @@ def ingest(param):
             dim_blocks = param.dim_val.size
             cube = _dasker(cube, dim_blocks, col_blocks, row_blocks)
 
+            param.dim_unq_val = pd.to_datetime(param.dim_val).year.unique()
+            param.col_sz = param.col_val.size
+            param.dim_sz = param.dim_unq_val.size
+
+        elif param.col_nm is not None:
             param.dim_unq_val = pd.to_datetime(param.dim_val).year.unique()
             param.col_sz = param.col_val.size
             param.dim_sz = param.dim_unq_val.size
