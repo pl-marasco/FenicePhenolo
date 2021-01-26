@@ -33,7 +33,6 @@ class PixelDrill(object):
         self.pks = None
         self.seasons = None
         self.sincys = []
-        self.error = None
         self.phen = []
         self.error = False
         self.errtyp = None
