@@ -50,55 +50,60 @@ def _process(cube, **kwargs):
 
     cache = _cache_da(cube, param)
 
-    for x in range(0, cube[param.row_nm].size):
-        for y in range(0, cube[param.col_nm].size):
+    for i_row in range(0, cube[param.row_nm].size):
+        for i_col in range(0, cube[param.col_nm].size):
             pxldrl = atoms.PixelDrill(cube.isel(
-                                                dict([(param.col_nm, y), 
-                                                      (param.row_nm, x)])).to_series().astype(float),
-                                      [x, y])
-
-            pxldrl = analysis.phenolo(pxldrl, settings=param)
+                                                dict([(param.i_col_nm, i_col),
+                                                      (param.row_nm, i_row)])).to_series().astype(float),
+                                      [i_row, i_col])
 
             try:
-                row, col = pxldrl.position[0], pxldrl.position[1]
+                pxldrl = analysis.phenolo(pxldrl, settings=param)
+            except Exception as e:
+                cache['Pixel_Critical_Error'][:, i_row, i_col] = 1
+                cache['Number_of_Seasons'][:, i_row, i_col] = -1
+                logger.debug(f'Error: {_error_decoder(pxldrl.errtyp)} in position:{pxldrl.position}')
 
-                # if param.ovr_scratch:
-                #     try:
-                #         import phenolo.output as output
-                #         output.scratch_dump(pxldrl, param)
-                #     except Exception as e:
-                #         raise Exception
-
+            try:
                 if pxldrl.error:
-                    cache['Pixel_Critical_Error'][:, row, col] = 1
-                    cache['Number_of_Seasons'][:, row, col] = -1
+                    cache['Pixel_Critical_Error'][:, i_row, i_col] = 2
+                    cache['Number_of_Seasons'][:, i_row, i_col] = -1
                     logger.debug(f'Error: {_error_decoder(pxldrl.errtyp)} in position:{pxldrl.position}')
                 else:
                     try:
-                        cache['Standing_Biomass'][:, row, col] = copy.deepcopy(pxldrl.stb)
-                        cache['Min_min_PermanentIntegral'][:, row, col] = copy.deepcopy(pxldrl.mpi)
-                        cache['Season_Start_date'][:, row, col] = copy.deepcopy(pxldrl.sbd)
-                        cache['Season_End_date'][:, row, col] = copy.deepcopy(pxldrl.sed)
-                        cache['Season_Lenght'][:, row, col] = copy.deepcopy(pxldrl.sl)
-                        cache['Seasonal_Permanent_Integral'][:, row, col] = copy.deepcopy(pxldrl.spi)
-                        cache['Season_Integral'][:, row, col] = copy.deepcopy(pxldrl.si)
-                        cache['Cyclic_Fraction'][:, row, col] = copy.deepcopy(pxldrl.cf)
-                        cache['Active_Fraction_Integral'][:, row, col] = copy.deepcopy(pxldrl.afi)
-                        cache['Cycle_Warning'][:, row, col] = copy.deepcopy(pxldrl.warn)
+                        cache['Standing_Biomass'][:, i_row, i_col] = copy.deepcopy(np.round(pxldrl.stb, 2))
+                        cache['Min_min_PermanentIntegral'][:, i_row, i_col] = copy.deepcopy(np.round(pxldrl.mpi, 2))
+                        cache['Season_Start_date'][:, i_row, i_col] = copy.deepcopy(pxldrl.sbd)
+                        cache['Season_End_date'][:, i_row, i_col] = copy.deepcopy(pxldrl.sed)
+                        cache['Season_Lenght'][:, i_row, i_col] = copy.deepcopy(pxldrl.sl)
+                        cache['Seasonal_Permanent_Integral'][:, i_row, i_col] = copy.deepcopy(np.round(pxldrl.spi, 2))
+                        cache['Season_Integral'][:, i_row, i_col] = copy.deepcopy(np.round(pxldrl.si, 2))
+                        cache['Cyclic_Fraction'][:, i_row, i_col] = copy.deepcopy(np.round(pxldrl.cf, 2))
+                        cache['Active_Fraction_Integral'][:, i_row, i_col] = copy.deepcopy(np.round(pxldrl.afi, 2))
+                        cache['Cycle_Warning'][:, i_row, i_col] = copy.deepcopy(pxldrl.warn)
 
                         if not pd.isnull(pxldrl.season_lng):
                             if pxldrl.season_lng <= 365.0:
-                                cache['Number_of_Seasons'][:, row, col] = int(365 / copy.deepcopy(pxldrl.season_lng))
+                                cache['Number_of_Seasons'][:, i_row, i_col] = int(365 / copy.deepcopy(pxldrl.season_lng))
                             else:
-                                cache['Number_of_Seasons'][:, row, col] = int(copy.deepcopy(pxldrl.season_lng))
+                                cache['Number_of_Seasons'][:, i_row, i_col] = int(copy.deepcopy(pxldrl.season_lng))
                                 # TODO add more seasons sub division
                         else:
-                            cache['Number_of_Seasons'][:, row, col] = copy.deepcopy(pxldrl.season_lng)
+                            cache['Number_of_Seasons'][:, i_row, i_col] = copy.deepcopy(pxldrl.season_lng)
 
                         del pxldrl
 
+                        # if param.ovr_scratch:
+                        #     try:
+                        #         import phenolo.output as output
+                        #         output.scratch_dump(pxldrl, param)
+                        #     except Exception as e:
+                        #         raise Exception
+
                     except Exception as e:
                         logger.error(f'Error in a worker during the filling of type {e}')
+                        cache['Pixel_Critical_Error'][:, i_row, i_col] = 3
+                        cache['Number_of_Seasons'][:, i_row, i_col] = -1
                         pass
             except Exception as e:
                 print(e)
