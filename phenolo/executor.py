@@ -53,7 +53,7 @@ def _process(cube, **kwargs):
     for i_row in range(0, cube[param.row_nm].size):
         for i_col in range(0, cube[param.col_nm].size):
             pxldrl = atoms.PixelDrill(cube.isel(
-                                                dict([(param.i_col_nm, i_col),
+                                                dict([(param.col_nm, i_col),
                                                       (param.row_nm, i_row)])).to_series().astype(float),
                                       [i_row, i_col])
 
