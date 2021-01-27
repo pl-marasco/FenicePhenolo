@@ -71,15 +71,15 @@ def _process(cube, **kwargs):
                     logger.debug(f'Error: {_error_decoder(pxldrl.errtyp)} in position:{pxldrl.position}')
                 else:
                     try:
-                        cache['Standing_Biomass'][:, i_row, i_col] = copy.deepcopy(np.round(pxldrl.stb, 2))
-                        cache['Min_min_PermanentIntegral'][:, i_row, i_col] = copy.deepcopy(np.round(pxldrl.mpi, 2))
+                        cache['Standing_Biomass'][:, i_row, i_col] = copy.deepcopy(pxldrl.stb)
+                        cache['Min_min_PermanentIntegral'][:, i_row, i_col] = copy.deepcopy(pxldrl.mpi)
                         cache['Season_Start_date'][:, i_row, i_col] = copy.deepcopy(pxldrl.sbd)
                         cache['Season_End_date'][:, i_row, i_col] = copy.deepcopy(pxldrl.sed)
                         cache['Season_Lenght'][:, i_row, i_col] = copy.deepcopy(pxldrl.sl)
-                        cache['Seasonal_Permanent_Integral'][:, i_row, i_col] = copy.deepcopy(np.round(pxldrl.spi, 2))
-                        cache['Season_Integral'][:, i_row, i_col] = copy.deepcopy(np.round(pxldrl.si, 2))
-                        cache['Cyclic_Fraction'][:, i_row, i_col] = copy.deepcopy(np.round(pxldrl.cf, 2))
-                        cache['Active_Fraction_Integral'][:, i_row, i_col] = copy.deepcopy(np.round(pxldrl.afi, 2))
+                        cache['Seasonal_Permanent_Integral'][:, i_row, i_col] = copy.deepcopy(pxldrl.spi)
+                        cache['Season_Integral'][:, i_row, i_col] = copy.deepcopy(pxldrl.si)
+                        cache['Cyclic_Fraction'][:, i_row, i_col] = copy.deepcopy(pxldrl.cf)
+                        cache['Active_Fraction_Integral'][:, i_row, i_col] = copy.deepcopy(pxldrl.afi)
                         cache['Cycle_Warning'][:, i_row, i_col] = copy.deepcopy(pxldrl.warn)
 
                         if not pd.isnull(pxldrl.season_lng):
@@ -107,6 +107,13 @@ def _process(cube, **kwargs):
                         pass
             except Exception as e:
                 print(e)
+
+    cache['Standing_Biomass'] = cache['Standing_Biomass'].round(2)
+    cache['Min_min_PermanentIntegral'] = cache['Min_min_PermanentIntegral'].round(2)
+    cache['Seasonal_Permanent_Integral'] = cache['Seasonal_Permanent_Integral'].round(2)
+    cache['Season_Integral'] = cache['Season_Integral'].round(2)
+    cache['Cyclic_Fraction'] = cache['Cyclic_Fraction'].round(2)
+    cache['Active_Fraction_Integral'] = cache['Active_Fraction_Integral'].round(2)
 
     return cache
 
