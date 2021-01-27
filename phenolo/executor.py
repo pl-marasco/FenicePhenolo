@@ -60,13 +60,13 @@ def _process(cube, **kwargs):
             try:
                 pxldrl = analysis.phenolo(pxldrl, settings=param)
             except Exception as e:
-                cache['Pixel_Critical_Error'][:, i_row, i_col] = 1
+                cache['Pixel_Critical_Error'][:, i_row, i_col] = 100
                 cache['Number_of_Seasons'][:, i_row, i_col] = -1
                 logger.debug(f'Error: {_error_decoder(pxldrl.errtyp)} in position:{pxldrl.position}')
 
             try:
                 if pxldrl.error:
-                    cache['Pixel_Critical_Error'][:, i_row, i_col] = 2
+                    cache['Pixel_Critical_Error'][:, i_row, i_col] = 200 + pxldrl.errtyp
                     cache['Number_of_Seasons'][:, i_row, i_col] = -1
                     logger.debug(f'Error: {_error_decoder(pxldrl.errtyp)} in position:{pxldrl.position}')
                 else:
@@ -102,7 +102,7 @@ def _process(cube, **kwargs):
 
                     except Exception as e:
                         logger.error(f'Error in a worker during the filling of type {e}')
-                        cache['Pixel_Critical_Error'][:, i_row, i_col] = 3
+                        cache['Pixel_Critical_Error'][:, i_row, i_col] = 300
                         cache['Number_of_Seasons'][:, i_row, i_col] = -1
                         pass
             except Exception as e:
