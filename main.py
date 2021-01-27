@@ -90,13 +90,12 @@ def main(param):
                 cluster.scale(n_workers)
 
         client = Client(cluster)
-        client.wait_for_workers(8)
+        client.wait_for_workers(4)
 
         if client:
             print('\rInfo -- Client up and running', end='')
             # http = 'http://localhost:8787/status'
             print('\rInfo -- Analysis is up and running, progress can be followed at:')
-            print(cluster)
             print(client)
             # webbrowser.open(http, new=2, autoraise=True)
 
@@ -119,6 +118,7 @@ def main(param):
         future = results.persist()
         progress(future)
 
+        client.close()
     else:
         raise ValueError
 
