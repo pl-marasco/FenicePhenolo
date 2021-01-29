@@ -12,6 +12,7 @@ import numpy.ma as ma
 import pandas as pd
 import xarray as xr
 from pyhdf.SD import *
+xr.set_options(file_cache_maxsize=4008)
 
 logger = logging.getLogger(__name__)
 
