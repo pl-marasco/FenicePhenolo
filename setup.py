@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="Phenolo",
-    version="2.5.3",
+    version="2.5.4",
     author="Pier Lorenzo Marasco",
     author_email="pl.marasco@gmail.com",
     description="Phenology caclulator according to the shift methodology",

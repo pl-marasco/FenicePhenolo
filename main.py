@@ -16,7 +16,52 @@ logger = logging.getLogger(__name__)
 
 
 def main(param):
+
     start_time = time.time()
+
+    print('\rConfiguring cluster', end='')
+    cluster = param.cluster
+    localproc = param.processes
+    n_workers = param.n_workers
+    threads_per_worker = param.threads_per_worker
+    scheduler = param.scheduler
+
+    from distributed import progress
+
+    if not cluster and localproc and n_workers and threads_per_worker:
+        cluster = LocalCluster(processes=localproc,
+                               n_workers=n_workers,
+                               threads_per_worker=threads_per_worker,
+                               host='localhost')
+    elif not localproc:
+        cluster = LocalCluster(processes=localproc,
+                               n_workers=n_workers,
+                               threads_per_worker=threads_per_worker)
+    elif cluster:
+        if scheduler:
+            cluster = scheduler
+        else:
+            from dask_jobqueue import PBSCluster
+
+            # cluster = PBSCluster(cores=threads_per_worker,
+            #                      memory="4GB",
+            #                      project='DASK_Parabellum',
+            #                      queue='long_fast',
+            #                      local_directory='/local0/maraspi/',
+            #                      walltime='120:00:00',
+            #                      death_timeout=240,
+            #                      log_directory='/tmp/marapi/workers/')
+            cluster = PBSCluster()
+            cluster.scale(n_workers)
+
+    client = Client(cluster)
+    client.wait_for_workers(n_workers)
+
+    if client:
+        print('\rClient is up and running', end='')
+        # http = 'http://localhost:8787/status'
+
+        # webbrowser.open(http, new=2, autoraise=True)
 
     print('\rReading Cube', end='')
     cube = reader.ingest(param)
@@ -52,52 +97,12 @@ def main(param):
 
     elif cube.coords.get(param.col_nm).size != 1 and cube.coords.get(param.row_nm).size != 1:
 
-        cluster = param.cluster
-        localproc = param.processes
-        n_workers = param.n_workers
-        threads_per_worker = param.threads_per_worker
-        scheduler = param.scheduler
+        print('\rInfo -- Analysis is up and running, progress can be followed at:')
+        print(client)
 
         template = output.template_creator(cube, param)
 
         print('\rInfo -- Output ready', end='')
-        from distributed import progress
-
-        if not cluster and localproc and n_workers and threads_per_worker:
-            cluster = LocalCluster(processes=localproc,
-                                   n_workers=n_workers,
-                                   threads_per_worker=threads_per_worker,
-                                   host='localhost')
-        elif not localproc:
-            cluster = LocalCluster(processes=localproc,
-                                   n_workers=n_workers,
-                                   threads_per_worker=threads_per_worker)
-        elif cluster:
-            if scheduler:
-                cluster = scheduler
-            else:
-                from dask_jobqueue import PBSCluster
-
-                # cluster = PBSCluster(cores=threads_per_worker,
-                #                      memory="4GB",
-                #                      project='DASK_Parabellum',
-                #                      queue='long_fast',
-                #                      local_directory='/local0/maraspi/',
-                #                      walltime='120:00:00',
-                #                      death_timeout=240,
-                #                      log_directory='/tmp/marapi/workers/')
-                cluster = PBSCluster()
-                cluster.scale(n_workers)
-
-        client = Client(cluster)
-        client.wait_for_workers(4)
-
-        if client:
-            print('\rInfo -- Client up and running', end='')
-            # http = 'http://localhost:8787/status'
-            print('\rInfo -- Analysis is up and running, progress can be followed at:')
-            print(client)
-            # webbrowser.open(http, new=2, autoraise=True)
 
         result_cube = executor.analyse(cube, client, param, template)
 
@@ -167,7 +172,7 @@ if __name__ == '__main__':
                 print('Error logging file creation')
                 raise IOError
         logger = logging.getLogger(__name__)
-        logger.info('*** Phenolo 2.0 ***')
+        logger.info('*** Phenolo 2.5 ***')
         logger.info('Process started @ {}'.format(datetime.now()))
 
         main(param)

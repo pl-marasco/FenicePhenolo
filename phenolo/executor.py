@@ -54,7 +54,7 @@ def _process(cube, **kwargs):
         for i_col in range(0, cube[param.col_nm].size):
             pxldrl = atoms.PixelDrill(cube.isel(
                                                 dict([(param.col_nm, i_col),
-                                                      (param.row_nm, i_row)])).to_series().astype(float),
+                                                      (param.row_nm, i_row)])).copy().to_series().astype(float),
                                       [i_row, i_col])
 
             try:
@@ -91,8 +91,6 @@ def _process(cube, **kwargs):
                         else:
                             cache['Number_of_Seasons'][:, i_row, i_col] = copy.deepcopy(pxldrl.season_lng)
 
-                        del pxldrl
-
                         # if param.ovr_scratch:
                         #     try:
                         #         import phenolo.output as output
@@ -107,6 +105,8 @@ def _process(cube, **kwargs):
                         pass
             except Exception as e:
                 print(e)
+
+            del pxldrl
 
     cache['Standing_Biomass'] = cache['Standing_Biomass'].round(2)
     cache['Min_min_PermanentIntegral'] = cache['Min_min_PermanentIntegral'].round(2)
