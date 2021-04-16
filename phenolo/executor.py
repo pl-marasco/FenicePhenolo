@@ -50,9 +50,11 @@ def _process(cube, **kwargs):
 
     cache = _cache_da(cube, param)
 
-    for i_row in range(0, cube[param.row_nm].size):
-        for i_col in range(0, cube[param.col_nm].size):
-            pxldrl = atoms.PixelDrill(cube.isel(
+    l_cube = cube.compute()
+
+    for i_row in range(0, l_cube[param.row_nm].size):
+        for i_col in range(0, l_cube[param.col_nm].size):
+            pxldrl = atoms.PixelDrill(l_cube.isel(
                                                 dict([(param.col_nm, i_col),
                                                       (param.row_nm, i_row)])).copy().to_series().astype(float),
                                       [i_row, i_col])
