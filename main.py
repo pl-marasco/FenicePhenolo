@@ -98,15 +98,10 @@ def main(param):
     elif cube.coords.get(param.col_nm).size != 1 and cube.coords.get(param.row_nm).size != 1:
 
         print('\rInfo -- Analysis is up and running, progress can be followed at:')
-        print(client)
 
-        template = output.template_creator(cube, param)
+        result_cube = executor.analyse(cube, param)
 
-        print('\rInfo -- Output ready', end='')
-
-        result_cube = executor.analyse(cube, client, param, template)
-
-        results = result_cube.to_netcdf(os.path.join(param.outFilePth, '.'.join((param.outName, 'nc'))), mode='w', format='NETCDF4',
+        result_cube.to_netcdf(os.path.join(param.outFilePth, '.'.join((param.outName, 'nc'))), mode='w', format='NETCDF4',
                               encoding={'Standing_Biomass': {"dtype": "double", "zlib": True, "complevel": 4},
                               'Min_min_PermanentIntegral': {"dtype": "double", "zlib": True, "complevel": 4},
                               'Season_Start_date': {"dtype": "double", "zlib": True, "complevel": 4},
@@ -119,9 +114,7 @@ def main(param):
                               'Cycle_Warning': {"dtype": "int", "zlib": True, "complevel": 4},
                               'Number_of_Seasons': {"dtype": "int64", "zlib": True, "complevel": 4},
                               'Pixel_Critical_Error': {"dtype": "int64", "zlib": True, "complevel": 4}},
-                              compute=False)
-        future = results.persist()
-        progress(future)
+                              compute=True)
 
         client.close()
     else:

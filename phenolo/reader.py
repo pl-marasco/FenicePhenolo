@@ -25,10 +25,11 @@ class Reader(object):
 def _get_rasterio(prmts, dim):
 
     from phenolo import chronos as dk
+    import rioxarray as riox
 
     try:
         # dataset = xr.open_rasterio(prmts.inFilePth, chunks={'x': 500, 'y': 500})
-        dataset = xr.open_rasterio(prmts.inFilePth)
+        dataset = riox.open_rasterio(prmts.inFilePth)
     except IOError:
         logger.debug('Error reading file through RasterIO')
         sys.exit(1)
@@ -56,14 +57,15 @@ def _get_rasterio(prmts, dim):
 
 
 def _get_gs_zarr(prmts, dim):
-    import gcsfs
+    # import gcsfs
 
-    fs = gcsfs.GCSFileSystem(project='pheno', token='cloud')
-    bucket = prmts.inFilePth.replace('gs://','')
-    gcsmap = gcsfs.mapping.GCSMap(bucket, gcs=fs, check=True, create=False)
-    dataset = xr.open_zarr(gcsmap, mask_and_scale=False)
-
-    return _slice_cube(dataset, dim)
+    # fs = gcsfs.GCSFileSystem(project='pheno', token='cloud')
+    # bucket = prmts.inFilePth.replace('gs://','')
+    # gcsmap = gcsfs.mapping.GCSMap(bucket, gcs=fs, check=True, create=False)
+    # dataset = xr.open_zarr(gcsmap, mask_and_scale=False)
+    #
+    # return _slice_cube(dataset, dim)
+    pass
 
 
 def _get_zarr(inFilePth, dim):
@@ -554,8 +556,8 @@ def ingest(param):
         param.add_dims(cube)
 
         if cube.chunks is None and param.col_nm is not None:
-            col_blocks = param.col_val.size/4
-            row_blocks = param.row_val.size/4
+            col_blocks = param.col_val.size #/4
+            row_blocks = param.row_val.size #/4
             dim_blocks = param.dim_val.size
             cube = _dasker(cube, dim_blocks, col_blocks, row_blocks)
 
