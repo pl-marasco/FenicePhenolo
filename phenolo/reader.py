@@ -492,7 +492,7 @@ def _get_slicers(prmts):
                 elif len(extent) == 4:
                     logger.debug('Four cooridnates found')
                     if type(extent[1]) is not int:
-                        if not (extent[1] > extent[3]) or not (extent[0] < extent[1]):
+                        if not (extent[1] > extent[3]) or not (extent[0] < extent[2]):
                             logger.debug('Coordinates doesn\'t respect the descending order, please check')
                             raise sys.exit(0)
                     x_slice = slice(extent[0], extent[2])
