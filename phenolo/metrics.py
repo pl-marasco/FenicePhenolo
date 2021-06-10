@@ -498,7 +498,7 @@ def _intercept(mms, shifted):
 @jit(nopython=True, cache=True)
 def _sub(val1, val2):
     # np.where(np.subtract(val1, val2) >= 0, val1, val2)
-    return np.where(val1 - val2 >= 0, val1, val2)
+    return np.where(val1 - val2 >= 0, val2, val1)
 
 
 @jit(nopython=True, cache=True)

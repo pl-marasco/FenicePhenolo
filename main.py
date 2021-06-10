@@ -147,7 +147,7 @@ def _log_info(logger, param):
 
 if __name__ == '__main__':
 
-    assert sys.version_info[:2] >= (3, 8), "You need at minimum python 3.7 to execute this script"
+    assert sys.version_info[:2] >= (3, 8), "You need at minimum python 3.8 to execute this script"
 
     print('~~~ Phenolo 2.5 [Chimera] ~~~\r\n')
 
